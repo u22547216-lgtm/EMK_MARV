@@ -1,2 +1,2 @@
 # EMK_MARV
-share codeing base for our MARV
+shared coding base for our MARV
