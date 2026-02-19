@@ -35,7 +35,8 @@
 ; -------------
 ;
     PSECT code,abs //Start of main code.
-    org	    init 			; startup address = 0000h
+    org	    0x00 			; startup address = 0000h
+    goto init
 
 init:
     MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
@@ -64,11 +65,12 @@ init:
 		
 		
 start: 	
-    movlw 		0x0F 		; move 0FH to W register
-    movwf 		0F80h,a		; move W to PORTA
-    movlw 		0x00 		; move 00H to W register
-    movwf 		PORTA,a		; move W to PORTA - note use of PORTA vs address
-    goto 		start 		; do this loop forever
+    bsf	    PORTD,5,A
+    call	delay_333
+    bcf	    PORTD,5,a
+    call	delay_333
+    goto start
+    
 	
 register_dump:
     
@@ -81,6 +83,21 @@ calibration:
 LLI:
     
 delay_333:
+    movlw   53
+    movwf   0x69,a
+delay_big:
+    movlw   255
+    movwf   0x67,a
+delay_in:
+    decfsz  0x67,a
+    goto delay_in
+    
+    decfsz  0x69,a
+    goto delay_big
+    
+    
+    return
+    
     
     end			
 
