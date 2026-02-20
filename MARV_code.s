@@ -12,6 +12,9 @@
 ;	ADC:
 ;	    Pins:   RA0,1,2,3,5
 ;	    ADCON0: AN0,1,2,3,4 (binary: 0 00000 00 to 0 00101 00)
+;   RGB:
+;       Pins:   RA4,6,7 (HIGH turns the colour off)
+;       Colours:  R,G,B
 ;	Register dump:
 ;	    Port C
 ;	Colour display:
