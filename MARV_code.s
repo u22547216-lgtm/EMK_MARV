@@ -33,6 +33,16 @@
     
     #include    <xc.inc>
     #include    "pic18f45k22.inc"
+
+; variables
+
+delay_inner     equ 0x00
+delay_outer     equ 0x01
+
+#define red_pin     PORTA,4
+#define green_pin   PORTA,6
+#define blue_pin    PORTA,7
+
 ;
 ; -------------	
 ; PROGRAM START	
@@ -45,12 +55,14 @@
 init:
     MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
     
-    ; setup ADC pins
+    ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
-    CLRF    LATA,a 	; Alternate method to clear output data latches
+    CLRF    LATA,a 	    ; Alternate method to clear output data latches
     movlw   0b00101111
-    movwf   ANSELA,b 	; set pins A 0,1,2,3 and 5 to analogue
-    movwf   TRISA,a	; set pins A 0,1,2,3 and 5 to input
+    movwf   ANSELA,b 	; sets pins A 0,1,2,3 and 5 to analogue     ADC
+                        ; also sets pins A 4,6 and 7 to digital     RGB
+    movwf   TRISA,a	    ; sets pins A 0,1,2,3 and 5 to input        ADC
+                        ; also sets pins A 4,6 and 7 to outputs     RGB
     
     ; setup debug ports(C and D)
     ; register dump port
@@ -69,10 +81,7 @@ init:
 		
 		
 start: 	
-    bsf	    PORTD,5,A
-    call	delay_333
-    bcf	    PORTD,5,a
-    call	delay_333
+
     goto start
     
 	
@@ -85,20 +94,21 @@ read_sensors:
 calibration:
     
 LLI:
+
+flash:
     
 delay_333:
     movlw   53
-    movwf   0x69,a
-delay_big:
+    movwf   delay_outer,a
+delay_outside:
     movlw   255
-    movwf   0x67,a
-delay_in:
-    decfsz  0x67,a
-    goto delay_in
+    movwf   delay_inner,a
+delay_inside:
+    decfsz  delay_inner,a
+    goto delay_inside
     
-    decfsz  0x69,a
-    goto delay_big
-    
+    decfsz  delay_outer,a
+    goto delay_outside
     
     return
     
