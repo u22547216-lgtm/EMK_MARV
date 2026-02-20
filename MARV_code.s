@@ -28,6 +28,7 @@
     ; CONFIG1H
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
+    CONFIG WDTEN = off      ; Turn off the watchdog timer
   
     
     #include    <xc.inc>
