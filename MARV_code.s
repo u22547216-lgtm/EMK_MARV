@@ -63,6 +63,23 @@ init:
                         ; also sets pins A 4,6 and 7 to digital     RGB
     movwf   TRISA,a	    ; sets pins A 0,1,2,3 and 5 to input        ADC
                         ; also sets pins A 4,6 and 7 to outputs     RGB
+
+    ; setup the ADC registers
+    ; ADCON0 = x 00000 0 1
+    clrf    ADCON0, a	; sets channel to AN0(RA0)
+			; makes sure it is not running
+    bsf	    ADCON0,0,a	; turns ADC on
+    
+    ; ADCON1 = 1 xxx 00 00
+    clrf    ADCON1, a	; sets voltage references to internal signal
+    bsf	    ADCON1,7,a	; set special trigger to CTMU
+    
+    ; ADCON2 = 1 x 100 010
+    clrf    ADCON2,a
+    bsf	    ADCON2,7,a	; left justified ADC result
+    bsf	    ADCON2,5,a	; acquisition time of 8 TAD
+    bsf	    ADCON2,1,a	; sets TAD to 2us
+    
     
     ; setup debug ports(C and D)
     ; register dump port
@@ -90,6 +107,7 @@ register_dump:
 show_colour:
     
 read_sensors:
+
     
 calibration:
     
