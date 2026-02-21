@@ -28,7 +28,7 @@
     ; CONFIG1H
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
-    CONFIG WDTEN = off      ; Turn off the watchdog timer
+    CONFIG WDTEN = OFF      ; Turn off the watchdog timer
   
     
     #include    <xc.inc>
@@ -42,6 +42,33 @@ delay_outer     equ 0x01
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
+
+; Sensor storage variables, the adresses here can be used with indirect addressing
+     ; name format is [colour flash]_[sensor number]
+red_0		equ 0x00
+red_1		equ 0x01
+red_2		equ 0x02
+red_3		equ 0x03
+red_4		equ 0x04
+
+green_0		equ 0x06
+green_1		equ 0x07
+green_2		equ 0x08
+green_3		equ 0x09
+green_4		equ 0x0A
+
+blue_0		equ 0x0B
+blue_1		equ 0x0C
+blue_2		equ 0x0D
+blue_3		equ 0x0E
+blue_4		equ 0x0F
+
+; variables to reduce magic numbers
+ADC_AN0		equ 0b00000011
+ADC_AN1 	equ 0b00000111
+ADC_AN2 	equ 0b00001011
+ADC_AN3 	equ 0b00001111
+ADC_AN4 	equ 0b00010011
 
 ;
 ; -------------	
@@ -74,12 +101,11 @@ init:
     clrf    ADCON1, a	; sets voltage references to internal signal
     bsf	    ADCON1,7,a	; set special trigger to CTMU
     
-    ; ADCON2 = 1 x 100 010
-    clrf    ADCON2,a
-    bsf	    ADCON2,7,a	; left justified ADC result
-    bsf	    ADCON2,5,a	; acquisition time of 8 TAD
-    bsf	    ADCON2,1,a	; sets TAD to 2us
-    
+    ; ADCON2 = 0 x 010 010
+    clrf    ADCON2,a	; left justified ADC result
+			; sets TAD to 2us
+    bsf	    ADCON2,4,a	; acquisition time of 4 TAD or 8us
+			; ADC works for 8+12*2 = 32us. ie: 32/4 = 8 instruction cycles.
     
     ; setup debug ports(C and D)
     ; register dump port
@@ -99,6 +125,7 @@ init:
 		
 start: 	
 
+    
     goto start
     
 	
@@ -107,7 +134,62 @@ register_dump:
 show_colour:
     
 read_sensors:
+; setup for indirect adressing
+    ; you need to use 'LFSR FSR0, XYZh' before calling this 
+    ; X is the bank
+    ; YZ is the starting register
+    LFSR 0, 100h ;need to remove, only here for initial creation purposes
+; shine red
+    bcf	    red_pin
+    call    read_all_sensors
+    bsf	    red_pin
+; shine green
+    bcf	    green_pin
+    call    read_all_sensors
+    bsf	    green_pin
+; shine blue
+    bcf	    blue_pin
+    call    read_all_sensors
+    bsf	    blue_pin
 
+read_all_sensors:
+; read from AN0
+    ; ADCON0 = x 00000 1 1
+    movlw   ADC_AN0	; select AN0
+    call    read_sensor
+    
+; read from AN1
+    ; ADCON0 = x 00001 1 1
+    movlw   ADC_AN1	; select AN1
+    call    read_sensor
+    
+; read from AN2
+    ; ADCON0 = x 00010 1 1
+    movlw   ADC_AN2	; select AN2
+    call    read_sensor
+    
+; read from AN3
+    ; ADCON0 = x 00011 1 1
+    movlw   ADC_AN3	; select AN3
+    call    read_sensor
+    
+; read from AN4
+    ; ADCON0 = x 00100 1 1
+    movlw   ADC_AN4	; select AN4
+    call    read_sensor
+    
+    return
+    
+read_sensor:
+    movwf   ADCON0,a	; begin ADC
+    
+    btfsc   ADCON0,1,a	; check if ADC is done
+    bra	    $-2		; no, check again
+    
+    movff    ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
+				; Increment FSR0
+				
+    return
     
 calibration:
     
