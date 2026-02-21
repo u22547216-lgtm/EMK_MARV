@@ -39,11 +39,6 @@
 delay_inner     equ 0x00
 delay_outer     equ 0x01
 
-test_0		equ 0x02
-#define test_en	    test_0,7
-
-test_1		equ 0x03
-
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
@@ -128,12 +123,6 @@ init:
     clrf    TRISD, a
     
     MOVLB   0x00	; back to bank 0 for normal opperations
-; testing setup		
-    bcf	    test_en, a
-    btfsc   test_en, a
-    goto    test
-end_test:
-    bcf	    test_en, q
 		
 start: 	
     
@@ -158,40 +147,16 @@ read_sensors:
     
 ; shine red
     bcf	    red_pin,a
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
     call    read_all_sensors
     bsf	    red_pin,a
     
 ; shine green
     bcf	    green_pin,a
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
     call    read_all_sensors
     bsf	    green_pin,a
     
 ; shine blue
     bcf	    blue_pin,a
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
     call    read_all_sensors
     bsf	    blue_pin,a
     
@@ -201,66 +166,26 @@ read_all_sensors:
 ; read from AN0
     ; ADCON0 = x 00000 1 1
     movlw   ADC_AN0	; select AN0
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
     call    read_sensor
     
 ; read from AN1
     ; ADCON0 = x 00001 1 1
     movlw   ADC_AN1	; select AN1
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
     call    read_sensor
     
 ; read from AN2
     ; ADCON0 = x 00010 1 1
     movlw   ADC_AN2	; select AN2
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
     call    read_sensor
     
 ; read from AN3
     ; ADCON0 = x 00011 1 1
     movlw   ADC_AN3	; select AN3
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
     call    read_sensor
     
 ; read from AN4
     ; ADCON0 = x 00100 1 1
     movlw   ADC_AN4	; select AN4
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
     call    read_sensor
     
     return
@@ -270,11 +195,6 @@ read_sensor:
     
     btfsc   ADCON0,1,a	; check if ADC is done (0)
     bra	    $-2		; no, check again
-    
-	; testing code, should do nothing if test_en = 0
-	    btfsc   test_en,a
-	    movff   test_1, ADRESH
-	; end of testing code
     
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
@@ -302,113 +222,7 @@ delay_inside:
     
     return
     
-test:
-; this is just a software engineering practice
-; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
-; just comment or uncomment what needs to be tested
-    
-    call    test_read_sensors
-    
-    call    test_read_all_sensors
-    
-    call    test_read_sensor
-    
-    nop
-    goto start
-    
-test_read_sensors:
-; test values
-    LFSR    1, 200h
-    movlw   0x0F
-    movwf   test_1,a
-    movlw   0x00
-    addlw   0x11
-    movwf   POSTINC1,a
-    decfsz  test_1,f,a
-    bra	    $-6
-; setup
-    LFSR    1, 200h
-    LFSR    0, 100h
-; test
-    call read_sensors
-; verification
-    bsf	    test_0,0,a
-    movlw   1
-    subwf   FSR1L,f,a
-    subwf   FSR0L,f,a
-    movf    INDF1,w,a
-    cpfseq  INDF0,a
-    bcf	    test_0,0,a
-    btfss   test_0,0,a
-    return
-    movlw   0x00
-    cpfseq  FSR0L,a
-    bra	$-20
-    return
-    
-dummy_read_all_sensors:
-    movlw   0x05
-    movwf   test_1,a
-    movff   POSTINC1, POSTINC0
-    decfsz  test_1,f,a
-    bra	    $-6
-    return
-    
-test_read_all_sensors:
-; test values
-    LFSR    1, 200h
-    movlw   0xC0
-    movwf   POSTINC1,a
-    movlw   0x30
-    movwf   POSTINC1,a
-    movlw   0x0C
-    movwf   POSTINC1,a
-    movlw   0x03
-    movwf   POSTINC1,a
-    movlw   0xFF
-    movwf   POSTINC1,a
-; setup
-    LFSR    1, 200h
-    LFSR    0, 100h
-; test
-    call    read_all_sensors
-; verification
-    bsf	    test_0,1,a
-    movlw   1
-    subwf   FSR1L,f,a
-    subwf   FSR0L,f,a
-    movf    INDF1,w,a
-    cpfseq  INDF0,a
-    bcf	    test_0,0,a
-    btfss   test_0,0,a
-    return
-    movlw   0x00
-    cpfseq  FSR0L,a
-    bra	$-20
-    return
-    
-dummy_read_sensor:
-    movff   POSTINC1, POSTINC0
-    return
-    
-test_read_sensor:
-; test values
-    movlw   0b11010010
-    movwf   test_1,a
-; setup
-    LFSR    0, 100h
-    movlw   ADC_AN1
-; test
-    call    read_sensor
-;verification
-    movlw   -1
-    movf    PLUSW0,w,a
-    cpfseq  test_1,a
-    bra	    1
-    bsf	    test_0,2,a
-    
-    return
-    
+
     end			
 
 
