@@ -94,6 +94,19 @@ read_sensors:
 calibration:
     
 LLI:
+; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
+
+;go straight --> M detects line
+;turn left 	--> LL or ML detects line
+;turn right --> RR or MR detects line
+;if all the sensors detect white STOP (SOS MODE). 
+	;Suggestion: turn 90 degrees to the left and see if the sensors detect the line. If not go back to previous position (-90 degrees)
+				;turn 90 degrees to the right and see if the sensors detect the line.
+				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
+; if all sensor detect black, STOP (End of maze)
+				
+
+
 
 flash:
     
