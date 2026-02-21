@@ -50,23 +50,23 @@ test_1		equ 0x03
 
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
-red_0		equ 0x00
-red_1		equ 0x01
-red_2		equ 0x02
-red_3		equ 0x03
-red_4		equ 0x04
+; red_0		equ 0x00
+; red_1		equ 0x01
+; red_2		equ 0x02
+; red_3		equ 0x03
+; red_4		equ 0x04
 
-green_0		equ 0x06
-green_1		equ 0x07
-green_2		equ 0x08
-green_3		equ 0x09
-green_4		equ 0x0A
+; green_0		equ 0x06
+; green_1		equ 0x07
+; green_2		equ 0x08
+; green_3		equ 0x09
+; green_4		equ 0x0A
 
-blue_0		equ 0x0B
-blue_1		equ 0x0C
-blue_2		equ 0x0D
-blue_3		equ 0x0E
-blue_4		equ 0x0F
+; blue_0		equ 0x0B
+; blue_1		equ 0x0C
+; blue_2		equ 0x0D
+; blue_3		equ 0x0E
+; blue_4		equ 0x0F
 
 ; variables to reduce magic numbers
 ADC_AN0		equ 0b00000011 ; 0 00000 1 1
@@ -89,11 +89,11 @@ init:
     
     ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
-    CLRF    LATA,a 	    ; Alternate method to clear output data latches
+    CLRF    LATA,a	; Alternate method to clear output data latches
     movlw   0b00101111
     movwf   ANSELA,b 	; sets pins A 0,1,2,3 and 5 to analogue     ADC
                         ; also sets pins A 4,6 and 7 to digital     RGB
-    movwf   TRISA,a	    ; sets pins A 0,1,2,3 and 5 to input        ADC
+    movwf   TRISA,a	; sets pins A 0,1,2,3 and 5 to input        ADC
                         ; also sets pins A 4,6 and 7 to outputs     RGB
     movlw   0b11010000
     movwf   PORTA,a	; turn RGB pins on, turns transistor on, and RBG LEDs off
@@ -155,34 +155,43 @@ read_sensors:
     ; X is the bank
     ; YZ is the starting register
 ;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
+    
 ; shine red
     bcf	    red_pin,a
-; testing code, should do nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_all_sensors
-    bra	    $+6
-; end of testing code
+    
+	; testing code, should do nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_all_sensors
+	    bra	    $+6
+	; end of testing code
+    
     call    read_all_sensors
     bsf	    red_pin,a
+    
 ; shine green
     bcf	    green_pin,a
-; testing code, should do nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_all_sensors
-    bra	    $+6
-; end of testing code
+    
+	; testing code, should do nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_all_sensors
+	    bra	    $+6
+	; end of testing code
+    
     call    read_all_sensors
     bsf	    green_pin,a
+    
 ; shine blue
     bcf	    blue_pin,a
-; testing code, should do nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_all_sensors
-    bra	    $+6
-; end of testing code
+    
+	; testing code, should do nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_all_sensors
+	    bra	    $+6
+	; end of testing code
+    
     call    read_all_sensors
     bsf	    blue_pin,a
     
@@ -192,56 +201,66 @@ read_all_sensors:
 ; read from AN0
     ; ADCON0 = x 00000 1 1
     movlw   ADC_AN0	; select AN0
-; testing code, does nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_sensor
-    bra	    $+6
-; end of testing code
+    
+	; testing code, does nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_sensor
+	    bra	    $+6
+	; end of testing code
+    
     call    read_sensor
     
 ; read from AN1
     ; ADCON0 = x 00001 1 1
     movlw   ADC_AN1	; select AN1
-; testing code, does nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_sensor
-    bra	    $+6
-; end of testing code
+    
+	; testing code, does nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_sensor
+	    bra	    $+6
+	; end of testing code
+    
     call    read_sensor
     
 ; read from AN2
     ; ADCON0 = x 00010 1 1
     movlw   ADC_AN2	; select AN2
-; testing code, does nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_sensor
-    bra	    $+6
-; end of testing code
+    
+	; testing code, does nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_sensor
+	    bra	    $+6
+	; end of testing code
+    
     call    read_sensor
     
 ; read from AN3
     ; ADCON0 = x 00011 1 1
     movlw   ADC_AN3	; select AN3
-; testing code, does nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_sensor
-    bra	    $+6
-; end of testing code
+    
+	; testing code, does nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_sensor
+	    bra	    $+6
+	; end of testing code
+    
     call    read_sensor
     
 ; read from AN4
     ; ADCON0 = x 00100 1 1
     movlw   ADC_AN4	; select AN4
-; testing code, does nothing if test_en = 0
-    btfss   test_en,a
-    bra	    $+8
-    call    dummy_read_sensor
-    bra	    $+6
-; end of testing code
+    
+	; testing code, does nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_sensor
+	    bra	    $+6
+	; end of testing code
+    
     call    read_sensor
     
     return
@@ -252,10 +271,10 @@ read_sensor:
     btfsc   ADCON0,1,a	; check if ADC is done (0)
     bra	    $-2		; no, check again
     
-; testing code, should do nothing if test_en = 0
-    btfsc   test_en,a
-    movff   test_1, ADRESH
-; end of testing code
+	; testing code, should do nothing if test_en = 0
+	    btfsc   test_en,a
+	    movff   test_1, ADRESH
+	; end of testing code
     
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
