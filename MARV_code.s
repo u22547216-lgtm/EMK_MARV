@@ -96,7 +96,7 @@ init:
     movwf   TRISA,a	; sets pins A 0,1,2,3 and 5 to input        ADC
                         ; also sets pins A 4,6 and 7 to outputs     RGB
     movlw   0b11010000
-    movwf   PORTA,a	; turn RGB pins on, turns transistor on, and RBG LEDs off
+    movwf   PORTA,a     ; put RGB pins high, powers NPN transistor, turns RGB LEDs off
 
     ; setup the ADC registers
     ; ADCON0 = x 00000 0 1
