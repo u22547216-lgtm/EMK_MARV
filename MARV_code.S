@@ -278,7 +278,7 @@ read_sensor:
     
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
-				
+
     return
     
 calibration:
