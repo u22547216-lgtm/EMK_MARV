@@ -98,13 +98,13 @@ init:
     clrf    ANSELB, a
     clrf    TRISB, a
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    clrf    WPUB,a
     
     ; set up interrupts
     bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
     clrf    INTCON,a	;
     clrf    INTCON2,a	;
-    clrf    INTCON3,a	;
     clrf    PIE1,a	;
     clrf    PIE2,a	;
     clrf    PIE3,a	;
@@ -114,6 +114,7 @@ init:
     bsf	    INTCON2,7,a	; no RBPU
     bsf	    INTCON2,5,a	; INT1I reacts on rising edge
     
+    clrf    INTCON3,a	;
     bsf	    INTCON3,3,a	; INT1I is enabled
     
     MOVLB   0x00	; back to bank 0 for normal opperations
