@@ -134,7 +134,7 @@ init:
     btfsc   test_en, a
     goto    test
 end_test:
-    bcf	    test_en, q
+    bcf	    test_en, a
 		
 start: 	
     
