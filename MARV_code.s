@@ -43,6 +43,12 @@ delay_outer     equ 0x01
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
 
+#define red_indicator       PORTD,0
+#define green_indicator     PORTD,1
+#define blue_indicator      PORTD,2
+#define black_indicator     PORTD,3
+#define white_indicator     PORTD,4
+
 ;
 ; -------------	
 ; PROGRAM START	
