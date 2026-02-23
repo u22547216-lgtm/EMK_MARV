@@ -28,7 +28,7 @@
     ; CONFIG1H
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
-    CONFIG WDTEN = off      ; Turn off the watchdog timer
+    CONFIG WDTEN = OFF      ; Turn off the watchdog timer
   
     
     #include    <xc.inc>
@@ -117,7 +117,7 @@ init:
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 ; testing setup		
-    bcf	    test_en, a
+    bsf	    test_en, a
     btfsc   test_en, a
     goto    test
 end_test:
@@ -176,7 +176,7 @@ test_register_dump:
     movlw   0b00000100
     movwf   line_reg,a
     bsf	    test_0,3,a
-    bsf	    INTCCON3,0,a
+    bsf	    INTCON3,0,a
     cpfseq  PORTC,a
     bcf	    test_0,3,a
     return
