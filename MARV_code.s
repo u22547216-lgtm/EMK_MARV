@@ -22,7 +22,7 @@
 ;		
 ; -----------------------------------------------------------------------------
 
-    title	"Our second assembler program"
+    title	"MARV code"
     PROCESSOR	18F45K22
     
     ; CONFIG1H
