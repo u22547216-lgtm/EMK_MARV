@@ -38,15 +38,22 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
-
 test_0		equ 0x02
 #define test_en	    test_0,7
 
 test_1		equ 0x03
+line_reg	equ 0x04
 
+; RGB pins
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
+; colour indicator pins
+#define red_indicator       PORTD,0
+#define green_indicator     PORTD,1
+#define blue_indicator      PORTD,2
+#define black_indicator     PORTD,3
+#define white_indicator     PORTD,4
 
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
@@ -83,6 +90,8 @@ ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
     PSECT code,abs //Start of main code.
     org	    0x00 			; startup address = 0000h
     goto init
+    org     0x08            ; interrupt start
+    goto ISR
 
 init:
     MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
@@ -128,6 +137,34 @@ init:
     clrf    ANSELD, b
     clrf    TRISD, a
     
+    ; Set up PORTB
+    clrf    PORTB, a
+    clrf    LATB, a
+    clrf    ANSELB, a
+    clrf    TRISB, a
+    bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    clrf    WPUB,a      ; no more weak pull up for PORTB
+    
+    ; set up interrupts
+    bcf	    RCON,7,b	; disable priority in interrupts.
+    ; just in case some flags are set or some interrupts are enabled when i enable interrupts
+    clrf    INTCON,a
+    clrf    INTCON2,a
+    clrf    PIE1,a
+    clrf    PIE2,a
+    clrf    PIE3,a
+    clrf    PIE4,a
+    clrf    PIE5,a
+    ; INTCON = 0b 1 1 0 0 0 0 0 0
+    bsf	    INTCON,7,a	;enable global interupts
+    bsf	    INTCON,6,a	;enable periphital interupts
+    ; INTCON2 = 0b 1 0 1 0 x 0 x 0 
+    bsf	    INTCON2,7,a	; no RBPU
+    bsf	    INTCON2,5,a	; INT1I reacts on rising edge
+    ; INTCON3 = 0b 0 0 x 0 1 x 0 0
+    clrf    INTCON3,a	;
+    bsf	    INTCON3,3,a	; INT1I is enabled
+    
     MOVLB   0x00	; back to bank 0 for normal opperations
 ; testing setup		
     bcf	    test_en, a
@@ -147,6 +184,9 @@ start:
     
 	
 register_dump:
+    movff   line_reg, PORTC     ; put line_reg into PORTC
+    bcf	    INTCON3,0,a         ; clear interrupt flag
+    retfie			            ;return from interrupt
     
 show_colour:
     
@@ -301,6 +341,10 @@ delay_inside:
     decfsz  delay_outer,a
     goto delay_outside
     
+ISR:
+    btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
+    goto    register_dump   
+    
     return
     
 test:
@@ -308,14 +352,27 @@ test:
 ; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
 ; just comment or uncomment what needs to be tested
     
+    call test_register_dump
+    
     call    test_read_sensors
     
     call    test_read_all_sensors
     
     call    test_read_sensor
     
-    nop
-    goto start
+    goto end_test
+    
+test_register_dump:
+; setup
+    movlw   0b00000100
+    movwf   line_reg,a
+    bsf	    test_0,3,a
+; test
+    bsf	    INTCON3,0,a
+; verification 
+    cpfseq  PORTC,a
+    bcf	    test_0,3,a
+    return
     
 test_read_sensors:
 ; test values
