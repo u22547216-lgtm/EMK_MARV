@@ -100,6 +100,7 @@ init:
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
     
     ; set up interrupts
+    bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
     clrf    INTCON,a	;
     clrf    INTCON2,a	;
