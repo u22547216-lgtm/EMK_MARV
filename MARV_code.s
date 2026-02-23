@@ -93,6 +93,16 @@ init:
     clrf    TRISB, a
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
     
+    ; set up interrupts
+    clrf    INTCON,a	; just in case flags are set when i enable interrupts
+    clrf    INTCON2,a	;
+    clrf    INTCON3,a	;
+    
+    bsf	    INTCON2,7,a	; no RBPU
+    bsf	    INTCON2,5,a	; INT1I reacts on rising edge
+    
+    bsf	    INTCON3,3,a	; INT1I is enabled
+    
     MOVLB   0x00	; back to bank 0 for normal opperations
 		
 		
