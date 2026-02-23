@@ -111,6 +111,9 @@ init:
     clrf    PIE4,a	;
     clrf    PIE5,a	;
     
+    bsf	    INTCON,7,a	;enable global interupts
+    bsf	    INTCON,6,a	;enable periphital interupts
+    
     bsf	    INTCON2,7,a	; no RBPU
     bsf	    INTCON2,5,a	; INT1I reacts on rising edge
     
@@ -178,7 +181,7 @@ test_register_dump:
     movlw   0b00000100
     movwf   line_reg,a
     bsf	    test_0,3,a
-    bsf	    PORTB,1,a
+    bsf	    INTCON3,0,a
     cpfseq  PORTC,a
     bcf	    test_0,3,a
     return
