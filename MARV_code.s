@@ -39,10 +39,11 @@
 delay_inner     equ 0x00
 delay_outer     equ 0x01
 
+; RGB pins
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
-
+; colour indicator pins
 #define red_indicator       PORTD,0
 #define green_indicator     PORTD,1
 #define blue_indicator      PORTD,2
@@ -84,6 +85,13 @@ init:
     clrf    LATD, a
     clrf    ANSELD, b
     clrf    TRISD, a
+    
+    ; Set up PORTB
+    clrf    PORTB, a
+    clrf    LATB, a
+    clrf    ANSELB, a
+    clrf    TRISB, a
+    bsf	    TRISB,1,a	; RB1 is input(INT1I)
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 		
