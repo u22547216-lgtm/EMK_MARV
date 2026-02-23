@@ -108,6 +108,7 @@ init:
 			; sets TAD to 2us
     bsf	    ADCON2,4,a	; acquisition time of 4 TAD or 8us
 			; ADC works for 8+12*2 = 32us. ie: 32/4 = 8 instruction cycles.
+    ; need to remember the ADC cooldown of 2 TAD, or 4us, which is 1 instruction cycle.
     
     ; setup debug ports(C and D)
     ; register dump port
@@ -198,7 +199,7 @@ read_sensor:
     
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
-				
+
     return
     
 calibration:
