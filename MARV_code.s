@@ -103,13 +103,13 @@ init:
     ; set up interrupts
     bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
-    clrf    INTCON,a	;
-    clrf    INTCON2,a	;
-    clrf    PIE1,a	;
-    clrf    PIE2,a	;
-    clrf    PIE3,a	;
-    clrf    PIE4,a	;
-    clrf    PIE5,a	;
+    clrf    INTCON,a
+    clrf    INTCON2,a
+    clrf    PIE1,a
+    clrf    PIE2,a
+    clrf    PIE3,a
+    clrf    PIE4,a
+    clrf    PIE5,a
     
     bsf	    INTCON,7,a	;enable global interupts
     bsf	    INTCON,6,a	;enable periphital interupts
@@ -134,9 +134,9 @@ start:
     
 	
 register_dump:
-    movff   line_reg, PORTC
-    bcf	    INTCON3,0,a
-    retfie			;return from interrupt
+    movff   line_reg, PORTC     ; put line_reg into PORTC
+    bcf	    INTCON3,0,a         ; clear interrupt flag
+    retfie			            ;return from interrupt
     
 show_colour:
     
@@ -181,7 +181,9 @@ test_register_dump:
     movlw   0b00000100
     movwf   line_reg,a
     bsf	    test_0,3,a
+; test
     bsf	    INTCON3,0,a
+; verification 
     cpfseq  PORTC,a
     bcf	    test_0,3,a
     return
