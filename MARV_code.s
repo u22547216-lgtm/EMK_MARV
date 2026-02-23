@@ -38,6 +38,7 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
+line_reg	equ 0x02
 
 ; RGB pins
 #define red_pin     PORTA,4
