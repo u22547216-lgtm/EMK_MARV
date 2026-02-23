@@ -38,7 +38,12 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
-line_reg	equ 0x02
+
+test_0		equ 0x02
+#define test_en	    test_0,7
+
+test_1		equ 0x03
+line_reg	equ 0x04
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -111,7 +116,12 @@ init:
     bsf	    INTCON3,3,a	; INT1I is enabled
     
     MOVLB   0x00	; back to bank 0 for normal opperations
-		
+; testing setup		
+    bcf	    test_en, a
+    btfsc   test_en, a
+    goto    test
+end_test:
+    bcf	    test_en, a
 		
 start: 	
 
@@ -152,6 +162,24 @@ ISR:
     
     return
     
+test:
+; this is just a software engineering practice
+; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
+; just comment or uncomment what needs to be tested
+    
+    call test_register_dump
+    
+    goto end_test
+    
+test_register_dump:
+; setup
+    movlw   0b00000100
+    movwf   line_reg,a
+    bsf	    test_0,3,a
+    bsf	    INTCCON3,0,a
+    cpfseq  PORTC,a
+    bcf	    test_0,3,a
+    return
     
     end			
 
