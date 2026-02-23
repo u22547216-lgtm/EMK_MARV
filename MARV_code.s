@@ -57,6 +57,8 @@ delay_outer     equ 0x01
     PSECT code,abs //Start of main code.
     org	    0x00 			; startup address = 0000h
     goto init
+    org     0x08            ; interrupt start
+    goto ISR
 
 init:
     MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
@@ -92,6 +94,9 @@ start:
     
 	
 register_dump:
+    movff   line_reg, PORTC
+    bcf	    INTCON3,0,a
+    retfie			;return from interrupt
     
 show_colour:
     
@@ -115,6 +120,10 @@ delay_inside:
     
     decfsz  delay_outer,a
     goto delay_outside
+    
+ISR:
+    btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
+    goto    register_dump   
     
     return
     
