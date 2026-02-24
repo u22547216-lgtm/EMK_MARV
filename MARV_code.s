@@ -179,10 +179,10 @@ start:
     
     LFSR 0, 060h
     call read_sensors
+
+
+
     
-    goto start
-    
-	
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
     bcf	    INTCON3,0,a         ; clear interrupt flag
