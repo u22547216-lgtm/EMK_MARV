@@ -168,6 +168,7 @@ comp_r2_r3:
 comp_r3_r4:
 
 ;red_mask = 0b 1111 0000
+;   we can use this as a threshold 
 
     red_ref equ 0x51
     movf    red_2,w,B
@@ -180,29 +181,20 @@ comp_r3_r4:
 
 ; do same for green and blue
 ;       green_mask and blue_mask
-    lowest_red      equ 0x40
-    movlw       0x00
-    movwf       lowest_red,a
 
+; simpler code, this just finds the lowest sensor value, we can use as a threshold
     movf        red_0,w,b       ;assume red 0 is smallest
-    cpfslt      red_1,b         ;is red 1 smaller?
-    bra $+6                     ; no
-    movf        red_1,w,b       ;yes
-    incf        lowest_red,f,a  ;
+    cpfsgt      red_1,b         ;is red 1 smaller?
+    movf        red_1,w,b       ;yes, save red_1
 
-    cpfslt      red_2,b
-    bra $+6
-    movf        red_2,w,b
+    cpfsgt      red_2,b         ;is red 2 smaller
+    movf        red_2,w,b       ;yes, save red_2
 
-    incf        lowest_red,f,a
-    cpfslt      red_3,b
-    bra $+6
+    cpfsgt      red_3,b
     movf        red_3,w,b
-    incf        lowest_red,f,a
-    cpfslt      red_4,b
-    bra $+6
+    
+    cpfsgt      red_4,b
     movf        red_4,w,b
-    incf        lowest_red,f,a
 
     movwf       red_ref,a
     
