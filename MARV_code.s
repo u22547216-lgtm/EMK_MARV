@@ -43,6 +43,27 @@ delay_outer     equ 0x01
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
 
+; Sensor storage variables, the adresses here can be used with indirect addressing
+     ; name format is [colour flash]_[sensor number]
+red_0		equ 0x60
+red_1		equ 0x61
+red_2		equ 0x62
+red_3		equ 0x63
+red_4		equ 0x64
+
+green_0		equ 0x66
+green_1		equ 0x67
+green_2		equ 0x68
+green_3		equ 0x69
+green_4		equ 0x6A
+
+blue_0		equ 0x6B
+blue_1		equ 0x6C
+blue_2		equ 0x6D
+blue_3		equ 0x6E
+blue_4		equ 0x6F
+
+
 ;
 ; -------------	
 ; PROGRAM START	
@@ -92,6 +113,101 @@ show_colour:
 read_sensors:
     
 calibration:
+    
+    LFSR 0, 060h
+    ; ; movf    INDF0,w,a ; sensor 0, red shine
+    ; addFSR  0, blue_4
+    ; movf    INDF0,w,A
+
+    movf    POSTINC0,w,a    ; move red_0 to WREG
+    movf    red_0,w,a
+    movf    POSTINC0,w,a    ; move red_1 to WREG
+    movf    POSTINC0,w,a    ; move red_2 to WREG
+    movf    POSTINC0,w,a    ; move red_3 to WREG
+    movf    POSTINC0,w,a    ; move red_4 to WREG
+
+    movf    POSTINC0,w,a    ; move green_0 to WREG
+    movf    POSTINC0,w,a    ; move green_1 to WREG
+    movf    POSTINC0,w,a    ; move green_2 to WREG
+    movf    POSTINC0,w,a    ; move green_3 to WREG
+    movf    POSTINC0,w,a    ; move green_4 to WREG
+
+    movf    POSTINC0,w,a    ; move blue_0 to WREG
+    movf    POSTINC0,w,a    ; move blue_1 to WREG
+    movf    POSTINC0,w,a    ; move blue_2 to WREG
+    movf    POSTINC0,w,a    ; move blue_3 to WREG
+    movf    POSTINC0,w,a    ; move blue_4 to WREG
+
+    goto start
+
+    mask_red    equ 0x50    ;
+    movlw       0xff        ;
+    movwf       mask_red,a  ; mask red = 0b 1111 1111
+
+comp_r0_r1:
+    movf    red_0,w,b
+    cpfseq  red_1,b         ; if red_0 = red_1
+    bra $+6                 ; no
+    goto    comp_r1_r2      ; yes, go to next compare
+
+    rlncf   mask_red,f,a    ; mask red -> 0b 1111 1110 -> 0b 1111 1100
+    movf    mask_red,w,a    ; move mask red to WREG
+    andwf   red_0,f,b       ; cut a bit off red_0
+    andwf   red_1,f,b       ; cut a bit off red_1
+    goto    comp_r0_r1      ; repeat
+
+comp_r1_r2:
+    
+    movf    mask_red,w,a    ; move mask red to WREG
+    andwf   red_2,f,b       ; cut noise bits off 
+    movf    red_1,w,b
+    cpfseq  red_2,b         ; if red_0 = red_1
+
+comp_r2_r3:
+
+comp_r3_r4:
+
+;red_mask = 0b 1111 0000
+
+    red_ref equ 0x51
+    movf    red_2,w,B
+    movwf   red_ref,a
+
+    ; colour detection
+        movf    red_mask,w,a
+        andwf   red_0,w,B
+        cmpfseq red_ref,a
+
+; do same for green and blue
+;       green_mask and blue_mask
+    lowest_red      equ 0x40
+    movlw       0x00
+    movwf       lowest_red,a
+
+    movf        red_0,w,b       ;assume red 0 is smallest
+    cpfslt      red_1,b         ;is red 1 smaller?
+    bra $+6                     ; no
+    movf        red_1,w,b       ;yes
+    incf        lowest_red,f,a  ;
+
+    cpfslt      red_2,b
+    bra $+6
+    movf        red_2,w,b
+
+    incf        lowest_red,f,a
+    cpfslt      red_3,b
+    bra $+6
+    movf        red_3,w,b
+    incf        lowest_red,f,a
+    cpfslt      red_4,b
+    bra $+6
+    movf        red_4,w,b
+    incf        lowest_red,f,a
+
+    movwf       red_ref,a
+    
+
+
     
 LLI:
 
