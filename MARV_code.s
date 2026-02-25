@@ -96,6 +96,11 @@ ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 init:
     MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
     
+	; Set oscillator speed at 4 MHz
+	bsf 	IRCF0
+	bcf	IRCF1
+	bsf	IRCF2
+    
     ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
     CLRF    LATA,a	; Alternate method to clear output data latches
@@ -119,10 +124,10 @@ init:
     
     ; ADCON2 = 0 x 010 010
     clrf    ADCON2,a	; left justified ADC result
-			; sets TAD to 2us
-    bsf	    ADCON2,4,a	; acquisition time of 4 TAD or 8us
-			; ADC works for 8+12*2 = 32us. ie: 32/4 = 8 instruction cycles.
-    ; need to remember the ADC cooldown of 2 TAD, or 4us, which is 1 instruction cycle.
+    bsf	    ADCON2,2,a	; sets TAD to 1us
+    bsf	    ADCON2,5,a	; acquisition time of 8 TAD or 8us
+			; ADC works for 8+12* = 20us. ie: 20 instruction cycles.
+    ; need to remember the ADC cooldown of 2 TAD, or 2us, which is 2 instruction cycle.
     
     ; setup debug ports(C and D)
     ; register dump port
@@ -319,7 +324,8 @@ read_sensor:
     
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
-
+    bcf	    ADCON0,1,a
+    
     return
     
 calibration:
@@ -329,10 +335,10 @@ LLI:
 flash:
     
 delay_333:
-    movlw   53
+    movlw   217
     movwf   delay_outer,a
 delay_outside:
-    movlw   255
+    movlw   254
     movwf   delay_inner,a
 delay_inside:
     decfsz  delay_inner,a
@@ -340,6 +346,8 @@ delay_inside:
     
     decfsz  delay_outer,a
     goto delay_outside
+    
+    return
     
 ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
@@ -352,7 +360,7 @@ test:
 ; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
 ; just comment or uncomment what needs to be tested
     
-    call test_register_dump
+    call    test_register_dump
     
     call    test_read_sensors
     
