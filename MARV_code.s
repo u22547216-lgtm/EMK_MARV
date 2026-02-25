@@ -95,13 +95,13 @@ init:
     ; Set up PORTB
     clrf    PORTB, a
     clrf    LATB, a
-    clrf    ANSELB, a
+    clrf    ANSELB, b
     clrf    TRISB, a
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
-    clrf    WPUB,a      ; no more weak pull up for PORTB
+    ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
     ; set up interrupts
-    bcf	    RCON,7,b	; disable priority in interrupts.
+    ; bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
     clrf    INTCON,a
     clrf    INTCON2,a
@@ -110,15 +110,16 @@ init:
     clrf    PIE3,a
     clrf    PIE4,a
     clrf    PIE5,a
-    ; INTCON = 0b 1 1 0 0 0 0 0 0
-    bsf	    INTCON,7,a	;enable global interupts
-    bsf	    INTCON,6,a	;enable periphital interupts
-    ; INTCON2 = 0b 1 0 1 0 x 0 x 0 
-    bsf	    INTCON2,7,a	; no RBPU
-    bsf	    INTCON2,5,a	; INT1I reacts on rising edge
+    ; INTCON2 = 0b 0 0 0 0 x 0 x 0 
+    ; bsf	    INTCON2,7,a	; no RBPU
+    ; bsf	    INTCON2,5,a	; INT1I reacts on rising edge
     ; INTCON3 = 0b 0 0 x 0 1 x 0 0
     clrf    INTCON3,a	;
+    bsf     INT1IP,a    ; INT1I high priority
     bsf	    INTCON3,3,a	; INT1I is enabled
+    ; INTCON = 0b 1 1 0 0 0 0 0 0
+    bsf	    INTCON,7,a	;enable global interupts
+    ; bsf	    INTCON,6,a	;enable periphital interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 ; testing setup		
@@ -165,7 +166,7 @@ ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
     goto    register_dump   
     
-    return
+    retfie
     
 test:
 ; this is just a software engineering practice
