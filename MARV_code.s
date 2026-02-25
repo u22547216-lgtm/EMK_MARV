@@ -141,29 +141,32 @@ init:
     clrf    PORTB, a
     clrf    LATB, a
     clrf    ANSELB, a
-    clrf    TRISB, a
-    bsf	    TRISB,1,a	; RB1 is input(INT1I)
-    clrf    WPUB,a      ; no more weak pull up for PORTB
+    setf    TRISB, a
+    ;bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    ;clrf    WPUB,a      ; no more weak pull up for PORTB
     
     ; set up interrupts
     bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
     clrf    INTCON,a
-    clrf    INTCON2,a
+    ;clrf    INTCON2,a
     clrf    PIE1,a
     clrf    PIE2,a
     clrf    PIE3,a
     clrf    PIE4,a
     clrf    PIE5,a
-    ; INTCON = 0b 1 1 0 0 0 0 0 0
+    ; INTCON = 0b 1 1 0 0 1 0 0 0
+    clrf    INTCON,a
     bsf	    INTCON,7,a	;enable global interupts
     bsf	    INTCON,6,a	;enable periphital interupts
+    bcf	    INTCON,0,a
+    bsf	    INTCON,3,a	
     ; INTCON2 = 0b 1 0 1 0 x 0 x 0 
-    bsf	    INTCON2,7,a	; no RBPU
-    bsf	    INTCON2,5,a	; INT1I reacts on rising edge
+    ;bsf	    INTCON2,7,a	; no RBPU
+    ;bsf	    INTCON2,5,a	; INT1I reacts on rising edge
     ; INTCON3 = 0b 0 0 x 0 1 x 0 0
-    clrf    INTCON3,a	;
-    bsf	    INTCON3,3,a	; INT1I is enabled
+    ;clrf    INTCON3,a	;
+    ;bsf	    INTCON3,3,a	; INT1I is enabled
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 ; testing setup		
@@ -177,15 +180,39 @@ start:
     
     
     
-    LFSR 0, 060h
-    call read_sensors
+    ; LFSR 0, 060h
+    ; call read_sensors
 
+    movlw   0b00010000
+    movwf   line_reg,a
+    bsf	    INTCON,0,a
+    ;movff   line_reg,PORTC
+    ;call    delay_333
+
+    movlw   0b00101001
+    movwf   line_reg,a
+    ;call    delay_333
+
+    movlw   0b10110010
+    movwf   line_reg,a
+    ;call    delay_333
+
+    movlw   0b01010101
+    movwf   line_reg,a
+    ;call    delay_333
+
+    movlw   0b00110011
+    movwf   line_reg,a
+    ;call    delay_333
+
+    goto start
 
 
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
-    bcf	    INTCON3,0,a         ; clear interrupt flag
+    ;bcf	    INTCON3,0,a         ; clear interrupt flag
+    bcf	    INTCON,0,a
     retfie			            ;return from interrupt
     
 show_colour:
@@ -341,11 +368,14 @@ delay_inside:
     decfsz  delay_outer,a
     goto delay_outside
     
+    return
+    
 ISR:
-    btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
+    ;btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
+    
     goto    register_dump   
     
-    return
+    retfie
     
 test:
 ; this is just a software engineering practice
@@ -368,7 +398,7 @@ test_register_dump:
     movwf   line_reg,a
     bsf	    test_0,3,a
 ; test
-    bsf	    INTCON3,0,a
+    ;bsf	    INTCON3,0,a
 ; verification 
     cpfseq  PORTC,a
     bcf	    test_0,3,a
