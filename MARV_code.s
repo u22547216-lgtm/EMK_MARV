@@ -335,6 +335,7 @@ LLI:
 flash:
     
 delay_333:
+; 0.166442 seconds of delay
     movlw   217
     movwf   delay_outer,a
 delay_outside:
