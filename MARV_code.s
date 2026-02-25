@@ -90,7 +90,11 @@ ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
     PSECT code,abs //Start of main code.
     org	    0x00 			; startup address = 0000h
     goto init
-    org     0x08            ; interrupt start
+    
+    org     0x08            ; high priority interrupt vector
+    goto ISR
+    
+    org	    0x18	    ; low priority interrupt vector
     goto ISR
 
 init:
@@ -140,33 +144,41 @@ init:
     ; Set up PORTB
     clrf    PORTB, a
     clrf    LATB, a
-    clrf    ANSELB, a
-    setf    TRISB, a
-    ;bsf	    TRISB,1,a	; RB1 is input(INT1I)
-    ;clrf    WPUB,a      ; no more weak pull up for PORTB
+    clrf    ANSELB, b
+    clrf    TRISB, a
+    bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
     ; set up interrupts
-    bcf	    RCON,7,b	; disable priority in interrupts.
+    ; bcf	    RCON,7,b	; disable priority in interrupts.
+    
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
-    clrf    INTCON,a
-    ;clrf    INTCON2,a
-    clrf    PIE1,a
-    clrf    PIE2,a
-    clrf    PIE3,a
-    clrf    PIE4,a
-    clrf    PIE5,a
-    ; INTCON = 0b 1 1 0 0 1 0 0 0
-    clrf    INTCON,a
-    bsf	    INTCON,7,a	;enable global interupts
-    bsf	    INTCON,6,a	;enable periphital interupts
-    bcf	    INTCON,0,a
-    bsf	    INTCON,3,a	
-    ; INTCON2 = 0b 1 0 1 0 x 0 x 0 
-    ;bsf	    INTCON2,7,a	; no RBPU
-    ;bsf	    INTCON2,5,a	; INT1I reacts on rising edge
-    ; INTCON3 = 0b 0 0 x 0 1 x 0 0
-    ;clrf    INTCON3,a	;
-    ;bsf	    INTCON3,3,a	; INT1I is enabled
+    ; clrf    INTCON,a
+    ; clrf    INTCON2,a
+    ; clrf    PIE1,a
+    ; clrf    PIE2,a
+    ; clrf    PIE3,a
+    ; clrf    PIE4,a
+    ; clrf    PIE5,a
+    
+    clrf    INTCON,a	; clearing this first just in case
+    
+    ; INTCON2 = 0b 0 0 1 0 x 0 x 0 
+    clrf    INTCON2,a
+    ; bsf	    INTCON2,7,a	; no RBPU
+    ; bsf	    INTCON2,5,a	; INT1I reacts on rising edge
+    ; INTCON3 = 0b 0 1 x 0 1 x 0 0
+    clrf    INTCON3,a	;
+    ; bsf	    INTCON3,6,a	; make INT1I high priority
+    ; bsf	    INTCON3,3,a	; INT1I is enabled
+    bsf	    INT1IP
+    bsf	    INT1IE
+    
+    ; now turn interrupts on
+    ; INTCON = 0b 1 1 0 0 0 0 0 0
+    ; bsf	    INTCON,7,a	;enable high priority interupts
+    ; bsf	    INTCON,6,a	;enable low priority interupts
+    bsf	    GIE
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 ; testing setup		
@@ -178,10 +190,15 @@ end_test:
 		
 start: 	
     
+    movlw   0b00010000
+    movwf   PORTC,a
     
+    ISR_test:
+    nop
+    nop
+    nop
     
-    ; LFSR 0, 060h
-    ; call read_sensors
+    goto ISR_test
 
     movlw   0b00010000
     movwf   line_reg,a
@@ -210,9 +227,12 @@ start:
 
     
 register_dump:
+    movlw   0b00000100
+    movwf   line_reg,a
     movff   line_reg, PORTC     ; put line_reg into PORTC
-    ;bcf	    INTCON3,0,a         ; clear interrupt flag
-    bcf	    INTCON,0,a
+    ; bcf	    INTCON3,0,a         ; clear interrupt flag
+    call    delay_333
+    bcf	    INT1IF
     retfie			            ;return from interrupt
     
 show_colour:
