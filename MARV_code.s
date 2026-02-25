@@ -176,9 +176,7 @@ end_test:
 start: 	
     
     
-    
-    LFSR 0, 060h
-    call read_sensors
+    goto start
 
 
 
@@ -345,7 +343,7 @@ ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
     goto    register_dump   
     
-    return
+    retfie
     
 test:
 ; this is just a software engineering practice
