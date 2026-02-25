@@ -166,10 +166,10 @@ init:
     ; bsf	    INTCON2,5,a	; INT1I reacts on rising edge
     ; INTCON3 = 0b 0 1 x 0 1 x 0 0
     clrf    INTCON3,a	;
-    bsf     INT1IP,a    ; INT1I priority is high
-    bsf	    INT1IE,a	; INT1I is enabled
+    bsf     INT1IP	    ; INT1I priority is high
+    bsf	    INT1IE	    ; INT1I is enabled
     ; INTCON = 0b 1 0 0 0 0 0 0 0
-    bsf	    GIEH,a	; enable high priority interupts
+    bsf	    GIEH	    ; enable high priority interupts
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
@@ -190,7 +190,7 @@ start:
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
-    bcf	    INT1IF,a            ; clear interrupt flag
+    bcf	    INT1IF		; clear interrupt flag
     retfie			            ;return from interrupt
     
 show_colour:
