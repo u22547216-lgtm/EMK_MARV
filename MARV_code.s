@@ -182,11 +182,9 @@ end_test:
 		
 start: 	
     
-    
-    
-    
-    goto start
-
+    LFSR    0,010h
+    call    read_sensors
+    goto    start
 
 
     
@@ -205,8 +203,23 @@ read_sensors:
 ;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
     
 ; shine red
+    bsf	    red_pin,a
+    call delay_RGB
+    
+	; testing code, should do nothing if test_en = 0
+	    btfss   test_en,a
+	    bra	    $+8
+	    call    dummy_read_all_sensors
+	    bra	    $+6
+	; end of testing code
+    
+    call    read_all_sensors
     bcf	    red_pin,a
     
+; shine green
+    bsf	    green_pin,a
+    call delay_RGB
+    
 	; testing code, should do nothing if test_en = 0
 	    btfss   test_en,a
 	    bra	    $+8
@@ -215,23 +228,11 @@ read_sensors:
 	; end of testing code
     
     call    read_all_sensors
-    bsf	    red_pin,a
-    
-; shine green
     bcf	    green_pin,a
     
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_all_sensors
-    bsf	    green_pin,a
-    
 ; shine blue
-    bcf	    blue_pin,a
+    bsf	    blue_pin,a
+    call delay_RGB
     
 	; testing code, should do nothing if test_en = 0
 	    btfss   test_en,a
@@ -241,7 +242,7 @@ read_sensors:
 	; end of testing code
     
     call    read_all_sensors
-    bsf	    blue_pin,a
+    bcf	    blue_pin,a
     
     return
 
@@ -350,6 +351,19 @@ delay_inside:
     decfsz  delay_outer,a
     goto delay_outside
     
+    return
+    
+delay_RGB:  ; 1.2ms = 1200 instruction cycles
+    movlw   151		    ;150 loops  + 1
+    movwf   delay_inner,a
+delay_rgb_inner:    ; need 8 instruction cycles here
+    dcfsnz  delay_inner,a   ;1	    1
+    goto    delay_rgb_end   ;2	    3
+    nop			    ;1	    4
+    nop			    ;1	    5
+    nop			    ;1	    6
+    goto    delay_rgb_inner ;2	    8
+delay_rgb_end:
     return
     
 ISR:
