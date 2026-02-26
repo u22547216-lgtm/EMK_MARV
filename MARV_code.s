@@ -13,7 +13,7 @@
 ;	    Pins:   RA0,1,2,3,5
 ;	    ADCON0: AN0,1,2,3,4 (binary: 0 00000 00 to 0 00101 00)
 ;   RGB:
-;       Pins:   RA4,6,7 (HIGH turns the colour off)
+;       Pins:   RA4,6,7 (HIGH turns the colour on)
 ;       Colours:  R,G,B
 ;	Register dump:
 ;	    Port C
@@ -109,8 +109,8 @@ init:
                         ; also sets pins A 4,6 and 7 to digital     RGB
     movwf   TRISA,a	; sets pins A 0,1,2,3 and 5 to input        ADC
                         ; also sets pins A 4,6 and 7 to outputs     RGB
-    movlw   0b11010000
-    movwf   PORTA,a     ; put RGB pins high, powers NPN transistor, turns RGB LEDs off
+    ; movlw   0b11010000
+    ; movwf   PORTA,a     ; put RGB pins low, powers NPN transistor, turns RGB LEDs on
 
     ; setup the ADC registers
     ; ADCON0 = x 00000 0 1
@@ -181,6 +181,8 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
+    
+    
     
     
     goto start
