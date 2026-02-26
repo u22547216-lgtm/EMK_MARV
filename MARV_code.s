@@ -19,6 +19,13 @@
 ;	    Port C
 ;	Colour display:
 ;	    Port D
+;SENSOR STORAGES TO BE USED IN LLI
+
+	SENSOR0        EQU 0x70
+	SENSOR1        EQU 0x71
+	SENSOR2        EQU 0x72
+	SENSOR3        EQU 0x73
+	SENSOR4        EQU 0x74
 ;		
 ; -----------------------------------------------------------------------------
 
@@ -104,7 +111,63 @@ LLI:
 				;turn 90 degrees to the right and see if the sensors detect the line.
 				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
 ; if all sensor detect black, STOP (End of maze)
-				
+
+    ;LFSR 0, 0x70
+    
+    ;MOVF ADRESH, w
+    ;MOVWF POSTINC0, a
+    ;MOVF ADRESH, w
+    ;MOVWF POSTINC0, a
+    ;MOVF ADRESH, w
+    ;MOVWF POSTINC0, a
+    ;MOVF ADRESH, w
+    ;MOVWF POSTINC0, a
+    ;MOVF ADRESH, w
+    ;MOVWF POSTINC0, a
+    
+    STRAIGHT:
+    ;ASSUMING WHITE REFERENCE FROM CALIBRATION IS LOWEST WHITE VALUE
+            MOVF white_ref,W
+	    CPFSGT SENSOR0,a
+	    GOTO TURN_LEFT_ALOT
+	    MOVF white_ref,W
+	    CPFSGT SENSOR1,a
+	    GOTO TURN_LEFT_ALITTLE
+	    MOVF white_ref,W
+	    CPFSEQ SENSOR3,a
+	    GOTO TURN_RIGHT_ALITTLE
+	    MOVF white_ref,W
+	    CPFSEQ SENSOR4,a
+	    GOTO TURN_RIGHT_ALOT
+	    MOVF white_ref,W
+	    CPFSLT SENSOR2,a
+	    GOTO LOST
+	    MOVLW 0b00100000
+	    MOVWF PORTB
+	    RETURN
+    TURN_LEFT_ALOT:
+            MOVLW 0b10000000
+	    MOVWF PORTB
+	    RETURN
+    TURN_LEFT_ALITTLE:
+            MOVLW 0b01000000
+	    MOVWF PORTB
+	    RETURN
+    TURN_RIGHT_ALOT:
+            MOVLW 0b00001000
+	    MOVWF PORTB
+	    RETURN
+    TURN_RIGHT_ALITTLE:
+            MOVLW 0b00010000
+	    MOVWF PORTB
+	    RETURN
+    LOST:
+         
+    STOP:
+            MOVLW 0b11111000
+	    MOVWF PORTB
+	    RETURN   
+	   			
 
 
 
