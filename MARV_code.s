@@ -127,7 +127,7 @@ LLI:
     
     STRAIGHT:
     ;ASSUMING WHITE REFERENCE FROM CALIBRATION IS LOWEST WHITE VALUE
-            MOVF white_ref,W
+        MOVF white_ref,W
 	    CPFSGT SENSOR0,a
 	    GOTO TURN_LEFT_ALOT
 	    MOVF white_ref,W
@@ -146,25 +146,25 @@ LLI:
 	    MOVWF PORTB
 	    RETURN
     TURN_LEFT_ALOT:
-            MOVLW 0b10000000
+        MOVLW 0b10000000
 	    MOVWF PORTB
 	    RETURN
     TURN_LEFT_ALITTLE:
-            MOVLW 0b01000000
+        MOVLW 0b01000000
 	    MOVWF PORTB
 	    RETURN
     TURN_RIGHT_ALOT:
-            MOVLW 0b00001000
+        MOVLW 0b00001000
 	    MOVWF PORTB
 	    RETURN
     TURN_RIGHT_ALITTLE:
-            MOVLW 0b00010000
+        MOVLW 0b00010000
 	    MOVWF PORTB
 	    RETURN
     LOST:
          
     STOP:
-            MOVLW 0b11111000
+        MOVLW 0b11111000
 	    MOVWF PORTB
 	    RETURN   
 	   			
