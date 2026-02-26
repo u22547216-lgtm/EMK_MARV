@@ -103,6 +103,7 @@ init:
 		
 start: 	
 
+;    hehe
     goto start
     
 	
