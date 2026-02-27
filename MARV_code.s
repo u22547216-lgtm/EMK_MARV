@@ -183,7 +183,7 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
-    calibrated_color	equ 0x0F
+    calibrated_color	equ 0x0E
     
     LFSR    0, 010h
     movlw   0x0F
@@ -194,7 +194,10 @@ start:
     goto    start
 
 detect_colour:
+;values used here
+    tolerance		equ 6	; tolerance is 5, but there is no greater than or equal operations
 ; putting variables here made for this
+    offset_stuff	equ 0x0F
     reading_count	equ 0x10
     count		equ 0x11
     colour_ref		equ 0x12
@@ -204,6 +207,7 @@ detect_colour:
     offset3		equ 0x16
     offset4		equ 0x17
     offset5		equ 0x18
+    extra		equ 0x19
 
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
@@ -219,10 +223,32 @@ detect_colour:
     LFSR    1, 010h	; presumed start of reference values
     LFSR    2, 070h	; presumed start of SENSOR registers for LLI
     
-    ; need to offset FSR0 and FSR1 for white
+    ; need to offset FSR0 and FSR1 for white, or just any other colour
+    call next_offset	; puts offset into wreg
+    addwf   FSR0L,f,a
+    addwf   FSR1L,f,a
+    
+    movff   reading_count, count
+    movf    INDF0,w,a
+    cpfsgt  INDF1,a	;is measured bigger than reference
+    bra	    $+6
+    subwf   INDF1,w,a
+    bra	    $+10
+    
+    movwf   extra,a
+    movf    INDF1,w,a
+    subwf   extra,w,a
+    
+    movwf   extra,a
+    movlw   tolerance
+    cpfsgt  extra,a	; is? the difference between the reference and measurement is less than the tolerance
     
     
-next_offset:
+    
+    
+    return ;putting this here just incase
+    
+make_offset_order:
     ; manages the offset for colour detection
     offsetW		equ 60 ;15*4
     offsetK		equ 45 ;15*3
@@ -230,10 +256,11 @@ next_offset:
     offsetG		equ 15
     offsetB		equ 30
 		
-    RGB_offset		equ 0x19
-    #define red_offset	    RGB_offset,0
-    #define green_offset    RGB_offset,1
-    #define blue_offset	    RGB_offset,2
+    clrf    offset_stuff,a
+    ;RGB_offset		equ 0x0F
+    #define red_offset	    offset_stuff,5
+    #define green_offset    offset_stuff,6
+    #define blue_offset	    offset_stuff,7
 		
     LFSR    0, 014h
     movlw   offsetW
@@ -281,6 +308,36 @@ next_offset:
     movlw   offsetB
     movwf   POSTINC0,a
     
+    clrf    offset_stuff,a
+    return
+    
+next_offset:
+    btfsc   offset_stuff, 0, a
+    bra	    $+10
+    movf    offset1,w,a
+    bsf	    offset_stuff, 0, a
+    return
+    
+    btfsc   offset_stuff, 1, a
+    bra	    $+10
+    movf    offset2,w,a
+    bsf	    offset_stuff, 1, a
+    return
+    
+    btfsc   offset_stuff, 2, a
+    bra	    $+10
+    movf    offset3,w,a
+    bsf	    offset_stuff, 2, a
+    return
+    
+    btfsc   offset_stuff, 3, a
+    bra	    $+10
+    movf    offset4,w,a
+    bsf	    offset_stuff, 3, a
+    return
+    
+    movf    offset5,w,a
+    clrf    offset_stuff,a
     return
     
 register_dump:
