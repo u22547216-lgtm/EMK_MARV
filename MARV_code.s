@@ -183,6 +183,7 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
+    calibrated_color	equ 0x0F
     
     LFSR    0, 010h
     movlw   0x0F
@@ -229,8 +230,58 @@ next_offset:
     offsetG		equ 15
     offsetB		equ 30
 		
+    RGB_offset		equ 0x19
+    #define red_offset	    RGB_offset,0
+    #define green_offset    RGB_offset,1
+    #define blue_offset	    RGB_offset,2
+		
+    LFSR    0, 014h
+    movlw   offsetW
+    movwf   POSTINC0,a
     ;if calibrated colour = red
+    movlw   'R'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    red_offset,a
+    movlw   offsetR
+    movwf   POSTINC0,a
     
+    ;if calibrated colour = green
+    movlw   'G'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    green_offset,a
+    movlw   offsetG
+    movwf   POSTINC0,a
+    
+    ;if calibrated colour = blue
+    movlw   'B'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    blue_offset,a
+    movlw   offsetB
+    movwf   POSTINC0,a
+    
+    ; default order, usually
+    movlw   offsetK
+    movwf   POSTINC0,a
+    
+    btfsc   red_offset,a
+    bra	    $+6
+    movlw   offsetR
+    movwf   POSTINC0,a
+    
+    btfsc   blue_offset,a
+    bra	    $+6
+    movlw   offsetG
+    movwf   POSTINC0,a
+    
+    btfsc   green_offset,a
+    bra	    $+6
+    movlw   offsetB
+    movwf   POSTINC0,a
+    
+    return
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
