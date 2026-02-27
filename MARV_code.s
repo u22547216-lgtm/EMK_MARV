@@ -195,7 +195,7 @@ start:
 
 detect_colour:
 ;values used here
-    tolerance		equ 6	; tolerance is 5, but there is no greater than or equal operations
+    tolerance		equ 5	; tolerance is 5
 ; putting variables here made for this
     offset_stuff	equ 0x0F
     reading_count	equ 0x10
@@ -208,6 +208,11 @@ detect_colour:
     offset4		equ 0x17
     offset5		equ 0x18
     extra		equ 0x19
+    SxXX		equ 0x1A
+    #define red_check	SxXX, 0
+    #define green_check	SxXX, 1
+    #define blue_check	SxXX, 2
+    sensor_offset	equ,0x1B
 
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
@@ -219,12 +224,15 @@ detect_colour:
     decfsz  count,a
     bra	    $-6
     
+    clrf    sensor_offset, a	;works in increments of 3 for each sensor
+detect_colour_start:
     LFSR    0, 200h	; start of sensor reading value
     LFSR    1, 010h	; presumed start of reference values
     LFSR    2, 070h	; presumed start of SENSOR registers for LLI
     
     ; need to offset FSR0 and FSR1 for white, or just any other colour
     call next_offset	; puts offset into wreg
+    clrf    SxXX,a
     addwf   FSR0L,f,a
     addwf   FSR1L,f,a
     
@@ -241,9 +249,30 @@ detect_colour:
     
     movwf   extra,a
     movlw   tolerance
-    cpfsgt  extra,a	; is? the difference between the reference and measurement is less than the tolerance
+    cpfslt  extra,a	; is the difference between the reference and measurement is greater than the tolerance
+    bra	    $+6    ; need to make a section that records success
+    goto detect_colour_start ; the sensor doesnt see this colour, try again at next colour
     
+    btfsc   red_check,a
+    bra	    $+10
+    bsf	    red_check,a
+    inc	    sensor_offset,a
+    goto    somewhere safe
     
+    btfsc   green_check,a
+    bra	    $+6
+    bsf	    green_check,a
+    inc	    sensor_offset,a
+    
+    btfsc   blue_check,a
+    bra	    $+6
+    bsf	    blue_check,a
+    inc	    sensor_offset,a
+    
+    ; need to now inc sensor_offset with 3, then somehow figure out how to 
+    ; make this loop back to somewhere that doesnt affect the offset
+    
+    working_area:
     
     
     return ;putting this here just incase
