@@ -38,10 +38,12 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
+     
 test_0		equ 0x02
 #define test_en	    test_0,7
 
 test_1		equ 0x03
+
 line_reg	equ 0x04
 
 ; RGB pins
@@ -182,11 +184,48 @@ end_test:
 		
 start: 	
     
-    LFSR    0,010h
-    call    read_sensors
+    LFSR    0, 010h
+    movlw   0x0F
+    movwf   count
+    call read_sensors
+    decfsz  count
+    bra	    $-6
     goto    start
 
+detect_colour:
+; putting variables here made for this
+    reading_count	equ 0x10
+    count		equ 0x11
+    colour_ref		equ 0x12
+    sensor_val		equ 0x13
 
+		
+    LFSR    0, 200h	; will store sensor measurements starting from 200h
+    movlw   1		; im making a setup for a loop just in case i want more sensor readings
+    movwf   reading_count,a
+    movwf   count,a
+    
+    call read_sensors
+    decfsz  count,a
+    bra	    $-6
+    
+    LFSR    0, 200h	; start of sensor reading value
+    LFSR    1, 010h	; presumed start of reference values
+    LFSR    2, 070h	; presumed start of SENSOR registers for LLI
+    
+    ; need to offset FSR0 and FSR1 for white
+    
+    
+next_offset:
+    ; manages the offset for colour detection
+    offsetW		equ 60 ;15*4
+    offsetK		equ 45 ;15*3
+    offsetR		equ 0
+    offsetG		equ 15
+    offsetB		equ 30
+		
+    ;if calibrated colour = red
+    
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
