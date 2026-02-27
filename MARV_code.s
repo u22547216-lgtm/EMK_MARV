@@ -21,11 +21,11 @@
 ;	    Port D
 ;SENSOR STORAGES TO BE USED IN LLI
 
-	SENSOR0        EQU 0x70
-	SENSOR1        EQU 0x71
-	SENSOR2        EQU 0x72
-	SENSOR3        EQU 0x73
-	SENSOR4        EQU 0x74
+	SENSOR0        EQU 0x50
+	SENSOR1        EQU 0x51
+	SENSOR2        EQU 0x52
+	SENSOR3        EQU 0x53
+	SENSOR4        EQU 0x54
 ;		
 ; -----------------------------------------------------------------------------
 
@@ -162,6 +162,9 @@ LLI:
 	    MOVWF PORTB
 	    RETURN
     LOST:
+	    BRA TURN_LEFT_ALOT
+	    BRA STRAIGHT
+	    RETURN
          
     STOP:
         MOVLW 0b11111000
