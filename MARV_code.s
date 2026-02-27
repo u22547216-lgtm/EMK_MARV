@@ -198,6 +198,11 @@ detect_colour:
     count		equ 0x11
     colour_ref		equ 0x12
     sensor_val		equ 0x13
+    offset1		equ 0x14
+    offset2		equ 0x15
+    offset3		equ 0x16
+    offset4		equ 0x17
+    offset5		equ 0x18
 
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
