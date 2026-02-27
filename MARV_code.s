@@ -21,11 +21,11 @@
 ;	    Port D
 ;SENSOR STORAGES TO BE USED IN LLI
 
-	SENSOR0        EQU 0x50
-	SENSOR1        EQU 0x51
-	SENSOR2        EQU 0x52
-	SENSOR3        EQU 0x53
-	SENSOR4        EQU 0x54
+	SENSOR0        EQU 0x55
+	SENSOR1        EQU 0x56
+	SENSOR2        EQU 0x57
+	SENSOR3        EQU 0x58
+	SENSOR4        EQU 0x59
 ;		
 ; -----------------------------------------------------------------------------
 
