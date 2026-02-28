@@ -83,6 +83,20 @@ init:
     clrf    LATD, a
     clrf    ANSELD, b
     clrf    TRISD, a
+
+	SENSOR0        EQU 0x55
+	SENSOR1        EQU 0x56
+	SENSOR2        EQU 0x57
+	SENSOR3        EQU 0x58
+	SENSOR4        EQU 0x59
+	RACE_COLOUR    EQU 0x5A
+	BLACK_FLAG     EQU 0x5B
+	K	       EQU 0x5C
+	sensor0	       EQU 0x5D
+	sensor1	       EQU 0x5E
+	sensor2	       EQU 0x5F
+	sensor3	       EQU 0x60
+	sensor4	       EQU 0x61
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 		
@@ -113,57 +127,91 @@ LLI:
 ; if all sensor detect black, STOP (End of maze)
 
 
+
+ MOVFF   SENSOR0,sensor0
+          MOVFF   SENSOR1,sensor1
+          MOVFF   SENSOR2,sensor2
+          MOVFF   SENSOR3,sensor3
+          MOVFF   SENSOR4,sensor4
+	
+
 	STRAIGHT:
-		MOVF	RACE_COLOUR,w
-    	SUBWF SENSOR0,a
-	    BZ TURN_LEFT_ALOT
-	    MOVF RACE_COLOUR,W
-	    SUBWF SENSOR1,a
-	    BZ TURN_LEFT_ALITTLE
-	    MOVF RACE_COLOUR,W
-	    SUBWF SENSOR3,a
-	    BZ TURN_RIGHT_ALITTLE
-	    MOVF RACE_COLOUR,W
-	    SUBWF SENSOR4,a
-	    BZ TURN_RIGHT_ALOT
-	    MOVF RACE_COLOUR,W
-	    SUBWF SENSOR2,a
-	    BNZ LOST
-	    MOVLW 0b00100000
-	    MOVWF PORTB
+	    MOVF    RACE_COLOUR,W
+	    SUBWF   sensor0,a
+	    BZ	    TURN_LEFT_ALOT
+	    MOVF    RACE_COLOUR
+	    SUBWF   sensor1,a
+	    BZ	    TURN_LEFT_ALITTLE
+	    MOVF    RACE_COLOUR
+	    SUBWF   sensor3,a
+	    BZ	    TURN_RIGHT_ALITTLE
+	    MOVF    RACE_COLOUR
+	    SUBWF   sensor4,a
+	    BZ	    TURN_RIGHT_ALOT
+	    MOVF    RACE_COLOUR,W
+	    SUBWF   sensor2,a
+	    BNZ	    CHECK_BLACK
+	    MOVLW   0b00100000
+	    MOVWF   PORTB,a
 	    RETURN
     TURN_LEFT_ALOT:
-        MOVLW 0b10000000
-	    MOVWF PORTB
+	    MOVLW 0b10000000
+	    MOVWF PORTB,a
 	    RETURN
     TURN_LEFT_ALITTLE:
-        MOVLW 0b01000000
-	    MOVWF PORTB
+	    MOVLW 0b01000000
+	    MOVWF PORTB,a
 	    RETURN
     TURN_RIGHT_ALOT:
-        MOVLW 0b00001000
-	    MOVWF PORTB
+	    MOVLW 0b00001000
+	    MOVWF PORTB,a
 	    RETURN
     TURN_RIGHT_ALITTLE:
-        MOVLW 0b00010000
-	    MOVWF PORTB
+	    MOVLW 0b00010000
+	    MOVWF PORTB,a
 	    RETURN
     LOST:
-		CALL LOST_STOP
+	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
 	    BRA STRAIGHT
 	    RETURN
+	    
+    LOST_STOP:
+	    CALL BRAKES
+	    CALL delay_333
+	    CLRF PORTB,a
+	    RETURN
          
-    STOP:
-        MOVLW 0b11111000
-	    MOVWF PORTB
+    BRAKES:
+	    MOVLW 0b11111000
+	    MOVWF PORTB,a
 	    RETURN   
-
-	LOST_STOP:
-		CALL STOP
-		CALL delay_333
-		BCF	PORTB,a
-		RETURN
+	    
+    CHECK_BLACK:
+	    MOVF    K,W
+	    CPFSEQ   SENSOR0,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,0
+	    MOVF   K,W
+	    CPFSEQ   SENSOR1,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,1
+	    MOVF   K,W
+	    CPFSEQ   SENSOR3,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,2
+	    MOVF   K,W
+	    CPFSEQ   SENSOR4,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,3
+	    MOVF   K,W
+	    CPFSEQ   SENSOR2,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,4
+	    MOVLW   0b00011111
+	    CPFSEQ  BLACK_FLAG
+	    RETURN
+	    BRA	    BRAKES
 	   			
 
 
