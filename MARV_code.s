@@ -57,6 +57,7 @@ offset_stuff	equ 0x0F
 reading_count	equ 0x10
 count		equ 0x11
 err		equ 0x12
+;   dont use address 0x13, strange things afoot
 offset_starts	equ 014h
 offset1		equ 0x14
 offset2		equ 0x15
