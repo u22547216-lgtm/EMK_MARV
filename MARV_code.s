@@ -203,6 +203,8 @@ init:
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
+    movlw   1
+    movwf   number_of_readings,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -213,10 +215,168 @@ end_test:
 start: 	
     goto run_read_sensors
     dummy_calibration_values:
+    LFSR    1, 300h
+    ; red
+    movlw   162
+    movwf   POSTINC1,a
+    movlw   151
+    movwf   POSTINC1,a
+    movlw   192
+    movwf   POSTINC1,a
+    movlw   159
+    movwf   POSTINC1,a
+    movlw   129
+    movwf   POSTINC1,a
+    movlw   116
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   115
+    movwf   POSTINC1,a
+    movlw   104
+    movwf   POSTINC1,a
+    movlw   97
+    movwf   POSTINC1,a
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   70
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   81
+    movwf   POSTINC1,a
+    ; green
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   87
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   245
+    movwf   POSTINC1,a
+    movlw   234
+    movwf   POSTINC1,a
+    movlw   244
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   152
+    movwf   POSTINC1,a
+    movlw   78
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    movlw   183
+    movwf   POSTINC1,a
+; blue
+    movlw   50
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   64
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   59
+    movwf   POSTINC1,a
+    movlw   149
+    movwf   POSTINC1,a
+    movlw   113
+    movwf   POSTINC1,a
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   143
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   161
+    movwf   POSTINC1,a
+    movlw   160
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   181
+    movwf   POSTINC1,a
+; black
+    movlw   60
+    movwf   POSTINC1,a
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   52
+    movwf   POSTINC1,a
+    movlw   38
+    movwf   POSTINC1,a
+    movlw   35
+    movwf   POSTINC1,a
+    movlw   126
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   112
+    movwf   POSTINC1,a
+    movlw   79
+    movwf   POSTINC1,a
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   62
+    movwf   POSTINC1,a
+; white
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   175
+    movwf   POSTINC1,a
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   142
+    movwf   POSTINC1,a
+    movlw   132
+    movwf   POSTINC1,a
+    movlw   248
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   203
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   214
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
     
-    
+
     test_colour_detection:
     call    detect_colour
+    btfsc   INT0IF
+    bcf	    INT0IF
     goto    test_colour_detection
     
     run_read_sensors:
@@ -226,6 +386,8 @@ start:
     call read_sensors
     decfsz  count,a
     bra	    $-6
+    btfsc   INT0IF
+    bcf	    INT0IF
     goto    run_read_sensors
 
 detect_colour:
@@ -255,7 +417,7 @@ detect_colour_start:
 next_colour_ref:    ; this is here cause the offsets work only from the start adresses
 ; start registers
     LFSR    0, 200h	; start of sensor reading value
-    LFSR    1, 010h	; presumed start of reference values
+    LFSR    1, 300h	; presumed start of reference values
     LFSR    2, 070h	; presumed start of SENSOR registers for LLI
     
 ; selects colour to check
@@ -579,7 +741,7 @@ read_all_sensors:
     
 read_sensor:
     movwf   extra,a
-    movff   number_of_readings, count
+    movff   number_of_readings, delay_outer
     movff   extra, ADCON0	; begin ADC
     
     btfsc   ADCON0,1,a	; check if ADC is done (0)
@@ -593,9 +755,9 @@ read_sensor:
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
 								    ; 5TAD is done
-    decfsz  count,a
+    decfsz  delay_outer,a
 								    ; 6TAD is done
-    bra	    $-16						    ;happens on 7TAD
+    bra	    $-20						    ;happens on 7TAD
     bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
     
     return
