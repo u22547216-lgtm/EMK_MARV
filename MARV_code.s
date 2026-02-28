@@ -45,6 +45,26 @@ test_0		equ 0x02
 test_1		equ 0x03
 
 line_reg	equ 0x04
+calibrated_color    equ 0x0E	
+offset_stuff	equ 0x0F
+reading_count	equ 0x10
+count		equ 0x11
+err		equ 0x12
+sensor_num	equ 0x13
+offset_starts	equ 014h
+offset1		equ 0x14
+offset2		equ 0x15
+offset3		equ 0x16
+offset4		equ 0x17
+offset5		equ 0x18
+extra		equ 0x19
+SxXX		equ 0x1A
+#define red_check	SxXX, 0
+#define green_check	SxXX, 1
+#define blue_check	SxXX, 2
+		
+sensor_offset	equ 0x1B
+colour_offset	equ 0x1C
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -183,13 +203,12 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
-    calibrated_color	equ 0x0E
     
     LFSR    0, 010h
     movlw   0x0F
-    movwf   count
+    movwf   count,a
     call read_sensors
-    decfsz  count
+    decfsz  count,a
     bra	    $-6
     goto    start
 
@@ -197,23 +216,7 @@ detect_colour:
 ;values used here
     tolerance		equ 5	; tolerance is 5
 ; putting variables here made for this
-    offset_stuff	equ 0x0F
-    reading_count	equ 0x10
-    count		equ 0x11
-    err			equ 0x12
-    sensor_num		equ 0x13
-    offset1		equ 0x14
-    offset2		equ 0x15
-    offset3		equ 0x16
-    offset4		equ 0x17
-    offset5		equ 0x18
-    extra		equ 0x19
-    SxXX		equ 0x1A
-    #define red_check	SxXX, 0
-    #define green_check	SxXX, 1
-    #define blue_check	SxXX, 2
-    sensor_offset	equ,0x1B
-    colour_offset	equ 0x1C
+    
 
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
@@ -252,15 +255,15 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     
 ; gets corresponding measurement and reference, calculates absulute error
     movff   reading_count, count
-    movf    INDF0,w
-    cpfslt  INDF1	;is measured smaller than reference
+    movf    INDF0,w,a
+    cpfslt  INDF1,a	;is measured smaller than reference
     bra	    $+6
     ; yes
-    subwf   INDF1,w	; subtract measurement from reference
+    subwf   INDF1,w,a	; subtract measurement from reference
     bra	    $+8
     ; no
     movwf   extra,a
-    movf    INDF1,w
+    movf    INDF1,w,a
     subwf   extra,w,a	; subtract reference from measurement
     ; end of if
     
@@ -276,21 +279,21 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     btfsc   red_check,a	    ; does red ref match measured
     bra	    $+10
     bsf	    red_check,a		
-    inc	    sensor_offset,a	; next colour ref
+    incf    sensor_offset,a	; next colour ref
     goto    next_colour_ref
     
     btfsc   green_check,a   ; does green ref match measured
     bra	    $+10
     bsf	    green_check,a
-    inc	    sensor_offset,a	; next colour ref
+    incf    sensor_offset,a	; next colour ref
     goto    next_colour_ref
     
     btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
     bra	    $+6						    ; this is not needed
     bsf	    blue_check,a
     call    store_colour
-    inc	    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
-    inc	    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
+    incf    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
+    incf    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
     movlw   5
     cpfseq  sensor_num,a
     goto    detect_colour_start
@@ -317,7 +320,7 @@ make_offset_order:
     #define green_offset    offset_stuff,6
     #define blue_offset	    offset_stuff,7
 		
-    LFSR    0, 014h
+    LFSR    0, offset_starts
     movlw   offsetW
     movwf   POSTINC0,a
     ;if calibrated colour = red
@@ -404,32 +407,32 @@ store_colour:
     cpfseq  colour_offset,a
     bra	    $+8
     movlw   'W'
-    movwf   INDF2
+    movwf   INDF2,a
     return
     
     movlw   offsetK
     cpfseq  colour_offset,a
     bra	    $+8
     movlw   'K'
-    movwf   INDF2
+    movwf   INDF2,a
     return
     
     movlw   offsetR
     cpfseq  colour_offset,a
     bra	    $+8
     movlw   'R'
-    movwf   INDF2
+    movwf   INDF2,a
     return
     
     movlw   offsetG
     cpfseq  colour_offset,a
     bra	    $+8
     movlw   'G'
-    movwf   INDF2
+    movwf   INDF2,a
     return
     
     movlw   'B'
-    movwf   INDF2
+    movwf   INDF2,a
     return
     
 register_dump:
