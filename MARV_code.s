@@ -288,6 +288,7 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
     bra	    $+6						    ; this is not needed
     bsf	    blue_check,a
+    call    store_colour
     inc	    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
     inc	    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
     movlw   5
@@ -392,6 +393,43 @@ next_offset:
     
     movf    offset5,w,a
     clrf    offset_stuff,a
+    return
+    
+store_colour:
+    ; move to right sensor colour register
+    movf    sensor_num,w,a
+    addwf   FSR2L,w,a
+    
+    movlw   offsetW
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'W'
+    movwf   INDF2
+    return
+    
+    movlw   offsetK
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'K'
+    movwf   INDF2
+    return
+    
+    movlw   offsetR
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'R'
+    movwf   INDF2
+    return
+    
+    movlw   offsetG
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'G'
+    movwf   INDF2
+    return
+    
+    movlw   'B'
+    movwf   INDF2
     return
     
 register_dump:
