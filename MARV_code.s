@@ -84,6 +84,7 @@ init:
     clrf    ANSELD, b
     clrf    TRISD, a
 
+	line_reg	equ 0x04
 	SENSOR0        EQU 0x55
 	SENSOR1        EQU 0x56
 	SENSOR2        EQU 0x57
@@ -152,23 +153,23 @@ LLI:
 	    SUBWF   sensor2,a
 	    BNZ	    CHECK_BLACK
 	    MOVLW   0b00100000
-	    MOVWF   PORTB,a
+	    MOVWF   PORTC,a
 	    RETURN
     TURN_LEFT_ALOT:
 	    MOVLW 0b10000000
-	    MOVWF PORTB,a
+	    MOVWF PORTC,a
 	    RETURN
     TURN_LEFT_ALITTLE:
 	    MOVLW 0b01000000
-	    MOVWF PORTB,a
+	    MOVWF PORTC,a
 	    RETURN
     TURN_RIGHT_ALOT:
 	    MOVLW 0b00001000
-	    MOVWF PORTB,a
+	    MOVWF PORTC,a
 	    RETURN
     TURN_RIGHT_ALITTLE:
 	    MOVLW 0b00010000
-	    MOVWF PORTB,a
+	    MOVWF PORTC,a
 	    RETURN
     LOST:
 	    CALL LOST_STOP
@@ -179,12 +180,12 @@ LLI:
     LOST_STOP:
 	    CALL BRAKES
 	    CALL delay_333
-	    CLRF PORTB,a
+	    CLRF PORTC,a
 	    RETURN
          
     BRAKES:
 	    MOVLW 0b11111000
-	    MOVWF PORTB,a
+	    MOVWF PORTC,a
 	    RETURN   
 	    
     CHECK_BLACK:
