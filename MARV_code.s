@@ -112,36 +112,23 @@ LLI:
 				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
 ; if all sensor detect black, STOP (End of maze)
 
-    ;LFSR 0, 0x70
-    
-    ;MOVF ADRESH, w
-    ;MOVWF POSTINC0, a
-    ;MOVF ADRESH, w
-    ;MOVWF POSTINC0, a
-    ;MOVF ADRESH, w
-    ;MOVWF POSTINC0, a
-    ;MOVF ADRESH, w
-    ;MOVWF POSTINC0, a
-    ;MOVF ADRESH, w
-    ;MOVWF POSTINC0, a
-    
-    STRAIGHT:
-    ;ASSUMING WHITE REFERENCE FROM CALIBRATION IS LOWEST WHITE VALUE
-        MOVF white_ref,W
-	    CPFSGT SENSOR0,a
-	    GOTO TURN_LEFT_ALOT
-	    MOVF white_ref,W
-	    CPFSGT SENSOR1,a
-	    GOTO TURN_LEFT_ALITTLE
-	    MOVF white_ref,W
-	    CPFSEQ SENSOR3,a
-	    GOTO TURN_RIGHT_ALITTLE
-	    MOVF white_ref,W
-	    CPFSEQ SENSOR4,a
-	    GOTO TURN_RIGHT_ALOT
-	    MOVF white_ref,W
-	    CPFSLT SENSOR2,a
-	    GOTO LOST
+
+	STRAIGHT:
+		MOVF	RACE_COLOUR,w
+    	SUBWF SENSOR0,a
+	    BZ TURN_LEFT_ALOT
+	    MOVF RACE_COLOUR,W
+	    SUBWF SENSOR1,a
+	    BZ TURN_LEFT_ALITTLE
+	    MOVF RACE_COLOUR,W
+	    SUBWF SENSOR3,a
+	    BZ TURN_RIGHT_ALITTLE
+	    MOVF RACE_COLOUR,W
+	    SUBWF SENSOR4,a
+	    BZ TURN_RIGHT_ALOT
+	    MOVF RACE_COLOUR,W
+	    SUBWF SENSOR2,a
+	    BNZ LOST
 	    MOVLW 0b00100000
 	    MOVWF PORTB
 	    RETURN
@@ -162,7 +149,8 @@ LLI:
 	    MOVWF PORTB
 	    RETURN
     LOST:
-	    BRA TURN_LEFT_ALOT
+		CALL LOST_STOP
+	    CALL TURN_LEFT_ALOT
 	    BRA STRAIGHT
 	    RETURN
          
@@ -170,6 +158,12 @@ LLI:
         MOVLW 0b11111000
 	    MOVWF PORTB
 	    RETURN   
+
+	LOST_STOP:
+		CALL STOP
+		CALL delay_333
+		BCF	PORTB,a
+		RETURN
 	   			
 
 
