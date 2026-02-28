@@ -43,6 +43,7 @@ test_0		equ 0x02
 
 test_1		equ 0x03
 line_reg	equ 0x04
+number_of_readings	    equ 0x05
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -315,19 +316,25 @@ read_all_sensors:
     return
     
 read_sensor:
-    movwf   ADCON0,a	; begin ADC
+    movwf   extra,a
+    movff   number_of_readings, count
+    movff   extra, ADCON0	; begin ADC
     
     btfsc   ADCON0,1,a	; check if ADC is done (0)
     bra	    $-2		; no, check again
-    
+								    ; adc delay is over by this point, Tacq starts 8TAD
 	; testing code, should do nothing if test_en = 0
 	    btfsc   test_en,a
 	    movff   test_1, ADRESH
 	; end of testing code
-    
+								    ; 3TAD is done
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
-    bcf	    ADCON0,1,a
+								    ; 5TAD is done
+    decfsz  count,a
+								    ; 6TAD is done
+    bra	    $-16						    ;happens on 7TAD
+    bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
     
     return
     
