@@ -200,8 +200,8 @@ detect_colour:
     offset_stuff	equ 0x0F
     reading_count	equ 0x10
     count		equ 0x11
-    colour_ref		equ 0x12
-    sensor_val		equ 0x13
+    err			equ 0x12
+    sensor_num		equ 0x13
     offset1		equ 0x14
     offset2		equ 0x15
     offset3		equ 0x16
@@ -213,6 +213,7 @@ detect_colour:
     #define green_check	SxXX, 1
     #define blue_check	SxXX, 2
     sensor_offset	equ,0x1B
+    colour_offset	equ 0x1C
 
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
@@ -223,51 +224,75 @@ detect_colour:
     call read_sensors
     decfsz  count,a
     bra	    $-6
+    ; sensor readings are done
     
+    ; start of colour detections
     clrf    sensor_offset, a	;works in increments of 3 for each sensor
 detect_colour_start:
+    call    next_offset	; puts offset into wreg
+    movwf   colour_offset,a
+    clrf    SxXX,a
+    
+next_colour_ref:    ; this is here cause the offsets work only from the start adresses
+; start registers
     LFSR    0, 200h	; start of sensor reading value
     LFSR    1, 010h	; presumed start of reference values
     LFSR    2, 070h	; presumed start of SENSOR registers for LLI
     
+; selects colour to check
     ; need to offset FSR0 and FSR1 for white, or just any other colour
-    call next_offset	; puts offset into wreg
-    clrf    SxXX,a
     addwf   FSR0L,f,a
     addwf   FSR1L,f,a
     
+; select RGB ref value for sensor
+    ; sensor_offset works with a different sensor RGB refs every +3 it gets
+    movf    sensor_offset,a
+    addwf   FSR0L,f,a
+    addwf   FSR1L,f,a
+    
+; gets corresponding measurement and reference, calculates absulute error
     movff   reading_count, count
     movf    INDF0,w,a
-    cpfsgt  INDF1,a	;is measured bigger than reference
+    cpfslt  INDF1,a	;is measured smaller than reference
     bra	    $+6
-    subwf   INDF1,w,a
-    bra	    $+10
-    
+    ; yes
+    subwf   INDF1,w,a	; subtract measurement from reference
+    bra	    $+8
+    ; no
     movwf   extra,a
     movf    INDF1,w,a
-    subwf   extra,w,a
+    subwf   extra,w,a	; subtract reference from measurement
+    ; end of if
     
-    movwf   extra,a
+    ; compare to tolerance
+    movwf   err,a	; this is the error
     movlw   tolerance
-    cpfslt  extra,a	; is the difference between the reference and measurement is greater than the tolerance
+    cpfslt  err,a	; is the tolerance less than the error
     bra	    $+6    ; need to make a section that records success
+    ; error > tol
     goto detect_colour_start ; the sensor doesnt see this colour, try again at next colour
     
-    btfsc   red_check,a
+    ; error <= tol
+    btfsc   red_check,a	    ; does red ref match measured
     bra	    $+10
-    bsf	    red_check,a
-    inc	    sensor_offset,a
-    goto    somewhere safe
+    bsf	    red_check,a		
+    inc	    sensor_offset,a	; next colour ref
+    goto    next_colour_ref
     
-    btfsc   green_check,a
-    bra	    $+6
+    btfsc   green_check,a   ; does green ref match measured
+    bra	    $+10
     bsf	    green_check,a
-    inc	    sensor_offset,a
+    inc	    sensor_offset,a	; next colour ref
+    goto    next_colour_ref
     
-    btfsc   blue_check,a
-    bra	    $+6
+    btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
+    bra	    $+6						    ; this is not needed
     bsf	    blue_check,a
-    inc	    sensor_offset,a
+    inc	    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
+    inc	    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
+    movlw   5
+    cpfseq  sensor_num,a
+    goto    detect_colour_start
     
     ; need to now inc sensor_offset with 3, then somehow figure out how to 
     ; make this loop back to somewhere that doesnt affect the offset
