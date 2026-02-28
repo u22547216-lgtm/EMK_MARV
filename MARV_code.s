@@ -252,15 +252,15 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     
 ; gets corresponding measurement and reference, calculates absulute error
     movff   reading_count, count
-    movf    INDF0,w,a
-    cpfslt  INDF1,a	;is measured smaller than reference
+    movf    INDF0,w
+    cpfslt  INDF1	;is measured smaller than reference
     bra	    $+6
     ; yes
-    subwf   INDF1,w,a	; subtract measurement from reference
+    subwf   INDF1,w	; subtract measurement from reference
     bra	    $+8
     ; no
     movwf   extra,a
-    movf    INDF1,w,a
+    movf    INDF1,w
     subwf   extra,w,a	; subtract reference from measurement
     ; end of if
     
