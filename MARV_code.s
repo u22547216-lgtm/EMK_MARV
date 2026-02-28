@@ -57,7 +57,6 @@ offset_stuff	equ 0x0F
 reading_count	equ 0x10
 count		equ 0x11
 err		equ 0x12
-sensor_num	equ 0x13
 offset_starts	equ 014h
 offset1		equ 0x14
 offset2		equ 0x15
@@ -72,6 +71,7 @@ SxXX		equ 0x1A
 		
 sensor_offset	equ 0x1B
 colour_offset	equ 0x1C
+sensor_num	equ 0x1D
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -213,7 +213,7 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
-    goto run_read_sensors
+    ;goto run_read_sensors
     dummy_calibration_values:
     LFSR    1, 300h
     ; red
@@ -372,6 +372,9 @@ start:
     movlw   246
     movwf   POSTINC1,a
     
+    movlw   'R'
+    movwf   calibrated_color,a
+    call    make_offset_order
 
     test_colour_detection:
     call    detect_colour
@@ -390,12 +393,49 @@ start:
     bcf	    INT0IF
     goto    run_read_sensors
 
+fake_read_sensors:
+    ;white
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   175
+    movwf   POSTINC1,a
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   142
+    movwf   POSTINC1,a
+    movlw   132
+    movwf   POSTINC1,a
+    movlw   248
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   203
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   214
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    return
+
 detect_colour:
 ;values used here
-    tolerance		equ 5	; tolerance is 5
+    tolerance		equ 16	; tolerance is 15, need increase for compare
 ; putting variables here made for this
-    
-
+    ;test stuff
+    LFSR    1, 200h
+    call fake_read_sensors
+    bra	    $+20
+    ;end of test stuff
 		
     LFSR    0, 200h	; will store sensor measurements starting from 200h
     movlw   1		; im making a setup for a loop just in case i want more sensor readings
@@ -409,9 +449,23 @@ detect_colour:
     
     ; start of colour detections
     clrf    sensor_offset, a	;works in increments of 3 for each sensor
+    clrf    sensor_num,a
 detect_colour_start:
     call    next_offset	; puts offset into wreg
     movwf   colour_offset,a
+    movlw   75
+    cpfseq  colour_offset,a
+    bra	    $+24
+    call    store_colour
+    clrf    offset_stuff,a
+    btfss   red_check,a
+    incf    sensor_offset,a
+    btfss   green_check,a
+    incf    sensor_offset,a
+    btfss   blue_check,a
+    incf    sensor_offset,a
+    goto    detect_colour_start
+    
     clrf    SxXX,a
     
 next_colour_ref:    ; this is here cause the offsets work only from the start adresses
@@ -422,19 +476,20 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     
 ; selects colour to check
     ; need to offset FSR0 and FSR1 for white, or just any other colour
-    addwf   FSR0L,f,a
+    ; addwf   FSR0L,f,a
+    movf    colour_offset,w,a
     addwf   FSR1L,f,a
     
 ; select RGB ref value for sensor
     ; sensor_offset works with a different sensor RGB refs every +3 it gets
-    movf    sensor_offset,a
+    movf    sensor_offset,w,a
     addwf   FSR0L,f,a
     addwf   FSR1L,f,a
     
 ; gets corresponding measurement and reference, calculates absulute error
     movff   reading_count, count
     movf    INDF0,w,a
-    cpfslt  INDF1,a	;is measured smaller than reference
+    cpfsgt  INDF1,a	;is measured smaller than reference
     bra	    $+6
     ; yes
     subwf   INDF1,w,a	; subtract measurement from reference
@@ -448,7 +503,7 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     ; compare to tolerance
     movwf   err,a	; this is the error
     movlw   tolerance
-    cpfslt  err,a	; is the tolerance less than the error
+    cpfsgt  err,a	; is the tolerance less than the error
     bra	    $+6    ; need to make a section that records success
     ; error > tol
     goto detect_colour_start ; the sensor doesnt see this colour, try again at next colour
@@ -472,6 +527,7 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     call    store_colour
     incf    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
     incf    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
+    clrf    offset_stuff,a
     movlw   5
     cpfseq  sensor_num,a
     goto    detect_colour_start
@@ -549,37 +605,50 @@ make_offset_order:
     
 next_offset:
     btfsc   offset_stuff, 0, a
-    bra	    $+10
+    bra	    $+8
     movf    offset1,w,a
     bsf	    offset_stuff, 0, a
     return
     
     btfsc   offset_stuff, 1, a
-    bra	    $+10
+    bra	    $+8
     movf    offset2,w,a
     bsf	    offset_stuff, 1, a
     return
     
     btfsc   offset_stuff, 2, a
-    bra	    $+10
+    bra	    $+8
     movf    offset3,w,a
     bsf	    offset_stuff, 2, a
     return
     
     btfsc   offset_stuff, 3, a
-    bra	    $+10
+    bra	    $+8
     movf    offset4,w,a
     bsf	    offset_stuff, 3, a
     return
     
+    btfsc   offset_stuff, 4, a
+    bra	    $+8
     movf    offset5,w,a
+    bsf	    offset_stuff, 4, a
+    return
+    
+    movlw   75
     clrf    offset_stuff,a
     return
     
 store_colour:
     ; move to right sensor colour register
     movf    sensor_num,w,a
-    addwf   FSR2L,w,a
+    addwf   FSR2L,f,a
+    
+    movlw   75
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'U'
+    movwf   INDF2,a
+    return
     
     movlw   offsetW
     cpfseq  colour_offset,a
