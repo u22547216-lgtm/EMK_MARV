@@ -29,6 +29,12 @@
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
     CONFIG WDTEN = OFF      ; Turn off the watchdog timer
+    
+    CONFIG  MCLRE = EXTMCLR
+    CONFIG  LVP	= ON
+    
+    CONFIG  BOREN = SBORDIS
+    CONFIG  BORV = 190 
   
     
     #include    <xc.inc>
@@ -45,6 +51,7 @@ test_0		equ 0x02
 test_1		equ 0x03
 
 line_reg	equ 0x04
+number_of_readings	    equ 0x05
 calibrated_color    equ 0x0E	
 offset_stuff	equ 0x0F
 reading_count	equ 0x10
@@ -170,6 +177,7 @@ init:
     clrf    ANSELB, b
     clrf    TRISB, a
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
     ; set up interrupts
@@ -203,14 +211,22 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
+    goto run_read_sensors
+    dummy_calibration_values:
     
-    LFSR    0, 010h
+    
+    test_colour_detection:
+    call    detect_colour
+    goto    test_colour_detection
+    
+    run_read_sensors:
+    LFSR    0, 100h
     movlw   0x0F
     movwf   count,a
     call read_sensors
     decfsz  count,a
     bra	    $-6
-    goto    start
+    goto    run_read_sensors
 
 detect_colour:
 ;values used here
@@ -562,19 +578,25 @@ read_all_sensors:
     return
     
 read_sensor:
-    movwf   ADCON0,a	; begin ADC
+    movwf   extra,a
+    movff   number_of_readings, count
+    movff   extra, ADCON0	; begin ADC
     
     btfsc   ADCON0,1,a	; check if ADC is done (0)
     bra	    $-2		; no, check again
-    
+								    ; adc delay is over by this point, Tacq starts 8TAD
 	; testing code, should do nothing if test_en = 0
 	    btfsc   test_en,a
 	    movff   test_1, ADRESH
 	; end of testing code
-    
+								    ; 3TAD is done
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
-    bcf	    ADCON0,1,a
+								    ; 5TAD is done
+    decfsz  count,a
+								    ; 6TAD is done
+    bra	    $-16						    ;happens on 7TAD
+    bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
     
     return
     
