@@ -182,7 +182,7 @@ LLI:
 	    CPFSEQ   SENSOR0,a
 	    BRA	    LOST
 	    BSF	    BLACK_FLAG,0,a
-	    MOVF   K,W
+	    MOVlW   'K'
 	    CPFSEQ   SENSOR1,a
 	    BRA	    LOST
 	    BSF	    BLACK_FLAG,1,a
@@ -195,7 +195,7 @@ LLI:
 	    BRA	    LOST
 	    BSF	    BLACK_FLAG,3,a
 	    MOVLW   'K'
-	    CPFSEQ   SENSOR2,a,a
+	    CPFSEQ   SENSOR2,a
 	    BRA	    LOST
 	    BSF	    BLACK_FLAG,4,a
 	    MOVLW   0b00011111
