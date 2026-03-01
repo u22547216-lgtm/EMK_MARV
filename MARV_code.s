@@ -392,6 +392,7 @@ calibration:
     movwf   green_4
     
 choose_colour:
+;interrupt code will move between these calls. Still need to implement it
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;New average code
     call    average
