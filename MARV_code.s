@@ -130,6 +130,9 @@ init:
 	bsf 	IRCF0
 	bcf	IRCF1
 	bsf	IRCF2
+	
+	; config because of LVP change
+	bsf	TRISE,3,a
     
     ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
@@ -419,7 +422,7 @@ fake_read_sensors:
     ; FLASH GREEN
     movlw   248		; W
     movwf   POSTINC1,a
-    movlw   60		; R
+    movlw   90		; R
     movwf   POSTINC1,a
     movlw   102		; K
     movwf   POSTINC1,a
@@ -461,22 +464,18 @@ detect_colour:
     ; sensor readings are done
     
     ; start of colour detections
-    clrf    sensor_offset, a	;works in increments of 3 for each sensor
+    clrf    sensor_offset, a	;works in increments of 5 for each ref/reading
     clrf    sensor_num,a
 detect_colour_start:
     call    next_offset	; puts offset into wreg
     movwf   colour_offset,a
+    ; error case check
     movlw   75
     cpfseq  colour_offset,a
-    bra	    $+24
+    bra	    $+16
     call    store_colour
-    clrf    offset_stuff,a
-    btfss   red_check,a
-    incf    sensor_offset,a
-    btfss   green_check,a
-    incf    sensor_offset,a
-    btfss   blue_check,a
-    incf    sensor_offset,a
+    incf    sensor_num,a
+    movff   sensor_num,sensor_offset
     goto    detect_colour_start
     
     clrf    SxXX,a
@@ -494,7 +493,7 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     addwf   FSR1L,f,a
     
 ; select RGB ref value for sensor
-    ; sensor_offset works with a different sensor RGB refs every +3 it gets
+    ; sensor_offset works with a different sensor RGB refs depending on sensor_num
     movf    sensor_offset,w,a
     addwf   FSR0L,f,a
     addwf   FSR1L,f,a
@@ -523,23 +522,25 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     
     ; error <= tol
     btfsc   red_check,a	    ; does red ref match measured
-    bra	    $+10
+    bra	    $+12
     bsf	    red_check,a		
-    incf    sensor_offset,a	; next colour ref
+    movlw   5
+    addwf   sensor_offset,a	; next colour ref
     goto    next_colour_ref
     
     btfsc   green_check,a   ; does green ref match measured
-    bra	    $+10
+    bra	    $+12
     bsf	    green_check,a
-    incf    sensor_offset,a	; next colour ref
+    movlw   5
+    addwf   sensor_offset,a	; next colour ref
     goto    next_colour_ref
     
-    btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
-    bra	    $+6						    ; this is not needed
+    ;btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
+    ;bra	    $+6						    ; this is not needed
     bsf	    blue_check,a
     call    store_colour
     incf    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
-    incf    sensor_offset,a	; next colour ref   ; effectivly next sensor ref
+    movff   sensor_num,sensor_offset	; next colour ref   ; effectivly next sensor ref
     clrf    offset_stuff,a
     movlw   5
     cpfseq  sensor_num,a
