@@ -237,6 +237,23 @@ end_test:
 		
 start: 	
     
+    LFSR    0, 100h
+    movlw   8
+    movwf   number_of_readings,a
+    bsf	    red_indicator,a
+    
+    loop:
+    btfss   INT0IF	    ;wait for button press
+    bra	    $-2
+    call    delay_333
+    bcf	    INT0IF
+    call    read_sensors
+    movlw   0			    ; for clarity
+    movwf   POSTINC0,a
+    bcf	    STATUS,0,a
+    RLCF    PORTD,f,a		    ;next colour
+    goto loop
+    
     
     goto start
 
@@ -771,8 +788,9 @@ ISR:
     
     retfie
     
-live_test:
+living_test:
 ; for tests that happen on the physical PIC
+    call    dummy_calibration_values
     
     return
     
