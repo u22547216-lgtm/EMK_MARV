@@ -343,16 +343,10 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
     movff   sensor_num,sensor_offset	; next colour ref   ; effectivly next sensor ref
     clrf    offset_stuff,a
     movlw   5
-    cpfseq  sensor_num,a
-    goto    detect_colour_start
+    cpfseq  sensor_num,a	    ; are all sensors checked?
+    goto    detect_colour_start		;no
     
-    ; need to now inc sensor_offset with 3, then somehow figure out how to 
-    ; make this loop back to somewhere that doesnt affect the offset
-    
-    working_area:
-    
-    
-    return ;putting this here just incase
+    return 
     
 make_offset_order:
     ; manages the offset for colour detection
