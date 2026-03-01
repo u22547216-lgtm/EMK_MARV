@@ -29,6 +29,12 @@
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
     CONFIG WDTEN = OFF      ; Turn off the watchdog timer
+    
+    CONFIG  MCLRE = EXTMCLR
+    CONFIG  LVP	= ON
+    
+    CONFIG  BOREN = SBORDIS
+    CONFIG  BORV = 190 
   
     
     #include    <xc.inc>
@@ -38,12 +44,35 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
+     
 test_0		equ 0x02
 #define test_en	    test_0,7
 
 test_1		equ 0x03
+
 line_reg	equ 0x04
 number_of_readings	    equ 0x05
+calibrated_color    equ 0x0E	
+offset_stuff	equ 0x0F
+reading_count	equ 0x10
+count		equ 0x11
+err		equ 0x12
+;   dont use address 0x13, strange things afoot
+offset_starts	equ 014h
+offset1		equ 0x14
+offset2		equ 0x15
+offset3		equ 0x16
+offset4		equ 0x17
+offset5		equ 0x18
+extra		equ 0x19
+SxXX		equ 0x1A
+#define red_check	SxXX, 0
+#define green_check	SxXX, 1
+#define blue_check	SxXX, 2
+		
+sensor_offset	equ 0x1B
+colour_offset	equ 0x1C
+sensor_num	equ 0x1D
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -101,6 +130,9 @@ init:
 	bsf 	IRCF0
 	bcf	IRCF1
 	bsf	IRCF2
+	
+	; config because of LVP change
+	bsf	TRISE,3,a
     
     ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
@@ -149,6 +181,7 @@ init:
     clrf    ANSELB, b
     clrf    TRISB, a
     bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
     ; set up interrupts
@@ -174,6 +207,8 @@ init:
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
+    movlw   1
+    movwf   number_of_readings,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -182,12 +217,484 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
+    ;goto run_read_sensors
+    dummy_calibration_values:
+    LFSR    1, 300h
+    ; red
+    movlw   162
+    movwf   POSTINC1,a
+    movlw   151
+    movwf   POSTINC1,a
+    movlw   192
+    movwf   POSTINC1,a
+    movlw   159
+    movwf   POSTINC1,a
+    movlw   129
+    movwf   POSTINC1,a
     
-    LFSR    0,010h
-    call    read_sensors
-    goto    start
+    movlw   116
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   115
+    movwf   POSTINC1,a
+    movlw   104
+    movwf   POSTINC1,a
+    movlw   97
+    movwf   POSTINC1,a
+    
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   70
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   81
+    movwf   POSTINC1,a
+    ; green
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   87
+    movwf   POSTINC1,a
+    
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   245
+    movwf   POSTINC1,a
+    movlw   234
+    movwf   POSTINC1,a
+    movlw   244
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   152
+    movwf   POSTINC1,a
+    movlw   78
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    movlw   183
+    movwf   POSTINC1,a
+; blue
+    movlw   50
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   64
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   59
+    movwf   POSTINC1,a
+    
+    movlw   149
+    movwf   POSTINC1,a
+    movlw   113
+    movwf   POSTINC1,a
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   143
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   161
+    movwf   POSTINC1,a
+    movlw   160
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   181
+    movwf   POSTINC1,a
+; black
+    movlw   60
+    movwf   POSTINC1,a
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   52
+    movwf   POSTINC1,a
+    movlw   38
+    movwf   POSTINC1,a
+    movlw   35
+    movwf   POSTINC1,a
+    
+    movlw   126
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   112
+    movwf   POSTINC1,a
+    movlw   79
+    movwf   POSTINC1,a
+    
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   62
+    movwf   POSTINC1,a
+; white
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   175
+    movwf   POSTINC1,a
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   142
+    movwf   POSTINC1,a
+    movlw   132
+    movwf   POSTINC1,a
+    
+    movlw   248
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    
+    movlw   203
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   214
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    
+    movlw   'R'
+    movwf   calibrated_color,a
+    call    make_offset_order
 
+    test_colour_detection:
+    call    detect_colour
+    btfsc   INT0IF
+    bcf	    INT0IF
+    goto    test_colour_detection
+    
+    run_read_sensors:
+    LFSR    0, 100h
+    movlw   0x0F
+    movwf   count,a
+    call read_sensors
+    decfsz  count,a
+    bra	    $-6
+    btfsc   INT0IF
+    bcf	    INT0IF
+    goto    run_read_sensors
 
+fake_read_sensors:
+    ; FLASH RED
+    movlw   180		; W
+    movwf   POSTINC1,a
+    movlw   151		; R
+    movwf   POSTINC1,a
+    movlw   52		; K
+    movwf   POSTINC1,a
+    movlw   76		; G
+    movwf   POSTINC1,a
+    movlw   59		; B
+    movwf   POSTINC1,a
+    ; FLASH GREEN
+    movlw   248		; W
+    movwf   POSTINC1,a
+    movlw   90		; R
+    movwf   POSTINC1,a
+    movlw   102		; K
+    movwf   POSTINC1,a
+    movlw   244		; G
+    movwf   POSTINC1,a
+    movlw   127		; B
+    movwf   POSTINC1,a
+    ; FLASH BLUE
+    movlw   203		; W
+    movwf   POSTINC1,a
+    movlw   70		; R
+    movwf   POSTINC1,a
+    movlw   56		; K
+    movwf   POSTINC1,a
+    movlw   127		; G
+    movwf   POSTINC1,a
+    movlw   181		; B
+    movwf   POSTINC1,a
+    return
+
+detect_colour:
+;values used here
+    tolerance		equ 16	; tolerance is 15, need increase for compare
+; putting variables here made for this
+    ;test stuff
+    LFSR    1, 200h
+    call fake_read_sensors
+    bra	    $+20
+    ;end of test stuff
+		
+    LFSR    0, 200h	; will store sensor measurements starting from 200h
+    movlw   1		; im making a setup for a loop just in case i want more sensor readings
+    movwf   reading_count,a
+    movwf   count,a
+    
+    call read_sensors
+    decfsz  count,a
+    bra	    $-6
+    ; sensor readings are done
+    
+    ; start of colour detections
+    clrf    sensor_offset, a	;works in increments of 5 for each ref/reading
+    clrf    sensor_num,a
+detect_colour_start:
+    call    next_offset	; puts offset into wreg
+    movwf   colour_offset,a
+    ; error case check
+    movlw   75
+    cpfseq  colour_offset,a
+    bra	    $+16
+    call    store_colour
+    incf    sensor_num,a
+    movff   sensor_num,sensor_offset
+    goto    detect_colour_start
+    
+    clrf    SxXX,a
+    
+next_colour_ref:    ; this is here cause the offsets work only from the start adresses
+; start registers
+    LFSR    0, 200h	; start of sensor reading value
+    LFSR    1, 300h	; presumed start of reference values
+    LFSR    2, 070h	; presumed start of SENSOR registers for LLI
+    
+; selects colour to check
+    ; need to offset FSR0 and FSR1 for white, or just any other colour
+    ; addwf   FSR0L,f,a
+    movf    colour_offset,w,a
+    addwf   FSR1L,f,a
+    
+; select RGB ref value for sensor
+    ; sensor_offset works with a different sensor RGB refs depending on sensor_num
+    movf    sensor_offset,w,a
+    addwf   FSR0L,f,a
+    addwf   FSR1L,f,a
+    
+; gets corresponding measurement and reference, calculates absulute error
+    movff   reading_count, count
+    movf    INDF0,w,a
+    cpfsgt  INDF1,a	;is measured smaller than reference
+    bra	    $+6
+    ; yes
+    subwf   INDF1,w,a	; subtract measurement from reference
+    bra	    $+8
+    ; no
+    movwf   extra,a
+    movf    INDF1,w,a
+    subwf   extra,w,a	; subtract reference from measurement
+    ; end of if
+    
+    ; compare to tolerance
+    movwf   err,a	; this is the error
+    movlw   tolerance
+    cpfsgt  err,a	; is the tolerance less than the error
+    bra	    $+6    ; need to make a section that records success
+    ; error > tol
+    goto detect_colour_start ; the sensor doesnt see this colour, try again at next colour
+    
+    ; error <= tol
+    btfsc   red_check,a	    ; does red ref match measured
+    bra	    $+12
+    bsf	    red_check,a		
+    movlw   5
+    addwf   sensor_offset,a	; next colour ref
+    goto    next_colour_ref
+    
+    btfsc   green_check,a   ; does green ref match measured
+    bra	    $+12
+    bsf	    green_check,a
+    movlw   5
+    addwf   sensor_offset,a	; next colour ref
+    goto    next_colour_ref
+    
+    ;btfsc   blue_check,a    ; does blue ref match measured  ; this is not needed
+    ;bra	    $+6						    ; this is not needed
+    bsf	    blue_check,a
+    call    store_colour
+    incf    sensor_num,a	; next sensor refs  ; just for keeping track of when to end the loop
+    movff   sensor_num,sensor_offset	; next colour ref   ; effectivly next sensor ref
+    clrf    offset_stuff,a
+    movlw   5
+    cpfseq  sensor_num,a
+    goto    detect_colour_start
+    
+    ; need to now inc sensor_offset with 3, then somehow figure out how to 
+    ; make this loop back to somewhere that doesnt affect the offset
+    
+    working_area:
+    
+    
+    return ;putting this here just incase
+    
+make_offset_order:
+    ; manages the offset for colour detection
+    offsetW		equ 60 ;15*4
+    offsetK		equ 45 ;15*3
+    offsetR		equ 0
+    offsetG		equ 15
+    offsetB		equ 30
+		
+    clrf    offset_stuff,a
+    ;RGB_offset		equ 0x0F
+    #define red_offset	    offset_stuff,5
+    #define green_offset    offset_stuff,6
+    #define blue_offset	    offset_stuff,7
+		
+    LFSR    0, offset_starts
+    movlw   offsetW
+    movwf   POSTINC0,a
+    ;if calibrated colour = red
+    movlw   'R'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    red_offset,a
+    movlw   offsetR
+    movwf   POSTINC0,a
+    
+    ;if calibrated colour = green
+    movlw   'G'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    green_offset,a
+    movlw   offsetG
+    movwf   POSTINC0,a
+    
+    ;if calibrated colour = blue
+    movlw   'B'
+    cpfseq  calibrated_color,a
+    bra	    $+8
+    bsf	    blue_offset,a
+    movlw   offsetB
+    movwf   POSTINC0,a
+    
+    ; default order, usually
+    movlw   offsetK
+    movwf   POSTINC0,a
+    
+    btfsc   red_offset,a
+    bra	    $+6
+    movlw   offsetR
+    movwf   POSTINC0,a
+    
+    btfsc   blue_offset,a
+    bra	    $+6
+    movlw   offsetG
+    movwf   POSTINC0,a
+    
+    btfsc   green_offset,a
+    bra	    $+6
+    movlw   offsetB
+    movwf   POSTINC0,a
+    
+    clrf    offset_stuff,a
+    return
+    
+next_offset:
+    btfsc   offset_stuff, 0, a
+    bra	    $+8
+    movf    offset1,w,a
+    bsf	    offset_stuff, 0, a
+    return
+    
+    btfsc   offset_stuff, 1, a
+    bra	    $+8
+    movf    offset2,w,a
+    bsf	    offset_stuff, 1, a
+    return
+    
+    btfsc   offset_stuff, 2, a
+    bra	    $+8
+    movf    offset3,w,a
+    bsf	    offset_stuff, 2, a
+    return
+    
+    btfsc   offset_stuff, 3, a
+    bra	    $+8
+    movf    offset4,w,a
+    bsf	    offset_stuff, 3, a
+    return
+    
+    btfsc   offset_stuff, 4, a
+    bra	    $+8
+    movf    offset5,w,a
+    bsf	    offset_stuff, 4, a
+    return
+    
+    movlw   75
+    clrf    offset_stuff,a
+    return
+    
+store_colour:
+    ; move to right sensor colour register
+    movf    sensor_num,w,a
+    addwf   FSR2L,f,a
+    
+    movlw   75
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'U'
+    movwf   INDF2,a
+    return
+    
+    movlw   offsetW
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'W'
+    movwf   INDF2,a
+    return
+    
+    movlw   offsetK
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'K'
+    movwf   INDF2,a
+    return
+    
+    movlw   offsetR
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'R'
+    movwf   INDF2,a
+    return
+    
+    movlw   offsetG
+    cpfseq  colour_offset,a
+    bra	    $+8
+    movlw   'G'
+    movwf   INDF2,a
+    return
+    
+    movlw   'B'
+    movwf   INDF2,a
+    return
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
@@ -317,7 +824,7 @@ read_all_sensors:
     
 read_sensor:
     movwf   extra,a
-    movff   number_of_readings, count
+    movff   number_of_readings, delay_outer
     movff   extra, ADCON0	; begin ADC
     
     btfsc   ADCON0,1,a	; check if ADC is done (0)
@@ -331,9 +838,9 @@ read_sensor:
     movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 				; Increment FSR0
 								    ; 5TAD is done
-    decfsz  count,a
+    decfsz  delay_outer,a
 								    ; 6TAD is done
-    bra	    $-16						    ;happens on 7TAD
+    bra	    $-20						    ;happens on 7TAD
     bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
     
     return
