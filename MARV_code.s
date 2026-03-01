@@ -650,10 +650,7 @@ calibration:
     bsf	    red_indicator,a
     
     loop:
-    btfss   INT0IF	    ;wait for button press
-    bra	    $-2
-    call    delay_333
-    bcf	    INT0IF
+    call    wait_for_button_press
     call    read_sensors
     call    flash
     movlw   0			    ; for clarity
@@ -671,10 +668,7 @@ calibration:
     ;call    the_great_averaging
     
     setf    PORTD,a
-    btfss   INT0IF	    ;wait for button press
-    bra	    $-2
-    call    delay_333
-    bcf	    INT0IF
+    call    wait_for_button_press
     call    detect_colour
     
 ; calibrated colour
@@ -742,39 +736,41 @@ LLI:
 	    SUBWF   SENSOR2,W,a
 	    BNZ	    CHECK_BLACK
 	    MOVLW   0b00100000
-	    MOVWF   PORTC,a
+	    MOVWF   line_reg,a
 	    RETURN
     TURN_LEFT_ALOT:
 	    MOVLW 0b10000000
-	    MOVWF PORTC,a
+	    MOVWF line_reg,a
 	    RETURN
     TURN_LEFT_ALITTLE:
 	    MOVLW 0b01000000
-	    MOVWF PORTC,a
+	    MOVWF line_reg,a
 	    RETURN
     TURN_RIGHT_ALOT:
 	    MOVLW 0b00001000
-	    MOVWF PORTC,a
+	    MOVWF line_reg,a
 	    RETURN
     TURN_RIGHT_ALITTLE:
 	    MOVLW 0b00010000
-	    MOVWF PORTC,a
+	    MOVWF line_reg,a
 	    RETURN
     LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
+		call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
 	    
     LOST_STOP:
 	    CALL BRAKES
-	    CALL delay_333
-	    CLRF PORTC,a
+	    ;CALL delay_333
+		call    wait_for_button_press	; this is here for the purposes of the demo
+	    CLRF line_reg,a
 	    RETURN
          
     BRAKES:
 	    MOVLW 0b11111000
-	    MOVWF PORTC,a
+	    MOVWF line_reg,a
 	    RETURN   
 	    
     CHECK_BLACK:
@@ -816,6 +812,13 @@ flash:
     call    delay_333
     decfsz  count,a
     bra	    $-14
+    return
+
+wait_for_button_press:
+    btfss   INT0IF	    ;wait for button press
+    bra	    $-2
+    call    delay_333
+    bcf	    INT0IF
     return
     
 delay_333:
