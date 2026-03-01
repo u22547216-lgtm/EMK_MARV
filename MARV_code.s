@@ -55,6 +55,7 @@ delay_outer     equ 0x01
 
 test_0		equ 0x02
 #define test_en	    test_0,7
+#define live_test	    test_0,6
 
 test_1		equ 0x03
 
@@ -82,7 +83,7 @@ sensor_offset	equ 0x1B
 colour_offset	equ 0x1C
 sensor_num	equ 0x1D
 
-
+SENSOR_START	equ 059h
 SENSOR0        EQU 0x59
 SENSOR1        EQU 0x5A
 SENSOR2        EQU 0x5B
@@ -245,6 +246,8 @@ detect_colour:
     tolerance		equ 16	; tolerance is 15, need increase for compare
 ; putting variables here made for this
     ;test stuff
+    btfss   live_test,a
+    bra	    $+12
     LFSR    1, 200h
     call fake_read_sensors
     bra	    $+20
@@ -281,7 +284,7 @@ next_colour_ref:    ; this is here cause the offsets work only from the start ad
 ; start registers
     LFSR    0, 200h	; start of sensor reading value
     LFSR    1, 300h	; presumed start of reference values
-    LFSR    2, 070h	; presumed start of SENSOR registers for LLI
+    LFSR    2, SENSOR_START	; presumed start of SENSOR registers for LLI
     
 ; selects colour to check
     ; need to offset FSR0 and FSR1 for white, or just any other colour
