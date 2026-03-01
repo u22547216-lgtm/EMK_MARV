@@ -19,6 +19,13 @@
 ;	    Port C
 ;	Colour display:
 ;	    Port D
+;SENSOR STORAGES TO BE USED IN LLI
+;
+;	SENSOR0        EQU 0x55
+;	SENSOR1        EQU 0x56
+;	SENSOR2        EQU 0x57
+;	SENSOR3        EQU 0x58
+;	SENSOR4        EQU 0x59
 ;		
 ; -----------------------------------------------------------------------------
 
@@ -44,7 +51,8 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
-     
+
+
 test_0		equ 0x02
 #define test_en	    test_0,7
 
@@ -73,6 +81,15 @@ SxXX		equ 0x1A
 sensor_offset	equ 0x1B
 colour_offset	equ 0x1C
 sensor_num	equ 0x1D
+
+
+SENSOR0        EQU 0x59
+SENSOR1        EQU 0x5A
+SENSOR2        EQU 0x5B
+SENSOR3        EQU 0x5C
+SENSOR4        EQU 0x5D
+RACE_COLOUR    EQU 0x5E
+BLACK_FLAG     EQU 0x5F
 
 ; RGB pins
 #define red_pin     PORTA,4
@@ -628,6 +645,97 @@ read_sensor:
 calibration:
     
 LLI:
+; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
+
+;go straight --> M detects line
+;turn left 	--> LL or ML detects line
+;turn right --> RR or MR detects line
+;if all the sensors detect white STOP (SOS MODE). 
+	;Suggestion: turn 90 degrees to the left and see if the sensors detect the line. If not go back to previous position (-90 degrees)
+				;turn 90 degrees to the right and see if the sensors detect the line.
+				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
+; if all sensor detect black, STOP (End of maze)
+
+	STRAIGHT:
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR0,W,a
+	    BZ	    TURN_LEFT_ALOT
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR1,W,a
+	    BZ	    TURN_LEFT_ALITTLE
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR3,W,a
+	    BZ	    TURN_RIGHT_ALITTLE
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR4,W,a
+	    BZ	    TURN_RIGHT_ALOT
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR2,W,a
+	    BNZ	    CHECK_BLACK
+	    MOVLW   0b00100000
+	    MOVWF   PORTC,a
+	    RETURN
+    TURN_LEFT_ALOT:
+	    MOVLW 0b10000000
+	    MOVWF PORTC,a
+	    RETURN
+    TURN_LEFT_ALITTLE:
+	    MOVLW 0b01000000
+	    MOVWF PORTC,a
+	    RETURN
+    TURN_RIGHT_ALOT:
+	    MOVLW 0b00001000
+	    MOVWF PORTC,a
+	    RETURN
+    TURN_RIGHT_ALITTLE:
+	    MOVLW 0b00010000
+	    MOVWF PORTC,a
+	    RETURN
+    LOST:
+	    CALL LOST_STOP
+	    CALL TURN_LEFT_ALOT
+	    BRA STRAIGHT
+	    RETURN
+	    
+    LOST_STOP:
+	    CALL BRAKES
+	    CALL delay_333
+	    CLRF PORTC,a
+	    RETURN
+         
+    BRAKES:
+	    MOVLW 0b11111000
+	    MOVWF PORTC,a
+	    RETURN   
+	    
+    CHECK_BLACK:
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR0,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,0,a
+	    MOVlW   'K'
+	    CPFSEQ   SENSOR1,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,1,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR3,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,2,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR4,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,3,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR2,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,4,a
+	    MOVLW   0b00011111
+	    CPFSEQ  BLACK_FLAG,a
+	    RETURN
+	    BRA	    BRAKES
+	   			
+
+
 
 flash:
     
