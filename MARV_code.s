@@ -333,7 +333,7 @@ read_sensor:
 								    ; 5TAD is done
     decfsz  count,a
 								    ; 6TAD is done
-    bra	    $-16						    ;happens on 7TAD
+    bra	    $-20						    ;happens on 7TAD
     bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
     
     return
@@ -390,7 +390,379 @@ calibration:
     movwf   green_3
     movlw   0b11011101
     movwf   green_4
+    
 choose_colour:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;New average code
+    call    average
+    call    red_loop
+    call    green_loop
+    call    blue_loop
+;    call    reload_mask
+;    btfsc   chosen_red
+;    goto    comp_r0_r1  
+;    btfsc   chosen_green
+;    goto    comp_g0_g1
+;    btfsc   chosen_blue
+;    goto    comp_b0_b1
+;    goto    choose_colour
+average:
+;    LFSR    0, 100h
+;    movlw   0x0
+;    movwf   sensor_0_red
+;    movlw   0x4
+;    movwf   num_readings
+;    ave_sensor_0:
+;    movf    POSTINC0,W	;first sensor_0 reading for num_reading = 5. Second sensor_0 reading if num_reading = 4
+;    addwf   sensor_0_red
+;;    movff   POSTINC0, sensor_0_red   
+;    decfsz  num_readings
+;    bra	    ave_sensor_0
+;    RRCF    sensor_0_red
+;    RRCF    sensor_0_red
+;    ;RRCF    sensor_0_red
+;    goto    ave_sensor_1
+;    ave_sensor_1:
+
+;newbetter average calculation. Take sensor readings and divide by two until divided by eight. After each division,
+;add sensors in pairs. Do the same after each division.
+    ;Test POSTINC0 values
+   
+;    
+;
+;    ; Step 2: Store values sequentially using POSTINC0
+;    MOVLW   0x11
+;    MOVWF   POSTINC0           ; Store 0x11 at myBuffer[0], FSR0 now points to myBuffer+1
+;
+;    MOVLW   0x22
+;    MOVWF   POSTINC0           ; Store 0x22 at myBuffer[1], FSR0 now points to myBuffer+2
+;
+;    MOVLW   0x33
+;    MOVWF   POSTINC0           ; Store 0x33 at myBuffer[2], FSR0 now points to myBuffer+3
+;    
+;    MOVLW   0x44
+;    MOVWF   POSTINC0           ; Store 0x33 at myBuffer[2], FSR0 now points to myBuffer+4
+
+; --- First 40 values (Red sensor) ---
+LFSR    0, 100h    ; Load starting address into FSR0
+LFSR    1, 160h
+LFSR    2, 180h
+MOVLW   0b10110010
+MOVWF   POSTINC0
+MOVLW   0b01101101
+MOVWF   POSTINC0
+MOVLW   0b11001010
+MOVWF   POSTINC0
+MOVLW   0b01010101
+MOVWF   POSTINC0
+MOVLW   0b10001100
+MOVWF   POSTINC0
+MOVLW   0b11100011
+MOVWF   POSTINC0
+MOVLW   0b00111001
+MOVWF   POSTINC0
+MOVLW   0b10010110
+MOVWF   POSTINC0
+MOVLW   0b01111000
+MOVWF   POSTINC0
+MOVLW   0b11010100
+MOVWF   POSTINC0
+MOVLW   0b00101011
+MOVWF   POSTINC0
+MOVLW   0b10000001
+MOVWF   POSTINC0
+MOVLW   0b11110000
+MOVWF   POSTINC0
+MOVLW   0b01001110
+MOVWF   POSTINC0
+MOVLW   0b10101010
+MOVWF   POSTINC0
+MOVLW   0b00011100
+MOVWF   POSTINC0
+MOVLW   0b11000101
+MOVWF   POSTINC0
+MOVLW   0b01110010
+MOVWF   POSTINC0
+MOVLW   0b10011011
+MOVWF   POSTINC0
+MOVLW   0b00110110
+MOVWF   POSTINC0
+MOVLW   0b11101001
+MOVWF   POSTINC0
+MOVLW   0b01000111
+MOVWF   POSTINC0
+MOVLW   0b10100000
+MOVWF   POSTINC0
+MOVLW   0b00001101
+MOVWF   POSTINC0
+MOVLW   0b11011110
+MOVWF   POSTINC0
+MOVLW   0b01100001
+MOVWF   POSTINC0
+MOVLW   0b10001110
+MOVWF   POSTINC0
+MOVLW   0b00110011
+MOVWF   POSTINC0
+MOVLW   0b11100110
+MOVWF   POSTINC0
+MOVLW   0b01011000
+MOVWF   POSTINC0
+MOVLW   0b10110111
+MOVWF   POSTINC0
+MOVLW   0b00100100
+MOVWF   POSTINC0
+MOVLW   0b11001100
+MOVWF   POSTINC0
+MOVLW   0b01111011
+MOVWF   POSTINC0
+MOVLW   0b10010001
+MOVWF   POSTINC0
+MOVLW   0b00011111
+MOVWF   POSTINC0
+MOVLW   0b11010010
+MOVWF   POSTINC0
+MOVLW   0b01001011
+MOVWF   POSTINC0
+MOVLW   0b10101101
+MOVWF   POSTINC0
+MOVLW   0b00110000
+MOVWF   POSTINC0
+
+; --- Second 40 values (Green sensor) ---
+MOVLW   0b01100100
+MOVWF   POSTINC0
+MOVLW   0b10111001
+MOVWF   POSTINC0
+MOVLW   0b00101110
+MOVWF   POSTINC0
+MOVLW   0b11010101
+MOVWF   POSTINC0
+MOVLW   0b01001000
+MOVWF   POSTINC0
+MOVLW   0b10100011
+MOVWF   POSTINC0
+MOVLW   0b00011010
+MOVWF   POSTINC0
+MOVLW   0b11101100
+MOVWF   POSTINC0
+MOVLW   0b01110101
+MOVWF   POSTINC0
+MOVLW   0b10001010
+MOVWF   POSTINC0
+MOVLW   0b00100001
+MOVWF   POSTINC0
+MOVLW   0b11011000
+MOVWF   POSTINC0
+MOVLW   0b01000110
+MOVWF   POSTINC0
+MOVLW   0b10110001
+MOVWF   POSTINC0
+MOVLW   0b00111100
+MOVWF   POSTINC0
+MOVLW   0b11100000
+MOVWF   POSTINC0
+MOVLW   0b01011110
+MOVWF   POSTINC0
+MOVLW   0b10010011
+MOVWF   POSTINC0
+MOVLW   0b00101000
+MOVWF   POSTINC0
+MOVLW   0b11111010
+MOVWF   POSTINC0
+MOVLW   0b01100111
+MOVWF   POSTINC0
+MOVLW   0b10001111
+MOVWF   POSTINC0
+MOVLW   0b00110101
+MOVWF   POSTINC0
+MOVLW   0b11010001
+MOVWF   POSTINC0
+MOVLW   0b01001100
+MOVWF   POSTINC0
+MOVLW   0b10100110
+MOVWF   POSTINC0
+MOVLW   0b00011001
+MOVWF   POSTINC0
+MOVLW   0b11101010
+MOVWF   POSTINC0
+MOVLW   0b01110000
+MOVWF   POSTINC0
+MOVLW   0b10000111
+MOVWF   POSTINC0
+MOVLW   0b00100110
+MOVWF   POSTINC0
+MOVLW   0b11011011
+MOVWF   POSTINC0
+MOVLW   0b01000001
+MOVWF   POSTINC0
+MOVLW   0b10111110
+MOVWF   POSTINC0
+MOVLW   0b00111010
+MOVWF   POSTINC0
+MOVLW   0b11100100
+MOVWF   POSTINC0
+MOVLW   0b01011011
+MOVWF   POSTINC0
+MOVLW   0b10010111
+MOVWF   POSTINC0
+MOVLW   0b00101101
+MOVWF   POSTINC0
+MOVLW   0b11111001
+MOVWF   POSTINC0
+    
+;get values from FSR0 and divide them
+   count_1  equ	0x30
+   count_2  equ 0x31
+   count_3  equ 0x32
+return
+red_loop:
+   movlw    0x14
+   movwf    count_1
+   movlw    0x0A
+   movwf    count_2
+   movlw    0x5
+   movwf    count_3
+   LFSR    0, 100h
+loop_1_r:
+    BCF     STATUS, 0
+    RRCF   INDF0	    ;divide 1st value by 2
+    MOVF    POSTINC0, W	    ;move the value to W and increment to next value in FSR0
+    MOVWF   INDF1	    ;put the value from W(POSTINC0) into FSR1
+    
+    BCF     STATUS, 0
+    RRCF   INDF0	    ;divide 2nd value by 2
+    MOVF    POSTINC0,W	    ;move the value to W and increment to 3rd value for second loop
+    ADDWF   POSTINC1	    ;Add the 2nd value to the 1st value moved into FSR1(through INDF1) and increment
+			    ;after incrementing, in the second loop the second place will be filled with the value
+    DECFSZ  count_1
+    goto    loop_1_r
+    LFSR    1,160h
+    goto    loop_2_r
+loop_2_r:
+    BCF     STATUS, 0
+    RRCF   INDF1
+    MOVF    POSTINC1,W
+    MOVWF   INDF2
+    
+    BCF     STATUS, 0
+    RRCF    INDF1
+    MOVF    POSTINC1,W
+    ADDWF   POSTINC2
+    
+    DECFSZ  count_2
+    goto    loop_2_r
+    LFSR    2,180h
+    LFSR    0, 100h
+    goto    loop_3_r
+loop_3_r:
+    BCF     STATUS, 0
+    RRCF    INDF2
+    MOVF    POSTINC2,W	;first FSR2 value added back to F and then increment to next value
+    MOVWF   INDF0	;load back into FSR0
+    
+    BCF     STATUS, 0
+    RRCF    INDF2
+    MOVF    POSTINC2,W
+    ADDWF   POSTINC0
+    
+    DECFSZ  count_3
+    goto    loop_3_r
+   ;after this loop, the 5 sensors' calibrated colour for red is stored in FSR0 from 100h. Green's values will start at 200h. May change depending on 
+   return
+green_loop:
+    movlw    0x40
+   movwf    count_1
+   movlw    0x20
+   movwf    count_2
+   movlw    0x10
+   movwf    count_2
+    LFSR    0,128h
+    loop_1_g:
+    RRCF   INDF0	    ;divide 1st value by 2
+    MOVF    POSTINC0, W	    ;move the value to W and increment to next value in FSR0
+    MOVWF   INDF1	    ;put the value from W(POSTINC0) into FSR1
+    
+    RRCF   INDF0	    ;divide 2nd value by 2
+    MOVF    POSTINC0,W	    ;move the value to W and increment to 3rd value for second loop
+    ADDWF   POSTINC1	    ;Add the 2nd value to the 1st value moved into FSR1(through INDF1) and increment
+			    ;after incrementing, in the second loop the second place will be filled with the value
+    DECFSZ  count_1
+    goto    loop_1_g
+    goto    loop_2_g
+loop_2_g:
+    RRCF   INDF1
+    MOVF    POSTINC1,W
+    MOVWF   INDF2
+    
+    RRCF   INDF1
+    MOVF    POSTINC1,W
+    ADDWF   POSTINC2
+    
+    DECFSZ  count_2
+    goto    loop_2_g
+    LFSR    0, 105h
+    goto    loop_3_g
+loop_3_g:
+    RRCF    INDF2
+    MOVF    POSTINC2	;first FSR2 value added back to F and then increment to next value
+;    MOVWF   INDF2?
+    
+    RRCF   INDF2
+    MOVF    POSTINC2,W
+    ADDWF   INDF2
+    MOVF    POSTINC2,W
+    MOVWF   POSTINC0
+    
+    DECFSZ  count_3
+    goto    loop_3_g
+    return
+blue_loop:
+    movlw    0x40
+   movwf    count_1
+   movlw    0x20
+   movwf    count_2
+   movlw    0x10
+   movwf    count_2
+    LFSR    0,150h
+loop_1_b:
+    RRNCF   INDF0	    ;divide 1st value by 2
+    MOVF    POSTINC0, W	    ;move the value to W and increment to next value in FSR0
+    MOVWF   INDF1	    ;put the value from W(POSTINC0) into FSR1
+    
+    RRNCF   INDF0	    ;divide 2nd value by 2
+    MOVF    POSTINC0,W	    ;move the value to W and increment to 3rd value for second loop
+    ADDWF   POSTINC1	    ;Add the 2nd value to the 1st value moved into FSR1(through INDF1) and increment
+			    ;after incrementing, in the second loop the second place will be filled with the value
+    DECFSZ  count_1
+    goto    loop_1_b
+    goto    loop_2_b
+loop_2_b:
+    RRNCF   INDF1
+    MOVF    POSTINC1,W
+    MOVWF   INDF2
+    
+    RRNCF   INDF1
+    MOVF    POSTINC1,W
+    ADDWF   POSTINC2
+    
+    DECFSZ  count_2
+    goto    loop_2_b
+    LFSR    0, 110h
+    goto    loop_3_b
+loop_3_b:
+    RRNCF    INDF2
+    MOVF    POSTINC2	;first FSR2 value added back to F and then increment to next value
+;    MOVWF   INDF2?
+    
+    RRNCF   INDF2
+    MOVF    POSTINC2,W
+    ADDWF   INDF2
+    MOVF    POSTINC2,W
+    MOVWF   POSTINC0
+    
+    DECFSZ  count_3
+    goto    loop_3_b
+    return
     call    reload_mask
     btfsc   chosen_red
     goto    comp_r0_r1  
@@ -399,7 +771,7 @@ choose_colour:
     btfsc   chosen_blue
     goto    comp_b0_b1
     goto    choose_colour
-    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 reload_mask:
     movlw       0b11111111        ;
     movwf       mask,a  ; mask red = 0b 1111 1111
