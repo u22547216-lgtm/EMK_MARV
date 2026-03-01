@@ -228,6 +228,7 @@ start:
     movwf   POSTINC1,a
     movlw   129
     movwf   POSTINC1,a
+    
     movlw   116
     movwf   POSTINC1,a
     movlw   90
@@ -238,6 +239,7 @@ start:
     movwf   POSTINC1,a
     movlw   97
     movwf   POSTINC1,a
+    
     movlw   55
     movwf   POSTINC1,a
     movlw   70
@@ -259,6 +261,7 @@ start:
     movwf   POSTINC1,a
     movlw   87
     movwf   POSTINC1,a
+    
     movlw   247
     movwf   POSTINC1,a
     movlw   245
@@ -269,6 +272,7 @@ start:
     movwf   POSTINC1,a
     movlw   246
     movwf   POSTINC1,a
+    
     movlw   136
     movwf   POSTINC1,a
     movlw   152
@@ -290,6 +294,7 @@ start:
     movwf   POSTINC1,a
     movlw   59
     movwf   POSTINC1,a
+    
     movlw   149
     movwf   POSTINC1,a
     movlw   113
@@ -300,6 +305,7 @@ start:
     movwf   POSTINC1,a
     movlw   127
     movwf   POSTINC1,a
+    
     movlw   106
     movwf   POSTINC1,a
     movlw   161
@@ -321,6 +327,7 @@ start:
     movwf   POSTINC1,a
     movlw   35
     movwf   POSTINC1,a
+    
     movlw   126
     movwf   POSTINC1,a
     movlw   76
@@ -331,6 +338,7 @@ start:
     movwf   POSTINC1,a
     movlw   79
     movwf   POSTINC1,a
+    
     movlw   54
     movwf   POSTINC1,a
     movlw   63
@@ -352,6 +360,7 @@ start:
     movwf   POSTINC1,a
     movlw   132
     movwf   POSTINC1,a
+    
     movlw   248
     movwf   POSTINC1,a
     movlw   247
@@ -362,6 +371,7 @@ start:
     movwf   POSTINC1,a
     movlw   246
     movwf   POSTINC1,a
+    
     movlw   203
     movwf   POSTINC1,a
     movlw   246
@@ -395,36 +405,38 @@ start:
     goto    run_read_sensors
 
 fake_read_sensors:
-    ;white
-    movlw   180
+    ; FLASH RED
+    movlw   180		; W
     movwf   POSTINC1,a
-    movlw   175
+    movlw   151		; R
     movwf   POSTINC1,a
-    movlw   180
+    movlw   52		; K
     movwf   POSTINC1,a
-    movlw   142
+    movlw   76		; G
     movwf   POSTINC1,a
-    movlw   132
+    movlw   59		; B
     movwf   POSTINC1,a
-    movlw   248
+    ; FLASH GREEN
+    movlw   248		; W
     movwf   POSTINC1,a
-    movlw   247
+    movlw   60		; R
     movwf   POSTINC1,a
-    movlw   247
+    movlw   102		; K
     movwf   POSTINC1,a
-    movlw   247
+    movlw   244		; G
     movwf   POSTINC1,a
-    movlw   246
+    movlw   127		; B
     movwf   POSTINC1,a
-    movlw   203
+    ; FLASH BLUE
+    movlw   203		; W
     movwf   POSTINC1,a
-    movlw   246
+    movlw   70		; R
     movwf   POSTINC1,a
-    movlw   211
+    movlw   56		; K
     movwf   POSTINC1,a
-    movlw   214
+    movlw   127		; G
     movwf   POSTINC1,a
-    movlw   246
+    movlw   181		; B
     movwf   POSTINC1,a
     return
 
