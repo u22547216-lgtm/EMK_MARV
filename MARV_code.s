@@ -20,12 +20,12 @@
 ;	Colour display:
 ;	    Port D
 ;SENSOR STORAGES TO BE USED IN LLI
-
-	SENSOR0        EQU 0x55
-	SENSOR1        EQU 0x56
-	SENSOR2        EQU 0x57
-	SENSOR3        EQU 0x58
-	SENSOR4        EQU 0x59
+;
+;	SENSOR0        EQU 0x55
+;	SENSOR1        EQU 0x56
+;	SENSOR2        EQU 0x57
+;	SENSOR3        EQU 0x58
+;	SENSOR4        EQU 0x59
 ;		
 ; -----------------------------------------------------------------------------
 
@@ -35,7 +35,7 @@
     ; CONFIG1H
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
-    CONFIG WDTEN = off      ; Turn off the watchdog timer
+    CONFIG WDTEN = OFF      ; Turn off the watchdog timer
   
     
     #include    <xc.inc>
@@ -45,6 +45,17 @@
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
+     
+     
+     
+line_reg	equ 0x04
+SENSOR0        EQU 0x59
+SENSOR1        EQU 0x5A
+SENSOR2        EQU 0x5B
+SENSOR3        EQU 0x5C
+SENSOR4        EQU 0x5D
+RACE_COLOUR    EQU 0x5E
+BLACK_FLAG     EQU 0x5F
 
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
@@ -84,20 +95,7 @@ init:
     clrf    ANSELD, b
     clrf    TRISD, a
 
-	line_reg	equ 0x04
-	SENSOR0        EQU 0x55
-	SENSOR1        EQU 0x56
-	SENSOR2        EQU 0x57
-	SENSOR3        EQU 0x58
-	SENSOR4        EQU 0x59
-	RACE_COLOUR    EQU 0x5A
-	BLACK_FLAG     EQU 0x5B
-	K	       EQU 0x5C
-	sensor0	       EQU 0x5D
-	sensor1	       EQU 0x5E
-	sensor2	       EQU 0x5F
-	sensor3	       EQU 0x60
-	sensor4	       EQU 0x61
+	
     
     MOVLB   0x00	; back to bank 0 for normal opperations
 		
@@ -127,30 +125,21 @@ LLI:
 				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
 ; if all sensor detect black, STOP (End of maze)
 
-
-
- MOVFF   SENSOR0,sensor0
-          MOVFF   SENSOR1,sensor1
-          MOVFF   SENSOR2,sensor2
-          MOVFF   SENSOR3,sensor3
-          MOVFF   SENSOR4,sensor4
-	
-
 	STRAIGHT:
-	    MOVF    RACE_COLOUR,W
-	    SUBWF   sensor0,a
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR0,W,a
 	    BZ	    TURN_LEFT_ALOT
-	    MOVF    RACE_COLOUR
-	    SUBWF   sensor1,a
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR1,W,a
 	    BZ	    TURN_LEFT_ALITTLE
-	    MOVF    RACE_COLOUR
-	    SUBWF   sensor3,a
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR3,W,a
 	    BZ	    TURN_RIGHT_ALITTLE
-	    MOVF    RACE_COLOUR
-	    SUBWF   sensor4,a
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR4,W,a
 	    BZ	    TURN_RIGHT_ALOT
-	    MOVF    RACE_COLOUR,W
-	    SUBWF   sensor2,a
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR2,W,a
 	    BNZ	    CHECK_BLACK
 	    MOVLW   0b00100000
 	    MOVWF   PORTC,a
@@ -189,28 +178,28 @@ LLI:
 	    RETURN   
 	    
     CHECK_BLACK:
-	    MOVF    K,W
+	    MOVLW   'K'
 	    CPFSEQ   SENSOR0,a
 	    BRA	    LOST
-	    BSF	    BLACK_FLAG,0
+	    BSF	    BLACK_FLAG,0,a
 	    MOVF   K,W
 	    CPFSEQ   SENSOR1,a
 	    BRA	    LOST
-	    BSF	    BLACK_FLAG,1
-	    MOVF   K,W
+	    BSF	    BLACK_FLAG,1,a
+	    MOVLW   'K'
 	    CPFSEQ   SENSOR3,a
 	    BRA	    LOST
-	    BSF	    BLACK_FLAG,2
-	    MOVF   K,W
+	    BSF	    BLACK_FLAG,2,a
+	    MOVLW   'K'
 	    CPFSEQ   SENSOR4,a
 	    BRA	    LOST
-	    BSF	    BLACK_FLAG,3
-	    MOVF   K,W
-	    CPFSEQ   SENSOR2,a
+	    BSF	    BLACK_FLAG,3,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR2,a,a
 	    BRA	    LOST
-	    BSF	    BLACK_FLAG,4
+	    BSF	    BLACK_FLAG,4,a
 	    MOVLW   0b00011111
-	    CPFSEQ  BLACK_FLAG
+	    CPFSEQ  BLACK_FLAG,a
 	    RETURN
 	    BRA	    BRAKES
 	   			
