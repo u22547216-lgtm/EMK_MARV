@@ -130,6 +130,8 @@ ADC_AN2 	equ 0b00001011 ; 0 00010 1 1
 ADC_AN3 	equ 0b00001111 ; 0 00011 1 1
 ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 
+calib_address	equ 100h
+	
 ;
 ; -------------	
 ; PROGRAM START	
@@ -237,22 +239,7 @@ end_test:
 		
 start: 	
     
-    LFSR    0, 100h
-    movlw   8
-    movwf   number_of_readings,a
-    bsf	    red_indicator,a
     
-    loop:
-    btfss   INT0IF	    ;wait for button press
-    bra	    $-2
-    call    delay_333
-    bcf	    INT0IF
-    call    read_sensors
-    movlw   0			    ; for clarity
-    movwf   POSTINC0,a
-    bcf	    STATUS,0,a
-    RLCF    PORTD,f,a		    ;next colour
-    goto loop
     
     
     goto start
@@ -300,7 +287,7 @@ detect_colour_start:
 next_colour_ref:    ; this is here cause the offsets work only from the start adresses
 ; start registers
     LFSR    0, 200h	; start of sensor reading value
-    LFSR    1, 300h	; presumed start of reference values
+    LFSR    1, calib_address	; presumed start of reference values
     LFSR    2, SENSOR_START	; presumed start of SENSOR registers for LLI
     
 ; selects colour to check
@@ -657,6 +644,74 @@ read_sensor:
     return
     
 calibration:
+    LFSR    0, 100h
+    movlw   8
+    movwf   number_of_readings,a
+    bsf	    red_indicator,a
+    
+    loop:
+    btfss   INT0IF	    ;wait for button press
+    bra	    $-2
+    call    delay_333
+    bcf	    INT0IF
+    call    read_sensors
+    call    flash
+    movlw   0			    ; for clarity
+    movwf   POSTINC0,a
+    bcf	    STATUS,0,a
+    RLCF    PORTD,f,a		    ;next colour
+    
+    btfss   PORTD,5,a
+    goto loop
+    
+; go to normal values
+    movlw   1
+    movwf   number_of_readings,a
+; true calibration efforts
+    ;call    the_great_averaging
+    
+    setf    PORTD,a
+    btfss   INT0IF	    ;wait for button press
+    bra	    $-2
+    call    delay_333
+    bcf	    INT0IF
+    call    detect_colour
+    
+; calibrated colour
+    movff   SENSOR2,RACE_COLOUR
+    clrf    PORTD,a
+    
+    movlw   'R'
+    cpfseq  RACE_COLOUR,a
+    bra	    $-6
+    bsf	    red_indicator,a
+    goto    display_race_colour
+    
+    movlw   'G'
+    cpfseq  RACE_COLOUR,a
+    bra	    $-6
+    bsf	    green_indicator,a
+    goto    display_race_colour
+    
+    movlw   'B'
+    cpfseq  RACE_COLOUR,a
+    bra	    $-6
+    bsf	    blue_indicator,a
+    goto    display_race_colour
+    
+    movlw   'K'
+    cpfseq  RACE_COLOUR,a
+    bra	    $-6
+    bsf	    black_indicator,a
+    goto    display_race_colour
+    
+    bsf	    white_indicator,a
+    
+    display_race_colour:
+    
+    call flash
+    
+    return
     
 LLI:
 ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
@@ -752,6 +807,16 @@ LLI:
 
 
 flash:
+    movlw   3
+    movwf   count,a
+    movf    PORTD,w,a
+    clrf    PORTD,a
+    call    delay_333
+    movwf   PORTD,a
+    call    delay_333
+    decfsz  count,a
+    bra	    $-14
+    return
     
 delay_333:
 ; 0.166442 seconds of delay
