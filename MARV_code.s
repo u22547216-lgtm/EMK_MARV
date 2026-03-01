@@ -209,6 +209,7 @@ init:
     MOVLB   0x00	; back to bank 0 for normal opperations
     movlw   1
     movwf   number_of_readings,a
+    clrf    calibrated_color,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -217,231 +218,10 @@ end_test:
     bcf	    test_en, a
 		
 start: 	
-    ;goto run_read_sensors
-    dummy_calibration_values:
-    LFSR    1, 300h
-    ; red
-    movlw   162
-    movwf   POSTINC1,a
-    movlw   151
-    movwf   POSTINC1,a
-    movlw   192
-    movwf   POSTINC1,a
-    movlw   159
-    movwf   POSTINC1,a
-    movlw   129
-    movwf   POSTINC1,a
     
-    movlw   116
-    movwf   POSTINC1,a
-    movlw   90
-    movwf   POSTINC1,a
-    movlw   115
-    movwf   POSTINC1,a
-    movlw   104
-    movwf   POSTINC1,a
-    movlw   97
-    movwf   POSTINC1,a
     
-    movlw   55
-    movwf   POSTINC1,a
-    movlw   70
-    movwf   POSTINC1,a
-    movlw   68
-    movwf   POSTINC1,a
-    movlw   68
-    movwf   POSTINC1,a
-    movlw   81
-    movwf   POSTINC1,a
-    ; green
-    movlw   106
-    movwf   POSTINC1,a
-    movlw   102
-    movwf   POSTINC1,a
-    movlw   90
-    movwf   POSTINC1,a
-    movlw   76
-    movwf   POSTINC1,a
-    movlw   87
-    movwf   POSTINC1,a
-    
-    movlw   247
-    movwf   POSTINC1,a
-    movlw   245
-    movwf   POSTINC1,a
-    movlw   234
-    movwf   POSTINC1,a
-    movlw   244
-    movwf   POSTINC1,a
-    movlw   246
-    movwf   POSTINC1,a
-    
-    movlw   136
-    movwf   POSTINC1,a
-    movlw   152
-    movwf   POSTINC1,a
-    movlw   78
-    movwf   POSTINC1,a
-    movlw   127
-    movwf   POSTINC1,a
-    movlw   183
-    movwf   POSTINC1,a
-; blue
-    movlw   50
-    movwf   POSTINC1,a
-    movlw   56
-    movwf   POSTINC1,a
-    movlw   64
-    movwf   POSTINC1,a
-    movlw   63
-    movwf   POSTINC1,a
-    movlw   59
-    movwf   POSTINC1,a
-    
-    movlw   149
-    movwf   POSTINC1,a
-    movlw   113
-    movwf   POSTINC1,a
-    movlw   136
-    movwf   POSTINC1,a
-    movlw   143
-    movwf   POSTINC1,a
-    movlw   127
-    movwf   POSTINC1,a
-    
-    movlw   106
-    movwf   POSTINC1,a
-    movlw   161
-    movwf   POSTINC1,a
-    movlw   160
-    movwf   POSTINC1,a
-    movlw   211
-    movwf   POSTINC1,a
-    movlw   181
-    movwf   POSTINC1,a
-; black
-    movlw   60
-    movwf   POSTINC1,a
-    movlw   54
-    movwf   POSTINC1,a
-    movlw   52
-    movwf   POSTINC1,a
-    movlw   38
-    movwf   POSTINC1,a
-    movlw   35
-    movwf   POSTINC1,a
-    
-    movlw   126
-    movwf   POSTINC1,a
-    movlw   76
-    movwf   POSTINC1,a
-    movlw   102
-    movwf   POSTINC1,a
-    movlw   112
-    movwf   POSTINC1,a
-    movlw   79
-    movwf   POSTINC1,a
-    
-    movlw   54
-    movwf   POSTINC1,a
-    movlw   63
-    movwf   POSTINC1,a
-    movlw   56
-    movwf   POSTINC1,a
-    movlw   55
-    movwf   POSTINC1,a
-    movlw   62
-    movwf   POSTINC1,a
-; white
-    movlw   180
-    movwf   POSTINC1,a
-    movlw   175
-    movwf   POSTINC1,a
-    movlw   180
-    movwf   POSTINC1,a
-    movlw   142
-    movwf   POSTINC1,a
-    movlw   132
-    movwf   POSTINC1,a
-    
-    movlw   248
-    movwf   POSTINC1,a
-    movlw   247
-    movwf   POSTINC1,a
-    movlw   247
-    movwf   POSTINC1,a
-    movlw   247
-    movwf   POSTINC1,a
-    movlw   246
-    movwf   POSTINC1,a
-    
-    movlw   203
-    movwf   POSTINC1,a
-    movlw   246
-    movwf   POSTINC1,a
-    movlw   211
-    movwf   POSTINC1,a
-    movlw   214
-    movwf   POSTINC1,a
-    movlw   246
-    movwf   POSTINC1,a
-    
-    movlw   'R'
-    movwf   calibrated_color,a
-    call    make_offset_order
+    goto start
 
-    test_colour_detection:
-    call    detect_colour
-    btfsc   INT0IF
-    bcf	    INT0IF
-    goto    test_colour_detection
-    
-    run_read_sensors:
-    LFSR    0, 100h
-    movlw   0x0F
-    movwf   count,a
-    call read_sensors
-    decfsz  count,a
-    bra	    $-6
-    btfsc   INT0IF
-    bcf	    INT0IF
-    goto    run_read_sensors
-
-fake_read_sensors:
-    ; FLASH RED
-    movlw   180		; W
-    movwf   POSTINC1,a
-    movlw   151		; R
-    movwf   POSTINC1,a
-    movlw   52		; K
-    movwf   POSTINC1,a
-    movlw   76		; G
-    movwf   POSTINC1,a
-    movlw   59		; B
-    movwf   POSTINC1,a
-    ; FLASH GREEN
-    movlw   248		; W
-    movwf   POSTINC1,a
-    movlw   90		; R
-    movwf   POSTINC1,a
-    movlw   102		; K
-    movwf   POSTINC1,a
-    movlw   244		; G
-    movwf   POSTINC1,a
-    movlw   127		; B
-    movwf   POSTINC1,a
-    ; FLASH BLUE
-    movlw   203		; W
-    movwf   POSTINC1,a
-    movlw   70		; R
-    movwf   POSTINC1,a
-    movlw   56		; K
-    movwf   POSTINC1,a
-    movlw   127		; G
-    movwf   POSTINC1,a
-    movlw   181		; B
-    movwf   POSTINC1,a
-    return
 
 detect_colour:
 ;values used here
@@ -886,6 +666,24 @@ ISR:
     
     retfie
     
+live_test:
+; for tests that happen on the physical PIC
+    
+    return
+    
+run_read_sensors:
+    LFSR    0, 100h
+    movlw   0x0F
+    movwf   count,a
+    call read_sensors
+    decfsz  count,a
+    bra	    $-6
+    btfsc   INT0IF
+    bcf	    INT0IF
+    goto    run_read_sensors
+
+
+    
 test:
 ; this is just a software engineering practice
 ; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
@@ -900,6 +698,226 @@ test:
     call    test_read_sensor
     
     goto end_test
+
+    
+test_colour_detection:
+    call    dummy_calibration_values
+    call    dummy_calibration
+    call    fake_read_sensors
+    call    detect_colour
+    return
+
+dummy_calibration_values:
+    LFSR    1, 300h
+    ; red
+    movlw   162
+    movwf   POSTINC1,a
+    movlw   151
+    movwf   POSTINC1,a
+    movlw   192
+    movwf   POSTINC1,a
+    movlw   159
+    movwf   POSTINC1,a
+    movlw   129
+    movwf   POSTINC1,a
+    
+    movlw   116
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   115
+    movwf   POSTINC1,a
+    movlw   104
+    movwf   POSTINC1,a
+    movlw   97
+    movwf   POSTINC1,a
+    
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   70
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   68
+    movwf   POSTINC1,a
+    movlw   81
+    movwf   POSTINC1,a
+    ; green
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   90
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   87
+    movwf   POSTINC1,a
+    
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   245
+    movwf   POSTINC1,a
+    movlw   234
+    movwf   POSTINC1,a
+    movlw   244
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   152
+    movwf   POSTINC1,a
+    movlw   78
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    movlw   183
+    movwf   POSTINC1,a
+; blue
+    movlw   50
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   64
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   59
+    movwf   POSTINC1,a
+    
+    movlw   149
+    movwf   POSTINC1,a
+    movlw   113
+    movwf   POSTINC1,a
+    movlw   136
+    movwf   POSTINC1,a
+    movlw   143
+    movwf   POSTINC1,a
+    movlw   127
+    movwf   POSTINC1,a
+    
+    movlw   106
+    movwf   POSTINC1,a
+    movlw   161
+    movwf   POSTINC1,a
+    movlw   160
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   181
+    movwf   POSTINC1,a
+; black
+    movlw   60
+    movwf   POSTINC1,a
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   52
+    movwf   POSTINC1,a
+    movlw   38
+    movwf   POSTINC1,a
+    movlw   35
+    movwf   POSTINC1,a
+    
+    movlw   126
+    movwf   POSTINC1,a
+    movlw   76
+    movwf   POSTINC1,a
+    movlw   102
+    movwf   POSTINC1,a
+    movlw   112
+    movwf   POSTINC1,a
+    movlw   79
+    movwf   POSTINC1,a
+    
+    movlw   54
+    movwf   POSTINC1,a
+    movlw   63
+    movwf   POSTINC1,a
+    movlw   56
+    movwf   POSTINC1,a
+    movlw   55
+    movwf   POSTINC1,a
+    movlw   62
+    movwf   POSTINC1,a
+; white
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   175
+    movwf   POSTINC1,a
+    movlw   180
+    movwf   POSTINC1,a
+    movlw   142
+    movwf   POSTINC1,a
+    movlw   132
+    movwf   POSTINC1,a
+    
+    movlw   248
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   247
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    
+    movlw   203
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+    movlw   211
+    movwf   POSTINC1,a
+    movlw   214
+    movwf   POSTINC1,a
+    movlw   246
+    movwf   POSTINC1,a
+
+    return
+
+dummy_calibration:
+    movlw   'R'
+    movwf   calibrated_color,a
+    call    make_offset_order
+    return
+    
+fake_read_sensors:
+    ; FLASH RED
+    movlw   180		; W
+    movwf   POSTINC1,a
+    movlw   151		; R
+    movwf   POSTINC1,a
+    movlw   52		; K
+    movwf   POSTINC1,a
+    movlw   76		; G
+    movwf   POSTINC1,a
+    movlw   59		; B
+    movwf   POSTINC1,a
+    ; FLASH GREEN
+    movlw   248		; W
+    movwf   POSTINC1,a
+    movlw   90		; R
+    movwf   POSTINC1,a
+    movlw   102		; K
+    movwf   POSTINC1,a
+    movlw   244		; G
+    movwf   POSTINC1,a
+    movlw   127		; B
+    movwf   POSTINC1,a
+    ; FLASH BLUE
+    movlw   203		; W
+    movwf   POSTINC1,a
+    movlw   70		; R
+    movwf   POSTINC1,a
+    movlw   56		; K
+    movwf   POSTINC1,a
+    movlw   127		; G
+    movwf   POSTINC1,a
+    movlw   181		; B
+    movwf   POSTINC1,a
+    return
     
 test_register_dump:
 ; setup
