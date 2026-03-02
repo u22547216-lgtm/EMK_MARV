@@ -270,28 +270,28 @@ detect_colour:
 	;sensor 0
 	
 	movf    red_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,0,a
 
 
 	movf    red_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,1,a
 
 	movf    red_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,2,a
 
 	movf    red_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,3,a
 
 	movf    red_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,4,a
 
@@ -299,28 +299,28 @@ detect_colour:
 	green_check_bits  equ	0x46
 	;sensor 0
 	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,0,a
 
 
 	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,1,a
 
 	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,2,a
 
 	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,3,a
 
 	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,4,a
 
@@ -330,27 +330,27 @@ detect_colour:
 	blue_check_bits  equ	0x47
 	;sensor 0
 	movf    blue_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,0,a
 
 	movf    blue_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,1,a
 
 	movf    blue_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,2,a
 
 	movf    blue_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,3,a
 
 	movf    blue_thresh,w,a
-	cpfslt  POSTINC0,a
+	cpfsgt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,4,a
 
@@ -437,85 +437,83 @@ detect_colour:
 	movwf	INDF1,a
     
     check_green:
+	lfsr	1,200h
 	movlw	15
-	addwf	FSR0,f,a
+	;addwf	FSR0,f,a
 	addwf	FSR1,f,a
 	
     green_check_bits  equ	0x46
 	;sensor 0
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  green_thresh,a
 	bra	    $+4
 	bsf	    green_check_bits,0,a
 
 
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  green_thresh,a
 	bra	    $+4
 	bsf	    green_check_bits,1,a
 
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  green_thresh,a
 	bra	    $+4
 	bsf	    green_check_bits,2,a
 
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  green_thresh,a
 	bra	    $+4
 	bsf	    green_check_bits,3,a
 
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  green_thresh,a
 	bra	    $+4
 	bsf	    green_check_bits,4,a
 	
 	;red checks
-	LFSR    0, 200h	
-	LFSR    1, 060h	
+	LFSR    1, 200h	
 	
     red_check_bits  equ	0x45
   
 	btfsc	green_check_bits,0,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  red_thresh,a
 	bra	    $+4
 	bsf	    red_check_bits,0,a
 	
 	btfsc	green_check_bits,1,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  red_thresh,a
 	bra	    $+4
 	bsf	    red_check_bits,1,a
 	
 	btfsc	green_check_bits,2,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  red_thresh,a
 	bra	    $+4
 	bsf	    red_check_bits,2,a
 	
 	btfsc	green_check_bits,3,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  red_thresh,a
 	bra	    $+4
 	bsf	    red_check_bits,3,a
 	
 	btfsc	green_check_bits,4,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  red_thresh,a
 	bra	    $+4
 	bsf	    red_check_bits,4,a
 	
 	;check blue
 	
-	LFSR    0, 200h	
-	LFSR    1, 060h	
+	LFSR    1, 200h	
 	movlw	30
-	addwf	FSR0,f,a
 	addwf	FSR1,f,a
 	
     blue_check_bits  equ	0x47
@@ -523,35 +521,35 @@ detect_colour:
 	btfsc	green_check_bits,0,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  blue_thresh,a
 	bra	    $+4
 	bsf	    blue_check_bits,0,a
 	
 	btfsc	green_check_bits,1,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  blue_thresh,a
 	bra	    $+4
 	bsf	    blue_check_bits,1,a
 	
 	btfsc	green_check_bits,2,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  blue_thresh,a
 	bra	    $+4
 	bsf	    blue_check_bits,2,a
 	
 	btfsc	green_check_bits,3,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  blue_thresh,a
 	bra	    $+4
 	bsf	    blue_check_bits,3,a
 	
 	btfsc	green_check_bits,4,a
 	bra	$+10
 	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
+	cpfslt  blue_thresh,a
 	bra	    $+4
 	bsf	    blue_check_bits,4,a
 	
