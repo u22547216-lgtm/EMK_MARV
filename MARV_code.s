@@ -261,95 +261,152 @@ start:
 detect_colour:
     ; desperate times
     LFSR    0, 200h	
-    LFSR    1, 060h	
     call read_sensors
     
     LFSR    0, 200h	
     
     white_check:
-    
-	red_check_bits  equ	0x45
-	;sensor 0
-	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,0,a
-
-
-	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,1,a
-
-	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,2,a
-
-	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,3,a
-
-	movf    POSTINC1,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,4,a
-
-
+	
 	green_check_bits  equ	0x46
 	;sensor 0
-	movf    POSTINC1,w,a
+	movf    white_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+6
+	movlw	    'W'
+	movwf	    SENSOR0,a
+
+
+	movf    white_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+6
+	movlw	    'W'
+	movwf	    SENSOR1,a
+
+	movf    white_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+6
+	movlw	    'W'
+	movwf	    SENSOR2,a
+
+	movf    white_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+6
+	movlw	    'W'
+	movwf	    SENSOR3,a
+
+	movf    white_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+6
+	movlw	    'W'
+	movwf	    SENSOR4,a
+
+    
+    
+	
+	green_check_bits  equ	0x46
+	;sensor 0
+	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,0,a
 
 
-	movf    POSTINC1,w,a
+	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,1,a
 
-	movf    POSTINC1,w,a
+	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,2,a
 
-	movf    POSTINC1,w,a
+	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,3,a
 
-	movf    POSTINC1,w,a
+	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    green_check_bits,4,a
 
+    
+	red_check_bits  equ	0x45
+	;sensor 0
+	
+	btfsc	green_check_bits,0,a
+	bra	$+10
+	movf    red_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,0,a
+
+
+	btfsc	green_check_bits,1,a
+	bra	$+10
+	movf    red_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,1,a
+
+	btfsc	green_check_bits,2,a
+	bra	$+10
+	movf    red_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,2,a
+
+	btfsc	green_check_bits,3,a
+	bra	$+10
+	movf    red_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,3,a
+
+	btfsc	green_check_bits,4,a
+	bra	$+10
+	movf    red_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,4,a
+
+
 
 	blue_check_bits  equ	0x47
 	;sensor 0
-	movf    POSTINC1,w,a
+	btfsc	green_check_bits,0,a
+	bra	$+10
+	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,0,a
 
 
-	movf    POSTINC1,w,a
+	btfsc	green_check_bits,1,a
+	bra	$+10
+	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,1,a
 
-	movf    POSTINC1,w,a
+	btfsc	green_check_bits,2,a
+	bra	$+10
+	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,2,a
 
-	movf    POSTINC1,w,a
+	btfsc	green_check_bits,3,a
+	bra	$+10
+	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,3,a
 
-	movf    POSTINC1,w,a
+	btfsc	green_check_bits,4,a
+	bra	$+10
+	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,4,a
@@ -1230,7 +1287,6 @@ read_sensor:
 calibration:
     ;desperate times
     LFSR    0, 100h
-    LFSR    1, 060h
     movlw   1
     movwf   number_of_readings,a
     bsf	    red_indicator,a
@@ -1238,14 +1294,29 @@ calibration:
     call    wait_for_button_press
     call    read_sensors
     
-    
+    red_thresh	    equ	0x40
 	    
     lfsr    0, 100h
-    movff    POSTINC0,POSTINC1    ;sensor 0
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
+    movf    INDF0,w,a    ;sensor 0
+    
+    cpfslt  PREINC0,a	    ;s 1
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 2
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 3
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 4
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    sublw   10
+    MOVWF red_thresh,a
     
     ;green
     lfsr    0, 100h
@@ -1255,14 +1326,29 @@ calibration:
     call    wait_for_button_press
     call    read_sensors
     
-    
+    green_thresh	    equ	0x41
 	    
     lfsr    0, 105h
-    movff    POSTINC0,POSTINC1    ;sensor 0
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
+    movf    INDF0,w,a    ;sensor 0
+    
+    cpfslt  PREINC0,a	    ;s 1
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 2
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 3
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 4
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    sublw   10
+    MOVWF green_thresh,a
     
     ;blue
     lfsr    0, 100h
@@ -1272,14 +1358,29 @@ calibration:
     call    wait_for_button_press
     call    read_sensors
     
-    
+    blue_thresh	    equ	0x42
 	    
     lfsr    0, 10Ah
-    movff    POSTINC0,POSTINC1    ;sensor 0
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
-    movff    POSTINC0,POSTINC1
+    movf    INDF0,w,a    ;sensor 0
+    
+    cpfslt  PREINC0,a	    ;s 1
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 2
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 3
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    cpfslt  PREINC0,a	    ;s 4
+    bra	    $+4
+    movf    INDF0,w,a
+    
+    sublw   10
+    MOVWF blue_thresh,a
     
     ;black
     lfsr    0, 100h
@@ -1351,6 +1452,7 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
+    sublw   10
     movwf   black_thresh,a
     ;white
     lfsr    0, 100h
@@ -1421,25 +1523,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    LFSR    1, 060h
-    movlw   10
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
+    sublw   10
+    movwf   white_thresh,a
     
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
-    subwf   POSTINC1,f,a
     
     goto    reuse_calibrate
     ;preemptive return
