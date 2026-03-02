@@ -237,11 +237,6 @@ init:
     movwf   number_of_readings,a
     clrf    calibrated_color,a
     clrf    test_0,a
-    clrf    SENSOR0,a
-    clrf    SENSOR1,a
-    clrf    SENSOR2,a
-    clrf    SENSOR3,a
-    clrf    SENSOR4,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -529,7 +524,6 @@ detect_colour:
     blue_check_bits  equ	0x47
   
 	clrf	blue_check_bits,a
-	btfss	red_check_bits,0,a
 	btfsc	green_check_bits,0,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -537,7 +531,6 @@ detect_colour:
 	bra	    $+4
 	bsf	    blue_check_bits,0,a
 	
-	btfss	red_check_bits,1,a
 	btfsc	green_check_bits,1,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -545,7 +538,6 @@ detect_colour:
 	bra	    $+4
 	bsf	    blue_check_bits,1,a
 	
-	btfss	red_check_bits,2,a
 	btfsc	green_check_bits,2,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -553,7 +545,6 @@ detect_colour:
 	bra	    $+4
 	bsf	    blue_check_bits,2,a
 	
-	btfss	red_check_bits,3,a
 	btfsc	green_check_bits,3,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -561,7 +552,6 @@ detect_colour:
 	bra	    $+4
 	bsf	    blue_check_bits,3,a
 	
-	btfss	red_check_bits,4,a
 	btfsc	green_check_bits,4,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -814,7 +804,6 @@ run_detection_checks:
     movwf   INDF1,a
     RETURN
     
-    movlw   0
     cpfseq  check,a
     bra	    $+8
     movlw   'R'
@@ -1519,7 +1508,7 @@ calibration:
     reuse_calibrate:
     setf    PORTD,a
     call    wait_for_button_press
-    ;call make_offset_order
+    call make_offset_order
     call    detect_colour
     
 ; calibrated colour
