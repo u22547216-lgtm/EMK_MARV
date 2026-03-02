@@ -242,6 +242,7 @@ init:
     clrf    SENSOR2,a
     clrf    SENSOR3,a
     clrf    SENSOR4,a
+    clrf    RACE_COLOUR,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -256,6 +257,35 @@ start:
     
     the_forever_loop:
 	call detect_colour
+	movf	SENSOR0,w,a
+	andwf	SENSOR1,w,a
+	andwf	SENSOR2,w,a
+	andwf	SENSOR3,w,a
+	andwf	SENSOR4,w,a
+	
+	clrf	PORTD,a
+	movwf	extra,a
+	movlw	'W'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	white_indicator,a
+	movlw	'K'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	black_indicator,a
+	movlw	'R'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	red_indicator,a
+	movlw	'G'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	green_indicator,a
+	movlw	'B'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	blue_indicator,a
+	;call	wait_for_button_press
 	call LLI
 	goto the_forever_loop
     
@@ -264,6 +294,11 @@ start:
 
 
 detect_colour:
+    clrf    SENSOR0,a
+    clrf    SENSOR1,a
+    clrf    SENSOR2,a
+    clrf    SENSOR3,a
+    clrf    SENSOR4,a
     ; desperate times
     LFSR    0, 200h	
     call read_sensors
@@ -421,7 +456,7 @@ detect_colour:
 	btfsc   blue_check_bits,3,a
 	bsf     check,2,a
 
-	lfsr    1,05Bh
+	lfsr    1,05Ch
 	movlw	7
 	cpfseq	check,a
 	bra	$+6
@@ -437,7 +472,7 @@ detect_colour:
 	btfsc   blue_check_bits,4,a
 	bsf     check,2,a
 
-	lfsr    1,05Bh
+	lfsr    1,05Dh
 	movlw	7
 	cpfseq	check,a
 	bra	$+6
@@ -479,7 +514,7 @@ detect_colour:
 	bra	    $+4
 	bsf	    green_check_bits,4,a
 	
-	;red checks
+	red_checks:
 	LFSR    1, 200h	
 	
     red_check_bits  equ	0x45
@@ -520,7 +555,7 @@ detect_colour:
 	bra	    $+4
 	bsf	    red_check_bits,4,a
 	
-	;check blue
+	check_blue:
 	
 	LFSR    1, 200h	
 	movlw	10
@@ -570,7 +605,7 @@ detect_colour:
 	bsf	    blue_check_bits,4,a
 	
 	
-	;checking colours
+	checking_colours:
 	check	equ 0x48
 	CLRF    check,a
 	;check sensor 0
@@ -629,7 +664,7 @@ detect_colour:
 	btfsc   blue_check_bits,3,a
 	bsf     check,2,a
 
-	lfsr    1,05Bh
+	lfsr    1,05Ch
 	movlw	'W'
 	cpfseq	SENSOR3,a
 	bra	$+4
@@ -645,7 +680,7 @@ detect_colour:
 	btfsc   blue_check_bits,4,a
 	bsf     check,2,a
 
-	lfsr    1,05Bh
+	lfsr    1,05Dh
 	movlw	'W'
 	cpfseq	SENSOR4,a
 	bra	$+4
@@ -814,7 +849,7 @@ run_detection_checks:
     movwf   INDF1,a
     RETURN
     
-    movlw   0
+    movlw   1
     cpfseq  check,a
     bra	    $+8
     movlw   'R'
@@ -1515,7 +1550,7 @@ calibration:
     movlw   1
     movwf   number_of_readings,a
 ; true calibration efforts
-    call    the_great_averaging
+    ;call    the_great_averaging
     reuse_calibrate:
     setf    PORTD,a
     call    wait_for_button_press
@@ -1640,21 +1675,28 @@ LLI:
 ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
+	    call detect_colour
+	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR0,W,a
 	    BZ	    TURN_LEFT_ALOT
+	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR1,W,a
 	    BZ	    TURN_LEFT_ALITTLE
+	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR3,W,a
 	    BZ	    TURN_RIGHT_ALITTLE
+	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR4,W,a
 	    BZ	    TURN_RIGHT_ALOT
+	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR2,W,a
 	    BNZ	    CHECK_BLACK
+	    
 	    MOVLW   0b00100000
 	    MOVWF   line_reg,a
 	    RETURN
@@ -1677,7 +1719,6 @@ LLI:
     LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
-	    call read_sensors
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
