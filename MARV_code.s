@@ -266,6 +266,382 @@ detect_colour:
     
     LFSR    0, 200h	
     
+    white_check:
+    
+	red_check_bits  equ	0x45
+	;sensor 0
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,0,a
+
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,1,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,2,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,3,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,4,a
+
+
+	green_check_bits  equ	0x46
+	;sensor 0
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,0,a
+
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,1,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,2,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,3,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,4,a
+
+
+	blue_check_bits  equ	0x47
+	;sensor 0
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,0,a
+
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,1,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,2,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,3,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,4,a
+
+	;checking colours
+	check	equ 0x48
+	CLRF    check,a
+	;check sensor 0
+	btfsc   red_check_bits,0,a
+	bsf     check,0,a
+	btfsc   green_check_bits,0,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,0,a
+	bsf     check,2,a
+
+	lfsr    1,059h
+	movlw	7
+	cpfseq	check,a
+	bra	$+6
+	movlw	'W'
+	movwf	INDF1,a
+
+	CLRF    check,a
+	;check sensor 1
+	btfsc   red_check_bits,1,a
+	bsf     check,0,a
+	btfsc   green_check_bits,1,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,1,a
+	bsf     check,2,a
+
+	lfsr    1,05Ah
+	movlw	7
+	cpfseq	check,a
+	bra	$+6
+	movlw	'W'
+	movwf	INDF1,a
+
+	CLRF    check,a
+	;check sensor 2
+	btfsc   red_check_bits,2,a
+	bsf     check,0,a
+	btfsc   green_check_bits,2,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,2,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	7
+	cpfseq	check,a
+	bra	$+6
+	movlw	'W'
+	movwf	INDF1,a
+
+	CLRF    check,a
+	;check sensor 3
+	btfsc   red_check_bits,3,a
+	bsf     check,0,a
+	btfsc   green_check_bits,3,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,3,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	7
+	cpfseq	check,a
+	bra	$+6
+	movlw	'W'
+	movwf	INDF1,a
+
+	CLRF    check,a
+	;check sensor 4
+	btfsc   red_check_bits,4,a
+	bsf     check,0,a
+	btfsc   green_check_bits,4,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,4,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	7
+	cpfseq	check,a
+	bra	$+6
+	movlw	'W'
+	movwf	INDF1,a
+    
+    ;check green
+	movlw	15
+	addwf	FSR0,f,a
+	addwf	FSR1,f,a
+	
+    green_check_bits  equ	0x46
+	;sensor 0
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,0,a
+
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,1,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,2,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,3,a
+
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,4,a
+	
+	;red checks
+	LFSR    0, 200h	
+	LFSR    1, 060h	
+	
+    red_check_bits  equ	0x45
+  
+	btfsc	green_check_bits,0,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,0,a
+	
+	btfsc	green_check_bits,1,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,1,a
+	
+	btfsc	green_check_bits,2,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,2,a
+	
+	btfsc	green_check_bits,3,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,3,a
+	
+	btfsc	green_check_bits,4,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    red_check_bits,4,a
+	
+	;check blue
+	
+	LFSR    0, 200h	
+	LFSR    1, 060h	
+	movlw	30
+	addwf	FSR0,f,a
+	addwf	FSR1,f,a
+	
+    blue_check_bits  equ	0x47
+  
+	btfsc	green_check_bits,0,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,0,a
+	
+	btfsc	green_check_bits,1,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,1,a
+	
+	btfsc	green_check_bits,2,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,2,a
+	
+	btfsc	green_check_bits,3,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,3,a
+	
+	btfsc	green_check_bits,4,a
+	bra	$+10
+	movf    POSTINC1,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    blue_check_bits,4,a
+	
+	
+	;checking colours
+	check	equ 0x48
+	CLRF    check,a
+	;check sensor 0
+	btfsc   red_check_bits,0,a
+	bsf     check,0,a
+	btfsc   green_check_bits,0,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,0,a
+	bsf     check,2,a
+
+	lfsr    1,059h
+	movlw	'W'
+	cpfseq	SENSOR0,a
+	bra	$+4
+	bra	$+6
+	call    run_detection_checks
+
+	CLRF    check,a
+	;check sensor 1
+	btfsc   red_check_bits,1,a
+	bsf     check,0,a
+	btfsc   green_check_bits,1,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,1,a
+	bsf     check,2,a
+
+	lfsr    1,05Ah
+	movlw	'W'
+	cpfseq	SENSOR1,a
+	bra	$+4
+	bra	$+6
+	call    run_detection_checks
+
+	CLRF    check,a
+	;check sensor 2
+	btfsc   red_check_bits,2,a
+	bsf     check,0,a
+	btfsc   green_check_bits,2,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,2,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	'W'
+	cpfseq	SENSOR2,a
+	bra	$+4
+	bra	$+6
+	call    run_detection_checks
+
+	CLRF    check,a
+	;check sensor 3
+	btfsc   red_check_bits,3,a
+	bsf     check,0,a
+	btfsc   green_check_bits,3,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,3,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	'W'
+	cpfseq	SENSOR3,a
+	bra	$+4
+	bra	$+6
+	call    run_detection_checks
+
+	CLRF    check,a
+	;check sensor 4
+	btfsc   red_check_bits,4,a
+	bsf     check,0,a
+	btfsc   green_check_bits,4,a
+	bsf     check,1,a
+	btfsc   blue_check_bits,4,a
+	bsf     check,2,a
+
+	lfsr    1,05Bh
+	movlw	'W'
+	cpfseq	SENSOR4,a
+	bra	$+4
+	bra	$+6
+	call    run_detection_checks
+
+	
+	
+    return;preemptive
+    
     red_check_bits  equ	0x45
     ;sensor 0
     movf    POSTINC1,w,a
