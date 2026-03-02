@@ -82,6 +82,12 @@ SxXX		equ 0x1A
 sensor_offset	equ 0x1B
 colour_offset	equ 0x1C
 sensor_num	equ 0x1D
+	
+	
+count_1_H	equ 0x30
+count_1_L	equ 0x31
+count_2		equ 0x32
+count_3		equ 0x33
 
 SENSOR_START	equ 059h
 SENSOR0        EQU 0x59
@@ -230,6 +236,7 @@ init:
     movlw   1
     movwf   number_of_readings,a
     clrf    calibrated_color,a
+    clrf    test_0,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -239,7 +246,13 @@ end_test:
 		
 start: 	
     
+    call calibration
+    call make_offset_order
     
+    the_forever_loop:
+	call detect_colour
+	call LLI
+	goto the_forever_loop
     
     
     goto start
@@ -247,7 +260,7 @@ start:
 
 detect_colour:
 ;values used here
-    tolerance		equ 16	; tolerance is 15, need increase for compare
+    tolerance		equ 6	; tolerance is 15, need increase for compare
 ; putting variables here made for this
     ;test stuff
     btfss   live_test,a
@@ -276,12 +289,16 @@ detect_colour_start:
     ; error case check
     movlw   75
     cpfseq  colour_offset,a
-    bra	    $+16
+    bra	    detect_colour_edgecase
     call    store_colour
     incf    sensor_num,a
+    movlw   5
+    cpfseq  sensor_num,a
+    bra	    $+4
+    return
     movff   sensor_num,sensor_offset
     goto    detect_colour_start
-    
+    detect_colour_edgecase:
     clrf    SxXX,a
     
 next_colour_ref:    ; this is here cause the offsets work only from the start adresses
@@ -653,8 +670,8 @@ calibration:
     call    wait_for_button_press
     call    read_sensors
     call    flash
-    movlw   0			    ; for clarity
-    movwf   POSTINC0,a
+    ;movlw   0			    ; for clarity
+    ;movwf   POSTINC0,a
     bcf	    STATUS,0,a
     RLCF    PORTD,f,a		    ;next colour
     
@@ -665,10 +682,11 @@ calibration:
     movlw   1
     movwf   number_of_readings,a
 ; true calibration efforts
-    ;call    the_great_averaging
+    call    the_great_averaging
     
     setf    PORTD,a
     call    wait_for_button_press
+    call make_offset_order
     call    detect_colour
     
 ; calibrated colour
@@ -677,25 +695,25 @@ calibration:
     
     movlw   'R'
     cpfseq  RACE_COLOUR,a
-    bra	    $-6
+    bra	    $+8
     bsf	    red_indicator,a
     goto    display_race_colour
     
     movlw   'G'
     cpfseq  RACE_COLOUR,a
-    bra	    $-6
+    bra	    $+8
     bsf	    green_indicator,a
     goto    display_race_colour
     
     movlw   'B'
     cpfseq  RACE_COLOUR,a
-    bra	    $-6
+    bra	    $+8
     bsf	    blue_indicator,a
     goto    display_race_colour
     
     movlw   'K'
     cpfseq  RACE_COLOUR,a
-    bra	    $-6
+    bra	    $+8
     bsf	    black_indicator,a
     goto    display_race_colour
     
@@ -704,10 +722,79 @@ calibration:
     display_race_colour:
     
     call flash
+    call wait_for_button_press
     
     return
     
+the_great_averaging:
+   movlw    0
+   movwf    count_3,a
+   ;count_2 is how many times we average 2 sequencial readings
+	    ; we have 8 samples per sensor reading, so we average 2 readings at 3 times
+    movlw    0x03
+    movwf    count_2,a
+red_loop:
+    LFSR    0, 100h
+    LFSR    1, 100h
+; mainly code appropriated from Elmor
+    ; modified by darius to work with hex numbers bigger than 0xFF
+	;count_1 is now half of the expected registers to be stored
+	    ; we expect 600, so count_1 is 300
+    movlw    0x01
+    movwf    count_1_H,a
+    movlw    0x2C
+    movwf    count_1_L,a
+
+	
+    
+	; count_3 has been repurposed to help in keep track of how much we have to devide count_1 by 2
+	    ; we dont want to average numbers that we have already averaged before
+    tstfsz   count_3,a
+    bra	    $+4
+    bra	    $+16
+    movf    count_3,w,a
+    bcf	    STATUS,0,a
+    rrcf    count_1_H,a
+    rrcf    count_1_L,a
+    bcf	    STATUS,0,a
+    decfsz   WREG,w,a
+    bra	    $-8
+    
+    incf    count_1_L,a
+   
+loop_1_r:
+    BCF     STATUS, 0,a
+    RRCF    INDF0,a	    ;divide 1st value by 2
+    MOVF    POSTINC0, W,a	    ;move the value to W and increment to next value in FSR0
+    MOVWF   INDF1,a	    ;put the value from W(POSTINC0) into FSR1
+    
+    BCF     STATUS, 0,a
+    RRCF    INDF0,a	    ;divide 2nd value by 2
+    MOVF    POSTINC0,W,a	    ;move the value to W and increment to 3rd value for second loop
+    ADDWF   POSTINC1,a	    ;Add the 2nd value to the 1st value moved into FSR1(through INDF1) and increment
+			    ;after incrementing, in the second loop the second place will be filled with the value
+			    
+    ; checking if we have reached the end of the sensor data
+    DECFSZ  count_1_L,a
+    goto    loop_1_r
+    tstfsz  count_1_H,a
+    bra	    $+4
+    bra	    $+10
+    setf    count_1_L,a
+    decf    count_1_H,a
+    goto    loop_1_r
+    
+    ; checks if the averaging is done, or sets up tbe next loop where we have to average half the values
+    dcfsnz  count_2,a
+    return
+    incf    count_3,a
+    goto    red_loop
+    
+    return  ; this is here just in case
+    
+    
 LLI:
+    nop	;this is just here to see it in the navigator
 ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
 ;go straight --> M detects line
@@ -757,14 +844,14 @@ LLI:
     LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
-		call    wait_for_button_press	; this is here for the purposes of the demo
+		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
 	    
     LOST_STOP:
 	    CALL BRAKES
-	    ;CALL delay_333
-		call    wait_for_button_press	; this is here for the purposes of the demo
+	    CALL delay_333
+		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    CLRF line_reg,a
 	    RETURN
          
@@ -822,6 +909,7 @@ wait_for_button_press:
     return
     
 delay_333:
+    movwf    extra,a
 ; 0.166442 seconds of delay
     movlw   217
     movwf   delay_outer,a
@@ -835,6 +923,7 @@ delay_inside:
     decfsz  delay_outer,a
     goto delay_outside
     
+    movf    extra,w,a
     return
     
 delay_RGB:  ; 1.2ms = 1200 instruction cycles
