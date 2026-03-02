@@ -237,6 +237,7 @@ init:
     movwf   number_of_readings,a
     clrf    calibrated_color,a
     clrf    test_0,a
+    ;bsf	    live_test,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -248,8 +249,9 @@ start:
     
    
     
-    call calibration
-    call make_offset_order
+    ;call calibration
+    ;call make_offset_order
+    call living_test
     
     the_forever_loop:
 	call detect_colour
