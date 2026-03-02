@@ -268,6 +268,7 @@ detect_colour:
     white_check:
 	red_check_bits  equ	0x45
 	;sensor 0
+	clrf	red_check_bits,a
 	
 	movf    red_thresh,w,a
 	cpfsgt  POSTINC0,a
@@ -298,6 +299,7 @@ detect_colour:
 
 	green_check_bits  equ	0x46
 	;sensor 0
+	clrf	green_check_bits,a
 	movf    green_thresh,w,a
 	cpfsgt  POSTINC0,a
 	bra	    $+4
@@ -329,6 +331,7 @@ detect_colour:
 
 	blue_check_bits  equ	0x47
 	;sensor 0
+	clrf	blue_check_bits,a
 	movf    blue_thresh,w,a
 	cpfsgt  POSTINC0,a
 	bra	    $+4
@@ -444,6 +447,7 @@ detect_colour:
 	
     green_check_bits  equ	0x46
 	;sensor 0
+	clrf	green_check_bits,a
 	movf    POSTINC1,w,a
 	cpfslt  green_thresh,a
 	bra	    $+4
@@ -475,6 +479,7 @@ detect_colour:
 	
     red_check_bits  equ	0x45
   
+	clrf	red_check_bits,a
 	btfsc	green_check_bits,0,a
 	bra	$+10
 	movf    POSTINC1,w,a
@@ -518,6 +523,7 @@ detect_colour:
 	
     blue_check_bits  equ	0x47
   
+	clrf	blue_check_bits,a
 	btfsc	green_check_bits,0,a
 	bra	$+10
 	movf    POSTINC1,w,a
