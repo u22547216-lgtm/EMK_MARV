@@ -269,42 +269,6 @@ detect_colour:
 	
 	green_check_bits  equ	0x46
 	;sensor 0
-	movf    white_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+6
-	movlw	    'W'
-	movwf	    SENSOR0,a
-
-
-	movf    white_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+6
-	movlw	    'W'
-	movwf	    SENSOR1,a
-
-	movf    white_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+6
-	movlw	    'W'
-	movwf	    SENSOR2,a
-
-	movf    white_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+6
-	movlw	    'W'
-	movwf	    SENSOR3,a
-
-	movf    white_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+6
-	movlw	    'W'
-	movwf	    SENSOR4,a
-
-    
-    
-	
-	green_check_bits  equ	0x46
-	;sensor 0
 	movf    green_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
@@ -335,37 +299,27 @@ detect_colour:
 	red_check_bits  equ	0x45
 	;sensor 0
 	
-	btfsc	green_check_bits,0,a
-	bra	$+10
 	movf    red_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,0,a
 
 
-	btfsc	green_check_bits,1,a
-	bra	$+10
 	movf    red_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,1,a
 
-	btfsc	green_check_bits,2,a
-	bra	$+10
 	movf    red_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,2,a
 
-	btfsc	green_check_bits,3,a
-	bra	$+10
 	movf    red_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    red_check_bits,3,a
 
-	btfsc	green_check_bits,4,a
-	bra	$+10
 	movf    red_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
@@ -375,37 +329,26 @@ detect_colour:
 
 	blue_check_bits  equ	0x47
 	;sensor 0
-	btfsc	green_check_bits,0,a
-	bra	$+10
 	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,0,a
 
-
-	btfsc	green_check_bits,1,a
-	bra	$+10
 	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,1,a
 
-	btfsc	green_check_bits,2,a
-	bra	$+10
 	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,2,a
 
-	btfsc	green_check_bits,3,a
-	bra	$+10
 	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
 	bsf	    blue_check_bits,3,a
 
-	btfsc	green_check_bits,4,a
-	bra	$+10
 	movf    blue_thresh,w,a
 	cpfslt  POSTINC0,a
 	bra	    $+4
@@ -493,7 +436,7 @@ detect_colour:
 	movlw	'W'
 	movwf	INDF1,a
     
-    ;check green
+    check_green:
 	movlw	15
 	addwf	FSR0,f,a
 	addwf	FSR1,f,a
@@ -1315,8 +1258,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    sublw   10
-    MOVWF red_thresh,a
+    MOVWF   red_thresh,a
+    movlw   10
+    subwf   red_thresh,f,a
     
     ;green
     lfsr    0, 100h
@@ -1347,8 +1291,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    sublw   10
     MOVWF green_thresh,a
+    movlw   10
+    subwf   green_thresh,f,a
     
     ;blue
     lfsr    0, 100h
@@ -1379,8 +1324,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    sublw   10
     MOVWF blue_thresh,a
+    movlw   10
+    subwf   blue_thresh,f,a
     
     ;black
     lfsr    0, 100h
@@ -1452,8 +1398,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    sublw   10
     movwf   black_thresh,a
+    movlw   10
+    subwf   black_thresh,f,a
     ;white
     lfsr    0, 100h
     bcf	    black_indicator,a
@@ -1523,8 +1470,9 @@ calibration:
     bra	    $+4
     movf    INDF0,w,a
     
-    sublw   10
     movwf   white_thresh,a
+    movlw   10
+    subwf   white_thresh,f,a
     
     
     goto    reuse_calibrate
