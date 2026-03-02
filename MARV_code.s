@@ -237,6 +237,11 @@ init:
     movwf   number_of_readings,a
     clrf    calibrated_color,a
     clrf    test_0,a
+    clrf    SENSOR0,a
+    clrf    SENSOR1,a
+    clrf    SENSOR2,a
+    clrf    SENSOR3,a
+    clrf    SENSOR4,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -441,7 +446,7 @@ detect_colour:
     
     check_green:
 	lfsr	1,200h
-	movlw	15
+	movlw	5
 	;addwf	FSR0,f,a
 	addwf	FSR1,f,a
 	
@@ -518,7 +523,7 @@ detect_colour:
 	;check blue
 	
 	LFSR    1, 200h	
-	movlw	30
+	movlw	10
 	addwf	FSR1,f,a
 	
     blue_check_bits  equ	0x47
@@ -804,6 +809,7 @@ run_detection_checks:
     movwf   INDF1,a
     RETURN
     
+    movlw   0
     cpfseq  check,a
     bra	    $+8
     movlw   'R'
@@ -1508,7 +1514,7 @@ calibration:
     reuse_calibrate:
     setf    PORTD,a
     call    wait_for_button_press
-    call make_offset_order
+    ;call make_offset_order
     call    detect_colour
     
 ; calibrated colour
@@ -1666,6 +1672,7 @@ LLI:
     LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
+	    call read_sensors
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
