@@ -354,7 +354,7 @@ detect_colour:
     
     ;checking colours
     check	equ 0x48
-    CLRF    check
+    CLRF    check,a
     ;check sensor 0
     btfsc   red_check_bits,0,a
     bsf     check,0,a
@@ -366,7 +366,7 @@ detect_colour:
     lfsr    1,059h
     call    run_detection_checks
     
-    CLRF    check
+    CLRF    check,a
     ;check sensor 1
     btfsc   red_check_bits,1,a
     bsf     check,0,a
@@ -378,7 +378,7 @@ detect_colour:
     lfsr    1,05Ah
     call    run_detection_checks
     
-    CLRF    check
+    CLRF    check,a
     ;check sensor 2
     btfsc   red_check_bits,2,a
     bsf     check,0,a
@@ -390,7 +390,7 @@ detect_colour:
     lfsr    1,05Bh
     call    run_detection_checks
     
-    CLRF    check
+    CLRF    check,a
     ;check sensor 3
     btfsc   red_check_bits,3,a
     bsf     check,0,a
@@ -402,7 +402,7 @@ detect_colour:
     lfsr    1,05Bh
     call    run_detection_checks
     
-    CLRF    check
+    CLRF    check,a
     ;check sensor 4
     btfsc   red_check_bits,4,a
     bsf     check,0,a
@@ -1044,6 +1044,26 @@ calibration:
     cpfslt  PREINC0,a	    ;s 4
     bra	    $+4
     movf    INDF0,w,a
+    
+    LFSR    1, 060h
+    movlw   10
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
+    subwf   POSTINC1,f,a
     
     goto    reuse_calibrate
     ;preemptive return
