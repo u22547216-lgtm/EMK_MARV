@@ -246,6 +246,8 @@ end_test:
 		
 start: 	
     
+   
+    
     call calibration
     call make_offset_order
     
@@ -260,7 +262,7 @@ start:
 
 detect_colour:
 ;values used here
-    tolerance		equ 6	; tolerance is 15, need increase for compare
+    tolerance		equ 21	; tolerance is 15, need increase for compare
 ; putting variables here made for this
     ;test stuff
     btfss   live_test,a
@@ -844,6 +846,7 @@ LLI:
     LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
+	    call detect_colour
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
