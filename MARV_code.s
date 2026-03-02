@@ -266,36 +266,6 @@ detect_colour:
     LFSR    0, 200h	
     
     white_check:
-	
-	green_check_bits  equ	0x46
-	;sensor 0
-	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,0,a
-
-
-	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,1,a
-
-	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,2,a
-
-	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,3,a
-
-	movf    green_thresh,w,a
-	cpfslt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,4,a
-
-    
 	red_check_bits  equ	0x45
 	;sensor 0
 	
@@ -326,6 +296,36 @@ detect_colour:
 	bsf	    red_check_bits,4,a
 
 
+	green_check_bits  equ	0x46
+	;sensor 0
+	movf    green_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,0,a
+
+
+	movf    green_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,1,a
+
+	movf    green_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,2,a
+
+	movf    green_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,3,a
+
+	movf    green_thresh,w,a
+	cpfslt  POSTINC0,a
+	bra	    $+4
+	bsf	    green_check_bits,4,a
+
+    
+	
 
 	blue_check_bits  equ	0x47
 	;sensor 0
