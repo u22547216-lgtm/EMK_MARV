@@ -267,6 +267,8 @@ STATE_MACHINE_SETUP:
     BCF show_the_colours,a
     BCF flash_port_d,a
     BCF button_press_check,a
+    
+STATE_MACHINE_START:
 		
 start: 	
     
