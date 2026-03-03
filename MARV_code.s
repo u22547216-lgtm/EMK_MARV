@@ -71,8 +71,8 @@ state_0		equ 0x06
 
 ; sub-routine bits
 subroutine_0	equ 0x07
-#define RGB_delay_call	    subroutine_0,0
-#define delay_333_call	    subroutine_0,1
+#define delay_333_call	    subroutine_0,0  ;166ms
+#define RGB_delay_call	    subroutine_0,1  ;1.2ms
 	
 #define read_sensors_call   subroutine_0,2
 #define check_colour	    subroutine_0,3
@@ -255,35 +255,139 @@ STATE_MACHINE_SETUP:
     CLRF    state_0,a
     CLRF    subroutine_0,a
     
-    ; State and Subroutine decicions
-    BCF calibrate,a
-    BCF follow_line,a
-    BCF code_tests,a
-    BCF hardware_tests,a
-    BCF RGB_delay_call,a
-    BCF delay_333_call,a
-    BCF read_sensors_call,a
-    BCF check_colour,a
-    BCF show_the_colours,a
-    BCF flash_port_d,a
-    BCF button_press_check,a
+    ; State activation bits
+    BSF calibrate,a
+    BSF follow_line,a
+    ; BSF code_tests,a
+    ; BSF hardware_tests,a
+    
+    ; Subroutine activation bits
+    BSF delay_333_call,a
+    BSF RGB_delay_call,a
+    BSF read_sensors_call,a
+    BSF check_colour,a
+    BSF show_the_colours,a
+    BSF flash_port_d,a
+    BSF button_press_check,a
     
 STATE_MACHINE_START:
 		
-start: 	
+STATE0:
+    BTFSS   calibrate,a
+    GOTO    STATE1
     
-    call calibration
+;   state 0 code
     
-    the_forever_loop:
-	call detect_colour
-	call show_colour
-	;call	wait_for_button_press
-	call LLI
-	goto the_forever_loop
+TRANSITION0:
+    BCF	    calibrate,a
+    BSF	    follow_line,a
     
+    		
+STATE1:
+    BTFSS   follow_line,a
+    GOTO    STATE2
     
-    goto start
+;   state 1 code
+    
+TRANSITION1:
+    BSF	    follow_line,a   ;LOOP OVER LLI
 
+		
+STATE2:
+    BTFSS   code_tests,a
+    GOTO    STATE3
+    
+;   state 2 code
+    
+TRANSITION2:
+    BCF	    code_tests,a
+    
+    		
+STATE3:
+    BTFSS   hardware_tests,a
+    GOTO    SUBROUTINE0
+    
+;   state 2 code
+    
+TRANSITION3:
+    BCF	    hardware_tests,a 
+    
+;==========SUBROUTINES=======================
+    
+SUBROUTINE0:
+    BTFSS   delay_333_call,a
+    GOTO    SUBROUTINE1
+    
+;   subroutine 0 code
+    
+SUB_TRANSITIONS0:
+    BCF	    delay_333_call,a
+    
+        
+SUBROUTINE1:
+    BTFSS   RGB_delay_call,a
+    GOTO    SUBROUTINE2
+    
+;   subroutine 1 code
+    
+SUB_TRANSITIONS1:
+    BCF	    RGB_delay_call,a
+    
+        
+SUBROUTINE2:
+    BTFSS   read_sensors_call,a
+    GOTO    SUBROUTINE3
+    
+;   subroutine 2 code
+    
+SUB_TRANSITIONS2:
+    BCF	    read_sensors_call,a
+    
+        
+SUBROUTINE3:
+    BTFSS   check_colour,a
+    GOTO    SUBROUTINE4
+    
+;   subroutine 3 code
+    
+SUB_TRANSITIONS3:
+    BCF	    check_colour,a
+        
+    
+SUBROUTINE4:
+    BTFSS   show_the_colours,a
+    GOTO    SUBROUTINE5
+    
+;   subroutine 4 code
+    
+SUB_TRANSITIONS4:
+    BCF	    show_the_colours,a
+        
+    
+SUBROUTINE5:
+    BTFSS   flash_port_d,a
+    GOTO    SUBROUTINE6
+    
+;   subroutine 5 code
+    
+SUB_TRANSITIONS5:
+    BCF	    flash_port_d,a
+        
+    
+SUBROUTINE6:
+    BTFSS   button_press_check,a
+    GOTO    STATE_MACHINE_END
+    
+;   subroutine 6 code
+    
+SUB_TRANSITIONS6:
+    BCF	    button_press_check,a
+    
+    
+    
+STATE_MACHINE_END:
+    
+GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
 detect_colour:
     clrf    SENSOR0,a
