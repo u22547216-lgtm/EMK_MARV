@@ -256,21 +256,21 @@ STATE_MACHINE_SETUP:
     CLRF    subroutine_0,a
     
     ; State activation bits
-    BSF calibrate,a
-    BSF follow_line,a
+    ;BSF calibrate,a
+    ;BSF follow_line,a
     
 	; tests
     ; BSF code_tests,a
     ; BSF hardware_tests,a
     
     ; Subroutine activation bits
-    BSF delay_333_call,a
-    BSF RGB_delay_call,a
-    BSF read_sensors_call,a
-    BSF check_colour,a
-    BSF show_the_colours,a
-    BSF flash_port_d,a
-    BSF button_press_check,a
+    ;BSF delay_333_call,a
+    ;BSF RGB_delay_call,a
+    ;BSF read_sensors_call,a
+    ;BSF check_colour,a
+    ;BSF show_the_colours,a
+    ;BSF flash_port_d,a
+    ;BSF button_press_check,a
     
 STATE_MACHINE_START:
 		
