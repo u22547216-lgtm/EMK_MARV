@@ -730,10 +730,10 @@ SUBROUTINE0:
 	goto delay_outside
 
 	movf    extra,w,a
+	return
     
 SUB_TRANSITIONS0:
     BCF	    delay_333_call,a
-	return
     
         
 SUBROUTINE1:
@@ -751,10 +751,10 @@ SUBROUTINE1:
 	nop			    ;1	    6
 	goto    delay_rgb_inner ;2	    8
     delay_rgb_end:
+	return
     
 SUB_TRANSITIONS1:
     BCF	    RGB_delay_call,a
-	return
     
         
 SUBROUTINE2:
@@ -813,7 +813,6 @@ SUBROUTINE2:
 	call    read_all_sensors
 	bcf	    blue_pin,a
 
-    BCF	    read_sensors_call,a
 	return
 
 	read_all_sensors:
@@ -1311,7 +1310,6 @@ SUBROUTINE3:
 	    bra	$+4
 	    bra	$+6
 	    call    run_detection_checks
-    BCF	    check_colour,a
 	return
 	    run_detection_checks:
 		movlw   0
@@ -1349,6 +1347,7 @@ SUBROUTINE3:
 
     
 SUB_TRANSITIONS3:
+    BCF	    check_colour,a
         
     
 SUBROUTINE4:
@@ -1389,11 +1388,11 @@ SUBROUTINE4:
 	cpfseq	extra,a
 	bra	$+4
 	bsf	blue_indicator,a
+	return
 
     
 SUB_TRANSITIONS4:
     BCF	    show_the_colours,a
-	return
         
     
 SUBROUTINE5:
@@ -1410,10 +1409,10 @@ SUBROUTINE5:
 	call    delay_333
 	decfsz  count,a
 	bra	    $-14
+	return
     
 SUB_TRANSITIONS5:
     BCF	    flash_port_d,a
-	return
         
     
 SUBROUTINE6:
@@ -1425,10 +1424,10 @@ SUBROUTINE6:
 	bra	    $-2
 	call    delay_333
 	bcf	    INT0IF
+	return
     
 SUB_TRANSITIONS6:
     BCF	    button_press_check,a
-	return
     
     
 STATE_MACHINE_END:
