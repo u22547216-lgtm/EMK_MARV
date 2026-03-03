@@ -86,29 +86,9 @@ calibrated_color    equ 0x0E
 offset_stuff	equ 0x0F
 reading_count	equ 0x10
 count		equ 0x11
-err		equ 0x12
 ;   dont use address 0x13, strange things afoot
-offset_starts	equ 014h
-offset1		equ 0x14
-offset2		equ 0x15
-offset3		equ 0x16
-offset4		equ 0x17
-offset5		equ 0x18
 extra		equ 0x19
-SxXX		equ 0x1A
-#define red_check	SxXX, 0
-#define green_check	SxXX, 1
-#define blue_check	SxXX, 2
-		
-sensor_offset	equ 0x1B
-colour_offset	equ 0x1C
-sensor_num	equ 0x1D
-	
-	
-count_1_H	equ 0x30
-count_1_L	equ 0x31
-count_2		equ 0x32
-count_3		equ 0x33
+
 
 SENSOR_START	equ 059h
 SENSOR0        EQU 0x59
@@ -274,7 +254,6 @@ end_test:
 start: 	
     
     call calibration
-    call make_offset_order
     
     the_forever_loop:
 	call detect_colour
@@ -717,49 +696,6 @@ run_detection_checks:
     
     return
     
-store_colour:
-    ; move to right sensor colour register
-    movf    sensor_num,w,a
-    addwf   FSR2L,f,a
-    
-    movlw   75
-    cpfseq  colour_offset,a
-    bra	    $+8
-    movlw   'U'
-    movwf   INDF2,a
-    return
-    
-    movlw   offsetW
-    cpfseq  colour_offset,a
-    bra	    $+8
-    movlw   'W'
-    movwf   INDF2,a
-    return
-    
-    movlw   offsetK
-    cpfseq  colour_offset,a
-    bra	    $+8
-    movlw   'K'
-    movwf   INDF2,a
-    return
-    
-    movlw   offsetR
-    cpfseq  colour_offset,a
-    bra	    $+8
-    movlw   'R'
-    movwf   INDF2,a
-    return
-    
-    movlw   offsetG
-    cpfseq  colour_offset,a
-    bra	    $+8
-    movlw   'G'
-    movwf   INDF2,a
-    return
-    
-    movlw   'B'
-    movwf   INDF2,a
-    return
     
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
@@ -1609,7 +1545,6 @@ dummy_calibration_values:
 dummy_calibration:
     movlw   'R'
     movwf   calibrated_color,a
-    call    make_offset_order
     return
     
 fake_read_sensors:
