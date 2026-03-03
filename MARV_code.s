@@ -61,6 +61,15 @@ test_1		equ 0x03
 
 line_reg	equ 0x04
 number_of_readings	    equ 0x05
+	    
+; state machine bits
+state_0		equ 0x06
+#define calibrate	state_0,0
+#define checck_colour	state_0,1
+#define follow_line	state_0,2
+#define extra_state	state_0,3
+	    
+	    
 calibrated_color    equ 0x0E	
 offset_stuff	equ 0x0F
 reading_count	equ 0x10
