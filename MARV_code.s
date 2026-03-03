@@ -65,9 +65,21 @@ number_of_readings	    equ 0x05
 ; state machine bits
 state_0		equ 0x06
 #define calibrate	state_0,0
-#define checck_colour	state_0,1
-#define follow_line	state_0,2
-#define extra_state	state_0,3
+#define follow_line	state_0,1
+#define code_tests	state_0,2
+#define hardware_tests	state_0,3
+
+; sub-routine bits
+subroutine_0	equ 0x07
+#define RGB_delay_call	    subroutine_0,0
+#define delay_333_call	    subroutine_0,1
+	
+#define read_sensors_call   subroutine_0,2
+#define check_colour	    subroutine_0,3
+	
+#define show_the_colours    subroutine_0,4
+#define	flash_port_d	    subroutine_0,5
+#define button_press_check  subroutine_0,6
 	    
 	    
 calibrated_color    equ 0x0E	
