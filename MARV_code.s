@@ -250,6 +250,23 @@ init:
     goto    test
 end_test:
     bcf	    test_en, a
+    .
+STATE_MACHINE_SETUP:
+    CLRF    state_0,a
+    CLRF    subroutine_0,a
+    
+    ; State and Subroutine decicions
+    BCF calibrate,a
+    BCF follow_line,a
+    BCF code_tests,a
+    BCF hardware_tests,a
+    BCF RGB_delay_call,a
+    BCF delay_333_call,a
+    BCF read_sensors_call,a
+    BCF check_colour,a
+    BCF show_the_colours,a
+    BCF flash_port_d,a
+    BCF button_press_check,a
 		
 start: 	
     
