@@ -266,34 +266,7 @@ start:
     
     the_forever_loop:
 	call detect_colour
-	movf	SENSOR0,w,a
-	andwf	SENSOR1,w,a
-	andwf	SENSOR2,w,a
-	andwf	SENSOR3,w,a
-	andwf	SENSOR4,w,a
-	
-	clrf	PORTD,a
-	movwf	extra,a
-	movlw	'W'
-	cpfseq	extra,a
-	bra	$+4
-	bsf	white_indicator,a
-	movlw	'K'
-	cpfseq	extra,a
-	bra	$+4
-	bsf	black_indicator,a
-	movlw	'R'
-	cpfseq	extra,a
-	bra	$+4
-	bsf	red_indicator,a
-	movlw	'G'
-	cpfseq	extra,a
-	bra	$+4
-	bsf	green_indicator,a
-	movlw	'B'
-	cpfseq	extra,a
-	bra	$+4
-	bsf	blue_indicator,a
+	call show_colour
 	;call	wait_for_button_press
 	call LLI
 	goto the_forever_loop
@@ -782,6 +755,41 @@ register_dump:
     retfie			            ;return from interrupt
     
 show_colour:
+    movf	SENSOR0,w,a
+    andwf	SENSOR1,w,a
+    andwf	SENSOR2,w,a
+    andwf	SENSOR3,w,a
+    andwf	SENSOR4,w,a
+
+    clrf	PORTD,a
+    
+    movwf	extra,a
+    movlw	'W'
+    cpfseq	extra,a
+    bra	$+4
+    bsf	white_indicator,a
+    
+    movlw	'K'
+    cpfseq	extra,a
+    bra	$+4
+    bsf	black_indicator,a
+    
+    movlw	'R'
+    cpfseq	extra,a
+    bra	$+4
+    bsf	red_indicator,a
+    
+    movlw	'G'
+    cpfseq	extra,a
+    bra	$+4
+    bsf	green_indicator,a
+    
+    movlw	'B'
+    cpfseq	extra,a
+    bra	$+4
+    bsf	blue_indicator,a
+    
+    return
     
 read_sensors:
 ; setup for indirect adressing
