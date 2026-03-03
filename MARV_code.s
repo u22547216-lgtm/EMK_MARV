@@ -250,7 +250,7 @@ init:
     goto    test
 end_test:
     bcf	    test_en, a
-    .
+    
 STATE_MACHINE_SETUP:
     CLRF    state_0,a
     CLRF    subroutine_0,a
@@ -258,6 +258,8 @@ STATE_MACHINE_SETUP:
     ; State activation bits
     BSF calibrate,a
     BSF follow_line,a
+    
+	; tests
     ; BSF code_tests,a
     ; BSF hardware_tests,a
     
@@ -276,7 +278,295 @@ STATE0:
     BTFSS   calibrate,a
     GOTO    STATE1
     
-;   state 0 code
+    calibration:
+	;desperate times
+	LFSR    0, 100h
+	movlw   1
+	movwf   number_of_readings,a
+	bsf	    red_indicator,a
+
+	call    wait_for_button_press
+	call    read_sensors
+
+	red_thresh	    equ	0x40
+
+	lfsr    0, 100h
+	movf    INDF0,w,a    ;sensor 0
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	MOVWF   red_thresh,a
+	movlw   10
+	subwf   red_thresh,f,a
+
+	;green
+	lfsr    0, 100h
+	bcf	    red_indicator,a
+	bsf	    green_indicator,a
+
+	call    wait_for_button_press
+	call    read_sensors
+
+	green_thresh	    equ	0x41
+
+	lfsr    0, 105h
+	movf    INDF0,w,a    ;sensor 0
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	MOVWF green_thresh,a
+	movlw   10
+	subwf   green_thresh,f,a
+
+	;blue
+	lfsr    0, 100h
+	bcf	    green_indicator,a
+	bsf	    blue_indicator,a
+
+	call    wait_for_button_press
+	call    read_sensors
+
+	blue_thresh	    equ	0x42
+
+	lfsr    0, 10Ah
+	movf    INDF0,w,a    ;sensor 0
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	MOVWF blue_thresh,a
+	movlw   10
+	subwf   blue_thresh,f,a
+
+	;black
+	lfsr    0, 100h
+	bcf	    blue_indicator,a
+	bsf	    black_indicator,a
+
+	call    wait_for_button_press
+	call    read_sensors
+
+	black_thresh    equ 0x43
+
+	lfsr    0, 100h
+	movf    INDF0,w,a    ;sensor 0
+
+
+	cpfsgt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 0
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 0
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfsgt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	movwf   black_thresh,a
+	movlw   10
+	subwf   black_thresh,f,a
+	;white
+	lfsr    0, 100h
+	bcf	    black_indicator,a
+	bsf	    white_indicator,a
+
+	call    wait_for_button_press
+	call    read_sensors
+
+	white_thresh    equ 0x44
+
+	lfsr    0, 100h
+	movf    INDF0,w,a    ;sensor 0
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 0
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 0
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 1
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 2
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 3
+	bra	    $+4
+	movf    INDF0,w,a
+
+	cpfslt  PREINC0,a	    ;s 4
+	bra	    $+4
+	movf    INDF0,w,a
+
+	movwf   white_thresh,a
+	movlw   10
+	subwf   white_thresh,f,a
+
+	setf    PORTD,a
+	call    wait_for_button_press
+
+	call    detect_colour
+
+    ; calibrated colour
+	movff   SENSOR2,RACE_COLOUR
+	clrf    PORTD,a
+
+	movlw   'R'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+8
+	bsf	    red_indicator,a
+	goto    display_race_colour
+
+	movlw   'G'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+8
+	bsf	    green_indicator,a
+	goto    display_race_colour
+
+	movlw   'B'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+8
+	bsf	    blue_indicator,a
+	goto    display_race_colour
+
+	movlw   'K'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+8
+	bsf	    black_indicator,a
+	goto    display_race_colour
+
+	bsf	    white_indicator,a
+
+	display_race_colour:
+
+	call flash
+	call wait_for_button_press
+
+	return
+    
     
 TRANSITION0:
     BCF	    calibrate,a
@@ -287,1025 +577,18 @@ STATE1:
     BTFSS   follow_line,a
     GOTO    STATE2
     
-;   state 1 code
-    
-TRANSITION1:
-    BSF	    follow_line,a   ;LOOP OVER LLI
+    LLI:
+	nop	;this is just here to see it in the navigator
+    ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
-		
-STATE2:
-    BTFSS   code_tests,a
-    GOTO    STATE3
-    
-;   state 2 code
-    
-TRANSITION2:
-    BCF	    code_tests,a
-    
-    		
-STATE3:
-    BTFSS   hardware_tests,a
-    GOTO    SUBROUTINE0
-    
-;   state 2 code
-    
-TRANSITION3:
-    BCF	    hardware_tests,a 
-    
-;==========SUBROUTINES=======================
-    
-SUBROUTINE0:
-    BTFSS   delay_333_call,a
-    GOTO    SUBROUTINE1
-    
-;   subroutine 0 code
-    
-SUB_TRANSITIONS0:
-    BCF	    delay_333_call,a
-    
-        
-SUBROUTINE1:
-    BTFSS   RGB_delay_call,a
-    GOTO    SUBROUTINE2
-    
-;   subroutine 1 code
-    
-SUB_TRANSITIONS1:
-    BCF	    RGB_delay_call,a
-    
-        
-SUBROUTINE2:
-    BTFSS   read_sensors_call,a
-    GOTO    SUBROUTINE3
-    
-;   subroutine 2 code
-    
-SUB_TRANSITIONS2:
-    BCF	    read_sensors_call,a
-    
-        
-SUBROUTINE3:
-    BTFSS   check_colour,a
-    GOTO    SUBROUTINE4
-    
-;   subroutine 3 code
-    
-SUB_TRANSITIONS3:
-    BCF	    check_colour,a
-        
-    
-SUBROUTINE4:
-    BTFSS   show_the_colours,a
-    GOTO    SUBROUTINE5
-    
-;   subroutine 4 code
-    
-SUB_TRANSITIONS4:
-    BCF	    show_the_colours,a
-        
-    
-SUBROUTINE5:
-    BTFSS   flash_port_d,a
-    GOTO    SUBROUTINE6
-    
-;   subroutine 5 code
-    
-SUB_TRANSITIONS5:
-    BCF	    flash_port_d,a
-        
-    
-SUBROUTINE6:
-    BTFSS   button_press_check,a
-    GOTO    STATE_MACHINE_END
-    
-;   subroutine 6 code
-    
-SUB_TRANSITIONS6:
-    BCF	    button_press_check,a
-    
-    
-    
-STATE_MACHINE_END:
-    
-GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
-
-detect_colour:
-    clrf    SENSOR0,a
-    clrf    SENSOR1,a
-    clrf    SENSOR2,a
-    clrf    SENSOR3,a
-    clrf    SENSOR4,a
-    ; desperate times
-    LFSR    0, 200h	
-    call read_sensors
-    
-    LFSR    0, 200h	
-    
-    white_check:
-	red_check_bits  equ	0x45
-	;sensor 0
-	clrf	red_check_bits,a
-	
-	movf    red_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,0,a
-
-
-	movf    red_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,1,a
-
-	movf    red_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,2,a
-
-	movf    red_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,3,a
-
-	movf    red_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    red_check_bits,4,a
-
-
-	green_check_bits  equ	0x46
-	;sensor 0
-	clrf	green_check_bits,a
-	movf    green_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,0,a
-
-
-	movf    green_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,1,a
-
-	movf    green_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,2,a
-
-	movf    green_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,3,a
-
-	movf    green_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    green_check_bits,4,a
-
-    
-	
-
-	blue_check_bits  equ	0x47
-	;sensor 0
-	clrf	blue_check_bits,a
-	movf    blue_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    blue_check_bits,0,a
-
-	movf    blue_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    blue_check_bits,1,a
-
-	movf    blue_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    blue_check_bits,2,a
-
-	movf    blue_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    blue_check_bits,3,a
-
-	movf    blue_thresh,w,a
-	cpfsgt  POSTINC0,a
-	bra	    $+4
-	bsf	    blue_check_bits,4,a
-
-	;checking colours
-	check	equ 0x48
-	CLRF    check,a
-	;check sensor 0
-	btfsc   red_check_bits,0,a
-	bsf     check,0,a
-	btfsc   green_check_bits,0,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,0,a
-	bsf     check,2,a
-
-	lfsr    1,059h
-	movlw	7
-	cpfseq	check,a
-	bra	$+6
-	movlw	'W'
-	movwf	INDF1,a
-
-	CLRF    check,a
-	;check sensor 1
-	btfsc   red_check_bits,1,a
-	bsf     check,0,a
-	btfsc   green_check_bits,1,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,1,a
-	bsf     check,2,a
-
-	lfsr    1,05Ah
-	movlw	7
-	cpfseq	check,a
-	bra	$+6
-	movlw	'W'
-	movwf	INDF1,a
-
-	CLRF    check,a
-	;check sensor 2
-	btfsc   red_check_bits,2,a
-	bsf     check,0,a
-	btfsc   green_check_bits,2,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,2,a
-	bsf     check,2,a
-
-	lfsr    1,05Bh
-	movlw	7
-	cpfseq	check,a
-	bra	$+6
-	movlw	'W'
-	movwf	INDF1,a
-
-	CLRF    check,a
-	;check sensor 3
-	btfsc   red_check_bits,3,a
-	bsf     check,0,a
-	btfsc   green_check_bits,3,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,3,a
-	bsf     check,2,a
-
-	lfsr    1,05Ch
-	movlw	7
-	cpfseq	check,a
-	bra	$+6
-	movlw	'W'
-	movwf	INDF1,a
-
-	CLRF    check,a
-	;check sensor 4
-	btfsc   red_check_bits,4,a
-	bsf     check,0,a
-	btfsc   green_check_bits,4,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,4,a
-	bsf     check,2,a
-
-	lfsr    1,05Dh
-	movlw	7
-	cpfseq	check,a
-	bra	$+6
-	movlw	'W'
-	movwf	INDF1,a
-    
-    check_green:
-	lfsr	1,200h
-	movlw	5
-	;addwf	FSR0,f,a
-	addwf	FSR1,f,a
-	
-    green_check_bits  equ	0x46
-	;sensor 0
-	clrf	green_check_bits,a
-	movf    POSTINC1,w,a
-	cpfslt  green_thresh,a
-	bra	    $+4
-	bsf	    green_check_bits,0,a
-
-
-	movf    POSTINC1,w,a
-	cpfslt  green_thresh,a
-	bra	    $+4
-	bsf	    green_check_bits,1,a
-
-	movf    POSTINC1,w,a
-	cpfslt  green_thresh,a
-	bra	    $+4
-	bsf	    green_check_bits,2,a
-
-	movf    POSTINC1,w,a
-	cpfslt  green_thresh,a
-	bra	    $+4
-	bsf	    green_check_bits,3,a
-
-	movf    POSTINC1,w,a
-	cpfslt  green_thresh,a
-	bra	    $+4
-	bsf	    green_check_bits,4,a
-	
-	red_checks:
-	LFSR    1, 200h	
-	
-    red_check_bits  equ	0x45
-  
-	clrf	red_check_bits,a
-	btfsc	green_check_bits,0,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  red_thresh,a
-	bra	    $+4
-	bsf	    red_check_bits,0,a
-	
-	btfsc	green_check_bits,1,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  red_thresh,a
-	bra	    $+4
-	bsf	    red_check_bits,1,a
-	
-	btfsc	green_check_bits,2,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  red_thresh,a
-	bra	    $+4
-	bsf	    red_check_bits,2,a
-	
-	btfsc	green_check_bits,3,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  red_thresh,a
-	bra	    $+4
-	bsf	    red_check_bits,3,a
-	
-	btfsc	green_check_bits,4,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  red_thresh,a
-	bra	    $+4
-	bsf	    red_check_bits,4,a
-	
-	check_blue:
-	
-	LFSR    1, 200h	
-	movlw	10
-	addwf	FSR1,f,a
-	
-    blue_check_bits  equ	0x47
-  
-	clrf	blue_check_bits,a
-	btfss	red_check_bits,0,a
-	btfsc	green_check_bits,0,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  blue_thresh,a
-	bra	    $+4
-	bsf	    blue_check_bits,0,a
-	
-	btfss	red_check_bits,1,a
-	btfsc	green_check_bits,1,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  blue_thresh,a
-	bra	    $+4
-	bsf	    blue_check_bits,1,a
-	
-	btfss	red_check_bits,2,a
-	btfsc	green_check_bits,2,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  blue_thresh,a
-	bra	    $+4
-	bsf	    blue_check_bits,2,a
-	
-	btfss	red_check_bits,3,a
-	btfsc	green_check_bits,3,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  blue_thresh,a
-	bra	    $+4
-	bsf	    blue_check_bits,3,a
-	
-	btfss	red_check_bits,4,a
-	btfsc	green_check_bits,4,a
-	bra	$+10
-	movf    POSTINC1,w,a
-	cpfslt  blue_thresh,a
-	bra	    $+4
-	bsf	    blue_check_bits,4,a
-	
-	
-	checking_colours:
-	check	equ 0x48
-	CLRF    check,a
-	;check sensor 0
-	btfsc   red_check_bits,0,a
-	bsf     check,0,a
-	btfsc   green_check_bits,0,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,0,a
-	bsf     check,2,a
-
-	lfsr    1,059h
-	movlw	'W'
-	cpfseq	SENSOR0,a
-	bra	$+4
-	bra	$+6
-	call    run_detection_checks
-
-	CLRF    check,a
-	;check sensor 1
-	btfsc   red_check_bits,1,a
-	bsf     check,0,a
-	btfsc   green_check_bits,1,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,1,a
-	bsf     check,2,a
-
-	lfsr    1,05Ah
-	movlw	'W'
-	cpfseq	SENSOR1,a
-	bra	$+4
-	bra	$+6
-	call    run_detection_checks
-
-	CLRF    check,a
-	;check sensor 2
-	btfsc   red_check_bits,2,a
-	bsf     check,0,a
-	btfsc   green_check_bits,2,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,2,a
-	bsf     check,2,a
-
-	lfsr    1,05Bh
-	movlw	'W'
-	cpfseq	SENSOR2,a
-	bra	$+4
-	bra	$+6
-	call    run_detection_checks
-
-	CLRF    check,a
-	;check sensor 3
-	btfsc   red_check_bits,3,a
-	bsf     check,0,a
-	btfsc   green_check_bits,3,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,3,a
-	bsf     check,2,a
-
-	lfsr    1,05Ch
-	movlw	'W'
-	cpfseq	SENSOR3,a
-	bra	$+4
-	bra	$+6
-	call    run_detection_checks
-
-	CLRF    check,a
-	;check sensor 4
-	btfsc   red_check_bits,4,a
-	bsf     check,0,a
-	btfsc   green_check_bits,4,a
-	bsf     check,1,a
-	btfsc   blue_check_bits,4,a
-	bsf     check,2,a
-
-	lfsr    1,05Dh
-	movlw	'W'
-	cpfseq	SENSOR4,a
-	bra	$+4
-	bra	$+6
-	call    run_detection_checks
-
-    return
-
-run_detection_checks:
-    movlw   0
-    cpfseq  check,a
-    bra	    $+8
-    movlw   'K'
-    movwf   INDF1,a
-    RETURN
-    
-    movlw   1
-    cpfseq  check,a
-    bra	    $+8
-    movlw   'R'
-    movwf   INDF1,a
-    RETURN
-    
-    movlw   2
-    cpfseq  check,a
-    bra	    $+8
-    movlw   'G'
-    movwf   INDF1,a
-    RETURN
-    
-    movlw   4
-    cpfseq  check,a
-    bra	    $+8
-    movlw   'B'
-    movwf   INDF1,a
-    RETURN
-    
-    movlw   'W'
-    movwf   INDF1,a
-    
-    return
-    
-    
-register_dump:
-    movff   line_reg, PORTC     ; put line_reg into PORTC
-    bcf	    INT1IF		; clear interrupt flag
-    retfie			            ;return from interrupt
-    
-show_colour:
-    movf	SENSOR0,w,a
-    andwf	SENSOR1,w,a
-    andwf	SENSOR2,w,a
-    andwf	SENSOR3,w,a
-    andwf	SENSOR4,w,a
-
-    clrf	PORTD,a
-    
-    movwf	extra,a
-    movlw	'W'
-    cpfseq	extra,a
-    bra	$+4
-    bsf	white_indicator,a
-    
-    movlw	'K'
-    cpfseq	extra,a
-    bra	$+4
-    bsf	black_indicator,a
-    
-    movlw	'R'
-    cpfseq	extra,a
-    bra	$+4
-    bsf	red_indicator,a
-    
-    movlw	'G'
-    cpfseq	extra,a
-    bra	$+4
-    bsf	green_indicator,a
-    
-    movlw	'B'
-    cpfseq	extra,a
-    bra	$+4
-    bsf	blue_indicator,a
-    
-    return
-    
-read_sensors:
-; setup for indirect adressing
-    ; you need to use 'LFSR FSR0, XYZh' before calling this 
-    ; X is the bank
-    ; YZ is the starting register
-;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
-    
-; shine red
-    bsf	    red_pin,a
-    call delay_RGB
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_all_sensors
-    bcf	    red_pin,a
-    
-; shine green
-    bsf	    green_pin,a
-    call delay_RGB
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_all_sensors
-    bcf	    green_pin,a
-    
-; shine blue
-    bsf	    blue_pin,a
-    call delay_RGB
-    
-	; testing code, should do nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_all_sensors
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_all_sensors
-    bcf	    blue_pin,a
-    
-    return
-
-read_all_sensors:
-; read from AN0
-    ; ADCON0 = x 00000 1 1
-    movlw   ADC_AN0	; select AN0
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_sensor
-    
-; read from AN1
-    ; ADCON0 = x 00001 1 1
-    movlw   ADC_AN1	; select AN1
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_sensor
-    
-; read from AN2
-    ; ADCON0 = x 00010 1 1
-    movlw   ADC_AN2	; select AN2
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_sensor
-    
-; read from AN3
-    ; ADCON0 = x 00011 1 1
-    movlw   ADC_AN3	; select AN3
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_sensor
-    
-; read from AN4
-    ; ADCON0 = x 00100 1 1
-    movlw   ADC_AN4	; select AN4
-    
-	; testing code, does nothing if test_en = 0
-	    btfss   test_en,a
-	    bra	    $+8
-	    call    dummy_read_sensor
-	    bra	    $+6
-	; end of testing code
-    
-    call    read_sensor
-    
-    return
-    
-read_sensor:
-    movwf   extra,a
-    movff   number_of_readings, delay_outer
-    movff   extra, ADCON0	; begin ADC
-    
-    btfsc   ADCON0,1,a	; check if ADC is done (0)
-    bra	    $-2		; no, check again
-								    ; adc delay is over by this point, Tacq starts 8TAD
-	; testing code, should do nothing if test_en = 0
-	    btfsc   test_en,a
-	    movff   test_1, ADRESH
-	; end of testing code
-								    ; 3TAD is done
-    movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
-				; Increment FSR0
-								    ; 5TAD is done
-    decfsz  delay_outer,a
-								    ; 6TAD is done
-    bra	    $-20						    ;happens on 7TAD
-    bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
-    
-    return
-    
-calibration:
-    ;desperate times
-    LFSR    0, 100h
-    movlw   1
-    movwf   number_of_readings,a
-    bsf	    red_indicator,a
-    
-    call    wait_for_button_press
-    call    read_sensors
-    
-    red_thresh	    equ	0x40
-	    
-    lfsr    0, 100h
-    movf    INDF0,w,a    ;sensor 0
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    MOVWF   red_thresh,a
-    movlw   10
-    subwf   red_thresh,f,a
-    
-    ;green
-    lfsr    0, 100h
-    bcf	    red_indicator,a
-    bsf	    green_indicator,a
-    
-    call    wait_for_button_press
-    call    read_sensors
-    
-    green_thresh	    equ	0x41
-	    
-    lfsr    0, 105h
-    movf    INDF0,w,a    ;sensor 0
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    MOVWF green_thresh,a
-    movlw   10
-    subwf   green_thresh,f,a
-    
-    ;blue
-    lfsr    0, 100h
-    bcf	    green_indicator,a
-    bsf	    blue_indicator,a
-    
-    call    wait_for_button_press
-    call    read_sensors
-    
-    blue_thresh	    equ	0x42
-	    
-    lfsr    0, 10Ah
-    movf    INDF0,w,a    ;sensor 0
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    MOVWF blue_thresh,a
-    movlw   10
-    subwf   blue_thresh,f,a
-    
-    ;black
-    lfsr    0, 100h
-    bcf	    blue_indicator,a
-    bsf	    black_indicator,a
-    
-    call    wait_for_button_press
-    call    read_sensors
-    
-    black_thresh    equ 0x43
-    
-    lfsr    0, 100h
-    movf    INDF0,w,a    ;sensor 0
-    
-    
-    cpfsgt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 0
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 0
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfsgt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    movwf   black_thresh,a
-    movlw   10
-    subwf   black_thresh,f,a
-    ;white
-    lfsr    0, 100h
-    bcf	    black_indicator,a
-    bsf	    white_indicator,a
-    
-    call    wait_for_button_press
-    call    read_sensors
-    
-    white_thresh    equ 0x44
-    
-    lfsr    0, 100h
-    movf    INDF0,w,a    ;sensor 0
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 0
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 0
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 1
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 2
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 3
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    cpfslt  PREINC0,a	    ;s 4
-    bra	    $+4
-    movf    INDF0,w,a
-    
-    movwf   white_thresh,a
-    movlw   10
-    subwf   white_thresh,f,a
-    
-    setf    PORTD,a
-    call    wait_for_button_press
-    
-    call    detect_colour
-    
-; calibrated colour
-    movff   SENSOR2,RACE_COLOUR
-    clrf    PORTD,a
-    
-    movlw   'R'
-    cpfseq  RACE_COLOUR,a
-    bra	    $+8
-    bsf	    red_indicator,a
-    goto    display_race_colour
-    
-    movlw   'G'
-    cpfseq  RACE_COLOUR,a
-    bra	    $+8
-    bsf	    green_indicator,a
-    goto    display_race_colour
-    
-    movlw   'B'
-    cpfseq  RACE_COLOUR,a
-    bra	    $+8
-    bsf	    blue_indicator,a
-    goto    display_race_colour
-    
-    movlw   'K'
-    cpfseq  RACE_COLOUR,a
-    bra	    $+8
-    bsf	    black_indicator,a
-    goto    display_race_colour
-    
-    bsf	    white_indicator,a
-    
-    display_race_colour:
-    
-    call flash
-    call wait_for_button_press
-    
-    return
-    
-    
-LLI:
-    nop	;this is just here to see it in the navigator
-; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
-
-;go straight --> M detects line
-;turn left 	--> LL or ML detects line
-;turn right --> RR or MR detects line
-;if all the sensors detect white STOP (SOS MODE). 
-	;Suggestion: turn 90 degrees to the left and see if the sensors detect the line. If not go back to previous position (-90 degrees)
-				;turn 90 degrees to the right and see if the sensors detect the line.
-				;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
-; if all sensor detect black, STOP (End of maze)
+    ;go straight --> M detects line
+    ;turn left 	--> LL or ML detects line
+    ;turn right --> RR or MR detects line
+    ;if all the sensors detect white STOP (SOS MODE). 
+	    ;Suggestion: turn 90 degrees to the left and see if the sensors detect the line. If not go back to previous position (-90 degrees)
+				    ;turn 90 degrees to the right and see if the sensors detect the line.
+				    ;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
+    ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
 	    call detect_colour
@@ -1333,42 +616,42 @@ LLI:
 	    MOVLW   0b00100000
 	    MOVWF   line_reg,a
 	    RETURN
-    TURN_LEFT_ALOT:
+	TURN_LEFT_ALOT:
 	    MOVLW 0b10000000
 	    MOVWF line_reg,a
 	    RETURN
-    TURN_LEFT_ALITTLE:
+	TURN_LEFT_ALITTLE:
 	    MOVLW 0b01000000
 	    MOVWF line_reg,a
 	    RETURN
-    TURN_RIGHT_ALOT:
+	TURN_RIGHT_ALOT:
 	    MOVLW 0b00001000
 	    MOVWF line_reg,a
 	    RETURN
-    TURN_RIGHT_ALITTLE:
+	TURN_RIGHT_ALITTLE:
 	    MOVLW 0b00010000
 	    MOVWF line_reg,a
 	    RETURN
-    LOST:
+	LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
 	    RETURN
 	    
-    LOST_STOP:
-	    CALL BRAKES
-	    CALL delay_333
-		;call    wait_for_button_press	; this is here for the purposes of the demo
-	    CLRF line_reg,a
-	    RETURN
+	    LOST_STOP:
+		CALL BRAKES
+		CALL delay_333
+		    ;call    wait_for_button_press	; this is here for the purposes of the demo
+		CLRF line_reg,a
+		RETURN
          
-    BRAKES:
+	BRAKES:
 	    MOVLW 0b11111000
 	    MOVWF line_reg,a
 	    RETURN   
 	    
-    CHECK_BLACK:
+	CHECK_BLACK:
 	    MOVLW   'K'
 	    CPFSEQ   SENSOR0,a
 	    BRA	    LOST
@@ -1393,65 +676,783 @@ LLI:
 	    CPFSEQ  BLACK_FLAG,a
 	    RETURN
 	    BRA	    BRAKES
-	   			
+    
+TRANSITION1:
+    BSF	    follow_line,a   ;LOOP OVER LLI
+
+		
+STATE2:
+    BTFSS   code_tests,a
+    GOTO    STATE3
+    
+    TODO_code_tests: ; to-do todo to do
+	nop
+;   state 2 code
+    ; to be added later
+    
+TRANSITION2:
+    BCF	    code_tests,a
+    
+    		
+STATE3:
+    BTFSS   hardware_tests,a
+    GOTO    SUBROUTINE0
+    
+    TODO_hardware_tests: ; to-do todo to do
+    nop
+;   state 2 code
+    ; to be added later
+    
+TRANSITION3:
+    BCF	    hardware_tests,a 
+    
+;==========SUBROUTINES=======================
+    
+TRY_ALL_SUBROUTINES:
+    
+SUBROUTINE0:
+    BTFSS   delay_333_call,a
+    GOTO    SUBROUTINE1
+    
+    delay_333:
+	movwf    extra,a
+    ; 0.166442 seconds of delay
+	movlw   217
+	movwf   delay_outer,a
+    delay_outside:
+	movlw   254
+	movwf   delay_inner,a
+    delay_inside:
+	decfsz  delay_inner,a
+	goto delay_inside
+
+	decfsz  delay_outer,a
+	goto delay_outside
+
+	movf    extra,w,a
+    
+SUB_TRANSITIONS0:
+    BCF	    delay_333_call,a
+	return
+    
+        
+SUBROUTINE1:
+    BTFSS   RGB_delay_call,a
+    GOTO    SUBROUTINE2
+    
+    delay_RGB:  ; 1.2ms = 1200 instruction cycles
+	movlw   151		    ;150 loops  + 1
+	movwf   delay_inner,a
+    delay_rgb_inner:    ; need 8 instruction cycles here
+	dcfsnz  delay_inner,a   ;1	    1
+	goto    delay_rgb_end   ;2	    3
+	nop			    ;1	    4
+	nop			    ;1	    5
+	nop			    ;1	    6
+	goto    delay_rgb_inner ;2	    8
+    delay_rgb_end:
+    
+SUB_TRANSITIONS1:
+    BCF	    RGB_delay_call,a
+	return
+    
+        
+SUBROUTINE2:
+    BTFSS   read_sensors_call,a
+    GOTO    SUBROUTINE3
+    
+    TODO_make_states_with_this: ; to-do todo to do
+    nop
+    
+    read_sensors:
+    ; setup for indirect adressing
+	; you need to use 'LFSR FSR0, XYZh' before calling this 
+	; X is the bank
+	; YZ is the starting register
+    ;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
+
+    ; shine red
+	bsf	    red_pin,a
+	call delay_RGB
+
+	    ; testing code, should do nothing if test_en = 0
+		btfss   test_en,a
+		bra	    $+8
+		call    dummy_read_all_sensors
+		bra	    $+6
+	    ; end of testing code
+
+	call    read_all_sensors
+	bcf	    red_pin,a
+
+    ; shine green
+	bsf	    green_pin,a
+	call delay_RGB
+
+	    ; testing code, should do nothing if test_en = 0
+		btfss   test_en,a
+		bra	    $+8
+		call    dummy_read_all_sensors
+		bra	    $+6
+	    ; end of testing code
+
+	call    read_all_sensors
+	bcf	    green_pin,a
+
+    ; shine blue
+	bsf	    blue_pin,a
+	call delay_RGB
+
+	    ; testing code, should do nothing if test_en = 0
+		btfss   test_en,a
+		bra	    $+8
+		call    dummy_read_all_sensors
+		bra	    $+6
+	    ; end of testing code
+
+	call    read_all_sensors
+	bcf	    blue_pin,a
+
+    BCF	    read_sensors_call,a
+	return
+
+	read_all_sensors:
+	; read from AN0
+	    ; ADCON0 = x 00000 1 1
+	    movlw   ADC_AN0	; select AN0
+
+		; testing code, does nothing if test_en = 0
+		    btfss   test_en,a
+		    bra	    $+8
+		    call    dummy_read_sensor
+		    bra	    $+6
+		; end of testing code
+
+	    call    read_sensor
+
+	; read from AN1
+	    ; ADCON0 = x 00001 1 1
+	    movlw   ADC_AN1	; select AN1
+
+		; testing code, does nothing if test_en = 0
+		    btfss   test_en,a
+		    bra	    $+8
+		    call    dummy_read_sensor
+		    bra	    $+6
+		; end of testing code
+
+	    call    read_sensor
+
+	; read from AN2
+	    ; ADCON0 = x 00010 1 1
+	    movlw   ADC_AN2	; select AN2
+
+		; testing code, does nothing if test_en = 0
+		    btfss   test_en,a
+		    bra	    $+8
+		    call    dummy_read_sensor
+		    bra	    $+6
+		; end of testing code
+
+	    call    read_sensor
+
+	; read from AN3
+	    ; ADCON0 = x 00011 1 1
+	    movlw   ADC_AN3	; select AN3
+
+		; testing code, does nothing if test_en = 0
+		    btfss   test_en,a
+		    bra	    $+8
+		    call    dummy_read_sensor
+		    bra	    $+6
+		; end of testing code
+
+	    call    read_sensor
+
+	; read from AN4
+	    ; ADCON0 = x 00100 1 1
+	    movlw   ADC_AN4	; select AN4
+
+		; testing code, does nothing if test_en = 0
+		    btfss   test_en,a
+		    bra	    $+8
+		    call    dummy_read_sensor
+		    bra	    $+6
+		; end of testing code
+
+	    call    read_sensor
+
+	    return
+
+	    read_sensor:
+		movwf   extra,a
+		movff   number_of_readings, delay_outer
+		movff   extra, ADCON0	; begin ADC
+
+		btfsc   ADCON0,1,a	; check if ADC is done (0)
+		bra	    $-2		; no, check again
+										; adc delay is over by this point, Tacq starts 8TAD
+		    ; testing code, should do nothing if test_en = 0
+			btfsc   test_en,a
+			movff   test_1, ADRESH
+		    ; end of testing code
+										; 3TAD is done
+		movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
+					    ; Increment FSR0
+										; 5TAD is done
+		decfsz  delay_outer,a
+										; 6TAD is done
+		bra	    $-20						    ;happens on 7TAD
+		bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
+
+		return
+    
+SUB_TRANSITIONS2:
+    BCF	    read_sensors_call,a
+    
+        
+SUBROUTINE3:
+    BTFSS   check_colour,a
+    GOTO    SUBROUTINE4
+    
+    TODO_make_this_work_with_states_1:  ; to-do todo to do
+    nop
+    
+    detect_colour:
+	clrf    SENSOR0,a
+	clrf    SENSOR1,a
+	clrf    SENSOR2,a
+	clrf    SENSOR3,a
+	clrf    SENSOR4,a
+	; desperate times
+	LFSR    0, 200h	
+	call read_sensors
+
+	LFSR    0, 200h	
+
+	white_check:
+	    red_check_bits  equ	0x45
+	    ;sensor 0
+	    clrf	red_check_bits,a
+
+	    movf    red_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    red_check_bits,0,a
+
+
+	    movf    red_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    red_check_bits,1,a
+
+	    movf    red_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    red_check_bits,2,a
+
+	    movf    red_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    red_check_bits,3,a
+
+	    movf    red_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    red_check_bits,4,a
+
+
+	    green_check_bits  equ	0x46
+	    ;sensor 0
+	    clrf	green_check_bits,a
+	    movf    green_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    green_check_bits,0,a
+
+
+	    movf    green_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    green_check_bits,1,a
+
+	    movf    green_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    green_check_bits,2,a
+
+	    movf    green_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    green_check_bits,3,a
+
+	    movf    green_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    green_check_bits,4,a
 
 
 
-flash:
-    movlw   3
-    movwf   count,a
-    movf    PORTD,w,a
-    clrf    PORTD,a
-    call    delay_333
-    movwf   PORTD,a
-    call    delay_333
-    decfsz  count,a
-    bra	    $-14
-    return
 
-wait_for_button_press:
-    btfss   INT0IF	    ;wait for button press
-    bra	    $-2
-    call    delay_333
-    bcf	    INT0IF
-    return
+	    blue_check_bits  equ	0x47
+	    ;sensor 0
+	    clrf	blue_check_bits,a
+	    movf    blue_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,0,a
+
+	    movf    blue_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,1,a
+
+	    movf    blue_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,2,a
+
+	    movf    blue_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,3,a
+
+	    movf    blue_thresh,w,a
+	    cpfsgt  POSTINC0,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,4,a
+
+	    ;checking colours
+	    check	equ 0x48
+	    CLRF    check,a
+	    ;check sensor 0
+	    btfsc   red_check_bits,0,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,0,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,0,a
+	    bsf     check,2,a
+
+	    lfsr    1,059h
+	    movlw	7
+	    cpfseq	check,a
+	    bra	$+6
+	    movlw	'W'
+	    movwf	INDF1,a
+
+	    CLRF    check,a
+	    ;check sensor 1
+	    btfsc   red_check_bits,1,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,1,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,1,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Ah
+	    movlw	7
+	    cpfseq	check,a
+	    bra	$+6
+	    movlw	'W'
+	    movwf	INDF1,a
+
+	    CLRF    check,a
+	    ;check sensor 2
+	    btfsc   red_check_bits,2,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,2,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,2,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Bh
+	    movlw	7
+	    cpfseq	check,a
+	    bra	$+6
+	    movlw	'W'
+	    movwf	INDF1,a
+
+	    CLRF    check,a
+	    ;check sensor 3
+	    btfsc   red_check_bits,3,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,3,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,3,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Ch
+	    movlw	7
+	    cpfseq	check,a
+	    bra	$+6
+	    movlw	'W'
+	    movwf	INDF1,a
+
+	    CLRF    check,a
+	    ;check sensor 4
+	    btfsc   red_check_bits,4,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,4,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,4,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Dh
+	    movlw	7
+	    cpfseq	check,a
+	    bra	$+6
+	    movlw	'W'
+	    movwf	INDF1,a
+
+	check_green:
+	    lfsr	1,200h
+	    movlw	5
+	    ;addwf	FSR0,f,a
+	    addwf	FSR1,f,a
+
+	green_check_bits  equ	0x46
+	    ;sensor 0
+	    clrf	green_check_bits,a
+	    movf    POSTINC1,w,a
+	    cpfslt  green_thresh,a
+	    bra	    $+4
+	    bsf	    green_check_bits,0,a
+
+
+	    movf    POSTINC1,w,a
+	    cpfslt  green_thresh,a
+	    bra	    $+4
+	    bsf	    green_check_bits,1,a
+
+	    movf    POSTINC1,w,a
+	    cpfslt  green_thresh,a
+	    bra	    $+4
+	    bsf	    green_check_bits,2,a
+
+	    movf    POSTINC1,w,a
+	    cpfslt  green_thresh,a
+	    bra	    $+4
+	    bsf	    green_check_bits,3,a
+
+	    movf    POSTINC1,w,a
+	    cpfslt  green_thresh,a
+	    bra	    $+4
+	    bsf	    green_check_bits,4,a
+
+	    red_checks:
+	    LFSR    1, 200h	
+
+	red_check_bits  equ	0x45
+
+	    clrf	red_check_bits,a
+	    btfsc	green_check_bits,0,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  red_thresh,a
+	    bra	    $+4
+	    bsf	    red_check_bits,0,a
+
+	    btfsc	green_check_bits,1,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  red_thresh,a
+	    bra	    $+4
+	    bsf	    red_check_bits,1,a
+
+	    btfsc	green_check_bits,2,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  red_thresh,a
+	    bra	    $+4
+	    bsf	    red_check_bits,2,a
+
+	    btfsc	green_check_bits,3,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  red_thresh,a
+	    bra	    $+4
+	    bsf	    red_check_bits,3,a
+
+	    btfsc	green_check_bits,4,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  red_thresh,a
+	    bra	    $+4
+	    bsf	    red_check_bits,4,a
+
+	    check_blue:
+
+	    LFSR    1, 200h	
+	    movlw	10
+	    addwf	FSR1,f,a
+
+	blue_check_bits  equ	0x47
+
+	    clrf	blue_check_bits,a
+	    btfss	red_check_bits,0,a
+	    btfsc	green_check_bits,0,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  blue_thresh,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,0,a
+
+	    btfss	red_check_bits,1,a
+	    btfsc	green_check_bits,1,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  blue_thresh,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,1,a
+
+	    btfss	red_check_bits,2,a
+	    btfsc	green_check_bits,2,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  blue_thresh,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,2,a
+
+	    btfss	red_check_bits,3,a
+	    btfsc	green_check_bits,3,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  blue_thresh,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,3,a
+
+	    btfss	red_check_bits,4,a
+	    btfsc	green_check_bits,4,a
+	    bra	$+10
+	    movf    POSTINC1,w,a
+	    cpfslt  blue_thresh,a
+	    bra	    $+4
+	    bsf	    blue_check_bits,4,a
+
+
+	    checking_colours:
+	    check	equ 0x48
+	    CLRF    check,a
+	    ;check sensor 0
+	    btfsc   red_check_bits,0,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,0,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,0,a
+	    bsf     check,2,a
+
+	    lfsr    1,059h
+	    movlw	'W'
+	    cpfseq	SENSOR0,a
+	    bra	$+4
+	    bra	$+6
+	    call    run_detection_checks
+
+	    CLRF    check,a
+	    ;check sensor 1
+	    btfsc   red_check_bits,1,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,1,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,1,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Ah
+	    movlw	'W'
+	    cpfseq	SENSOR1,a
+	    bra	$+4
+	    bra	$+6
+	    call    run_detection_checks
+
+	    CLRF    check,a
+	    ;check sensor 2
+	    btfsc   red_check_bits,2,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,2,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,2,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Bh
+	    movlw	'W'
+	    cpfseq	SENSOR2,a
+	    bra	$+4
+	    bra	$+6
+	    call    run_detection_checks
+
+	    CLRF    check,a
+	    ;check sensor 3
+	    btfsc   red_check_bits,3,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,3,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,3,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Ch
+	    movlw	'W'
+	    cpfseq	SENSOR3,a
+	    bra	$+4
+	    bra	$+6
+	    call    run_detection_checks
+
+	    CLRF    check,a
+	    ;check sensor 4
+	    btfsc   red_check_bits,4,a
+	    bsf     check,0,a
+	    btfsc   green_check_bits,4,a
+	    bsf     check,1,a
+	    btfsc   blue_check_bits,4,a
+	    bsf     check,2,a
+
+	    lfsr    1,05Dh
+	    movlw	'W'
+	    cpfseq	SENSOR4,a
+	    bra	$+4
+	    bra	$+6
+	    call    run_detection_checks
+    BCF	    check_colour,a
+	return
+	    run_detection_checks:
+		movlw   0
+		cpfseq  check,a
+		bra	    $+8
+		movlw   'K'
+		movwf   INDF1,a
+		RETURN
+
+		movlw   1
+		cpfseq  check,a
+		bra	    $+8
+		movlw   'R'
+		movwf   INDF1,a
+		RETURN
+
+		movlw   2
+		cpfseq  check,a
+		bra	    $+8
+		movlw   'G'
+		movwf   INDF1,a
+		RETURN
+
+		movlw   4
+		cpfseq  check,a
+		bra	    $+8
+		movlw   'B'
+		movwf   INDF1,a
+		RETURN
+
+		movlw   'W'
+		movwf   INDF1,a
+
+		return
+
     
-delay_333:
-    movwf    extra,a
-; 0.166442 seconds of delay
-    movlw   217
-    movwf   delay_outer,a
-delay_outside:
-    movlw   254
-    movwf   delay_inner,a
-delay_inside:
-    decfsz  delay_inner,a
-    goto delay_inside
+SUB_TRANSITIONS3:
+        
     
-    decfsz  delay_outer,a
-    goto delay_outside
+SUBROUTINE4:
+    BTFSS   show_the_colours,a
+    GOTO    SUBROUTINE5
     
-    movf    extra,w,a
-    return
+    show_colour:
+	movf	SENSOR0,w,a
+	andwf	SENSOR1,w,a
+	andwf	SENSOR2,w,a
+	andwf	SENSOR3,w,a
+	andwf	SENSOR4,w,a
+
+	clrf	PORTD,a
+
+	movwf	extra,a
+	movlw	'W'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	white_indicator,a
+
+	movlw	'K'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	black_indicator,a
+
+	movlw	'R'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	red_indicator,a
+
+	movlw	'G'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	green_indicator,a
+
+	movlw	'B'
+	cpfseq	extra,a
+	bra	$+4
+	bsf	blue_indicator,a
+
     
-delay_RGB:  ; 1.2ms = 1200 instruction cycles
-    movlw   151		    ;150 loops  + 1
-    movwf   delay_inner,a
-delay_rgb_inner:    ; need 8 instruction cycles here
-    dcfsnz  delay_inner,a   ;1	    1
-    goto    delay_rgb_end   ;2	    3
-    nop			    ;1	    4
-    nop			    ;1	    5
-    nop			    ;1	    6
-    goto    delay_rgb_inner ;2	    8
-delay_rgb_end:
-    return
+SUB_TRANSITIONS4:
+    BCF	    show_the_colours,a
+	return
+        
     
-ISR:
+SUBROUTINE5:
+    BTFSS   flash_port_d,a
+    GOTO    SUBROUTINE6
+    
+    flash:
+	movlw   3
+	movwf   count,a
+	movf    PORTD,w,a
+	clrf    PORTD,a
+	call    delay_333
+	movwf   PORTD,a
+	call    delay_333
+	decfsz  count,a
+	bra	    $-14
+    
+SUB_TRANSITIONS5:
+    BCF	    flash_port_d,a
+	return
+        
+    
+SUBROUTINE6:
+    BTFSS   button_press_check,a
+    GOTO    STATE_MACHINE_END
+    
+    wait_for_button_press:
+	btfss   INT0IF	    ;wait for button press
+	bra	    $-2
+	call    delay_333
+	bcf	    INT0IF
+    
+SUB_TRANSITIONS6:
+    BCF	    button_press_check,a
+	return
+    
+    
+STATE_MACHINE_END:
+    
+GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
+
+    
+;======INTERRUPTS===========
+    
+    ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
     goto    register_dump   
     
     retfie
+
+
+register_dump:
+    movff   line_reg, PORTC     ; put line_reg into PORTC
+    bcf	    INT1IF		; clear interrupt flag
+    retfie			            ;return from interrupt
+
+    
+TODO_move_test_code_into_states:  ; to-do todo to do
+    nop
     
 living_test:
 ; for tests that happen on the physical PIC
