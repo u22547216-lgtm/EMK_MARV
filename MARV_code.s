@@ -80,6 +80,11 @@ subroutine_0	equ 0x07
 #define show_the_colours    subroutine_0,4
 #define	flash_port_d	    subroutine_0,5
 #define button_press_check  subroutine_0,6
+
+; delay skip bits
+DELAY_SKIP		equ	0x08
+#define skip_delay_333		DELAY_SKIP,0
+#define skip_delay_RGB		DELAY_SKIP,1
 	    
 	    
 calibrated_color    equ 0x0E	
@@ -254,6 +259,7 @@ end_test:
 STATE_MACHINE_SETUP:
     CLRF    state_0,a
     CLRF    subroutine_0,a
+	CLRF	DELAY_SKIP,A
     
     ; State activation bits
     ;BSF calibrate,a
@@ -271,6 +277,10 @@ STATE_MACHINE_SETUP:
     ;BSF show_the_colours,a
     ;BSF flash_port_d,a
     ;BSF button_press_check,a
+
+	; Delay skips
+	;BSF skip_delay_333,a
+	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
 		
@@ -713,6 +723,8 @@ TRY_ALL_SUBROUTINES:
 SUBROUTINE0:
     BTFSS   delay_333_call,a
     GOTO    SUBROUTINE1
+	BTFSC	skip_delay_333,A
+	return
     
     delay_333:
 	movwf    extra,a
@@ -739,6 +751,8 @@ SUB_TRANSITIONS0:
 SUBROUTINE1:
     BTFSS   RGB_delay_call,a
     GOTO    SUBROUTINE2
+	BTFSC	skip_delay_RGB,A
+	return
     
     delay_RGB:  ; 1.2ms = 1200 instruction cycles
 	movlw   151		    ;150 loops  + 1
