@@ -86,6 +86,9 @@ DELAY_SKIP		equ	0x08
 #define skip_delay_333		DELAY_SKIP,0
 #define skip_delay_RGB		DELAY_SKIP,1
 	    
+timer_waits		equ	0x09
+#define	wait_for_timer333   timer_waits,0
+#define	wait_for_timerRBG   timer_waits,1
 	    
 calibrated_color    equ 0x0E	
 offset_stuff	equ 0x0F
@@ -234,7 +237,8 @@ init:
     clrf    INTCON3,a	;
     bsf     INT1IP	    ; INT1I priority is high
     bsf	    INT1IE	    ; INT1I is enabled
-    ; INTCON = 0b 1 0 0 0 0 0 0 0
+    ; INTCON = 0b 1 0 1 0 0 0 0 0
+    bsf	    TMR0IE	    ; enable timer 0 interrupts
     bsf	    GIEH	    ; enable high priority interupts
     ; bsf	    GIEL,a	; enable low priority interupts
     
@@ -259,7 +263,8 @@ end_test:
 STATE_MACHINE_SETUP:
     CLRF    state_0,a
     CLRF    subroutine_0,a
-	CLRF	DELAY_SKIP,A
+	CLRF	DELAY_SKIP,a
+	CLRF	timer_waits,a
     
     ; State activation bits
     ;BSF calibrate,a
@@ -667,7 +672,10 @@ LLI:
 	    
 	    LOST_STOP:
 		CALL BRAKES
+		bsf	wait_for_timer333,a
+		bsf	delay_333_call,a
 		CALL delay_333
+		bcf	delay_333_call,a
 		    ;call    wait_for_button_press	; this is here for the purposes of the demo
 		CLRF line_reg,a
 		RETURN
@@ -739,11 +747,34 @@ TRANSITION3:
 TRY_ALL_SUBROUTINES:
     
 SUBROUTINE0:
+TODO_DELAY_333_REPLACE_WITH_TIMER:
 delay_333:
     BTFSS   delay_333_call,a
     GOTO    SUBROUTINE1
-	BTFSC	skip_delay_333,A
+    BTFSC   skip_delay_333,A
+    return
+    ; decide timer 0 setup for this specific timer
+	; TMR0H = -2
+	movlw	-2
+	movwf	TMR0H,a
+	; TMR0L = -139
+	movlw	-139
+	movwf	TMR0L,a
+	; T0CON = 0b 1 0 0 0 0 111
+	; enable timer
+	; make 16-bit
+	; work on instruction cycle
+	; x
+	; use prescaler
+	; prescaler is set to 1:256
+	movlw	ob10000111
+	movwf	T0CON,a
+	
+	btfsc	wait_for_timer333,a
+	bra	$-2
+	
 	return
+	
     
 	movwf    extra,a
     ; 0.166442 seconds of delay
@@ -767,6 +798,8 @@ SUB_TRANSITIONS0:
     
         
 SUBROUTINE1:
+TODO_CHANGE_RGB_DELAY_TO_TIMER:
+    NOP	; to be done after the circuit is finalised
 delay_RGB:
     BTFSS   RGB_delay_call,a
     GOTO    SUBROUTINE2
@@ -1444,9 +1477,15 @@ flash:
 	movwf   count,a
 	movf    PORTD,w,a
 	clrf    PORTD,a
+	bsf	wait_for_timer333,a
+	bsf	delay_333_call,a
 	call    delay_333
+	bcf	delay_333_call,a
 	movwf   PORTD,a
+	bsf	wait_for_timer333,a
+	bsf	delay_333_call,a
 	call    delay_333
+	bcf	delay_333_call,a
 	decfsz  count,a
 	bra	    $-14
 	return
@@ -1462,7 +1501,10 @@ wait_for_button_press:
     
 	btfss   INT0IF	    ;wait for button press
 	bra	    $-2
+	bsf	wait_for_timer333,a
+	bsf	delay_333_call,a
 	call    delay_333
+	bcf	delay_333_call,a
 	bcf	    INT0IF
 	return
     
@@ -1480,6 +1522,8 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
     goto    register_dump   
+    btfsc   TMR0IF	    ; was it timer 0?
+    goto    timer0_interrupt
     
     retfie
 
@@ -1489,6 +1533,17 @@ register_dump:
     bcf	    INT1IF		; clear interrupt flag
     retfie			            ;return from interrupt
 
+timer0_interrupt:
+    ; check if the wait bit for timmer333 was set
+    btfsc   wait_for_timer333,a
+    bra	    $+6
+    ; if it was, just clear the wait and return
+    bcf	    wait_for_timer333,a
+    retfie
+    ; if not, do other things first, then return
+    
+    nop
+    retfie
     
 TODO_move_test_code_into_states:  ; to-do todo to do
     nop
