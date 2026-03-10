@@ -1391,10 +1391,10 @@ SUB_TRANSITIONS3:
         
     
 SUBROUTINE4:
+show_colour:
     BTFSS   show_the_colours,a
     GOTO    SUBROUTINE5
     
-    show_colour:
 	movf	SENSOR0,w,a
 	andwf	SENSOR1,w,a
 	andwf	SENSOR2,w,a
@@ -1436,10 +1436,10 @@ SUB_TRANSITIONS4:
         
     
 SUBROUTINE5:
+flash:
     BTFSS   flash_port_d,a
     GOTO    SUBROUTINE6
     
-    flash:
 	movlw   3
 	movwf   count,a
 	movf    PORTD,w,a
@@ -1456,10 +1456,10 @@ SUB_TRANSITIONS5:
         
     
 SUBROUTINE6:
+wait_for_button_press:
     BTFSS   button_press_check,a
     GOTO    STATE_MACHINE_END
     
-    wait_for_button_press:
 	btfss   INT0IF	    ;wait for button press
 	bra	    $-2
 	call    delay_333
