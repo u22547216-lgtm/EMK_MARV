@@ -284,11 +284,10 @@ STATE_MACHINE_SETUP:
     
 STATE_MACHINE_START:
 		
-STATE0:
+calibration_state:
     BTFSS   calibrate,a
     GOTO    STATE1
     
-    calibration:
 	;desperate times
 	LFSR    0, 100h
 	movlw   1
@@ -397,7 +396,9 @@ STATE0:
 	call    wait_for_button_press
 	call    read_sensors
 
-	black_thresh    equ 0x43
+	black_red_thresh    equ 0x43
+	black_green_thresh    equ 0x44
+	black_blue_thresh    equ 0x45
 
 	lfsr    0, 100h
 	movf    INDF0,w,a    ;sensor 0
@@ -419,9 +420,10 @@ STATE0:
 	bra	    $+4
 	movf    INDF0,w,a
 
-	cpfsgt  PREINC0,a	    ;s 0
-	bra	    $+4
-	movf    INDF0,w,a
+	movwf	black_red_thresh,a
+
+
+	movf    PREINC0,w,a	    ;s 0
 
 	cpfsgt  PREINC0,a	    ;s 1
 	bra	    $+4
@@ -438,10 +440,11 @@ STATE0:
 	cpfsgt  PREINC0,a	    ;s 4
 	bra	    $+4
 	movf    INDF0,w,a
+	
+	movwf	black_green_thresh,a
 
-	cpfsgt  PREINC0,a	    ;s 0
-	bra	    $+4
-	movf    INDF0,w,a
+
+	movf    PREINC0,w,a	    ;s 0
 
 	cpfsgt  PREINC0,a	    ;s 1
 	bra	    $+4
@@ -458,10 +461,14 @@ STATE0:
 	cpfsgt  PREINC0,a	    ;s 4
 	bra	    $+4
 	movf    INDF0,w,a
+	
+	movwf	black_blue_thresh,a
 
-	movwf   black_thresh,a
+
 	movlw   10
-	subwf   black_thresh,f,a
+	subwf   black_red_thresh,f,a
+	subwf   black_green_thresh,f,a
+	subwf   black_blue_thresh,f,a
 	;white
 	lfsr    0, 100h
 	bcf	    black_indicator,a
@@ -470,7 +477,9 @@ STATE0:
 	call    wait_for_button_press
 	call    read_sensors
 
-	white_thresh    equ 0x44
+	white_red_thresh    equ 0x46
+	white_green_thresh    equ 0x47
+	white_blue_thresh    equ 0x48
 
 	lfsr    0, 100h
 	movf    INDF0,w,a    ;sensor 0
@@ -491,9 +500,10 @@ STATE0:
 	bra	    $+4
 	movf    INDF0,w,a
 
-	cpfslt  PREINC0,a	    ;s 0
-	bra	    $+4
-	movf    INDF0,w,a
+	movwf	white_red_thresh,a
+
+
+	movf    PREINC0,w,a	    ;s 0
 
 	cpfslt  PREINC0,a	    ;s 1
 	bra	    $+4
@@ -511,9 +521,10 @@ STATE0:
 	bra	    $+4
 	movf    INDF0,w,a
 
-	cpfslt  PREINC0,a	    ;s 0
-	bra	    $+4
-	movf    INDF0,w,a
+	movwf	white_green_thresh,a
+
+
+	movf    PREINC0,w,a	    ;s 0
 
 	cpfslt  PREINC0,a	    ;s 1
 	bra	    $+4
@@ -531,9 +542,13 @@ STATE0:
 	bra	    $+4
 	movf    INDF0,w,a
 
-	movwf   white_thresh,a
+	movwf	white_blue_thresh,a
+
+
 	movlw   10
-	subwf   white_thresh,f,a
+	subwf   white_red_thresh,f,a
+	subwf   white_green_thresh,f,a
+	subwf   white_blue_thresh,f,a
 
 	setf    PORTD,a
 	call    wait_for_button_press
