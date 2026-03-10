@@ -767,7 +767,7 @@ delay_333:
 	; x
 	; use prescaler
 	; prescaler is set to 1:256
-	movlw	ob10000111
+	movlw	0b10000111
 	movwf	T0CON,a
 	
 	btfsc	wait_for_timer333,a
@@ -1303,7 +1303,7 @@ detect_colour:
 
 
 	    checking_colours:
-	    check	equ 0x48
+	    check	equ 0x4C
 	    CLRF    check,a
 	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
