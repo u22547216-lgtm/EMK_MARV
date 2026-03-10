@@ -284,7 +284,8 @@ STATE_MACHINE_SETUP:
     
 STATE_MACHINE_START:
 		
-calibration_state:
+STATE0:
+calibration:
     BTFSS   calibrate,a
     GOTO    STATE1
     
@@ -597,13 +598,13 @@ TRANSITION0:
     BCF	    calibrate,a
     BSF	    follow_line,a
     
-    		
+    	
 STATE1:
+LLI:	
     BTFSS   follow_line,a
     GOTO    STATE2
     
-    LLI:
-	nop	;this is just here to see it in the navigator
+	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
     ;go straight --> M detects line
@@ -707,6 +708,7 @@ TRANSITION1:
 
 		
 STATE2:
+software_tests:
     BTFSS   code_tests,a
     GOTO    STATE3
     
@@ -720,6 +722,7 @@ TRANSITION2:
     
     		
 STATE3:
+test_hardware:
     BTFSS   hardware_tests,a
     GOTO    SUBROUTINE0
     
@@ -736,12 +739,12 @@ TRANSITION3:
 TRY_ALL_SUBROUTINES:
     
 SUBROUTINE0:
+delay_333:
     BTFSS   delay_333_call,a
     GOTO    SUBROUTINE1
 	BTFSC	skip_delay_333,A
 	return
     
-    delay_333:
 	movwf    extra,a
     ; 0.166442 seconds of delay
 	movlw   217
@@ -764,12 +767,13 @@ SUB_TRANSITIONS0:
     
         
 SUBROUTINE1:
+delay_RGB:
     BTFSS   RGB_delay_call,a
     GOTO    SUBROUTINE2
 	BTFSC	skip_delay_RGB,A
 	return
     
-    delay_RGB:  ; 1.2ms = 1200 instruction cycles
+	; 1.2ms = 1200 instruction cycles
 	movlw   151		    ;150 loops  + 1
 	movwf   delay_inner,a
     delay_rgb_inner:    ; need 8 instruction cycles here
@@ -787,13 +791,13 @@ SUB_TRANSITIONS1:
     
         
 SUBROUTINE2:
+read_sensors:
     BTFSS   read_sensors_call,a
     GOTO    SUBROUTINE3
     
     TODO_make_states_with_this: ; to-do todo to do
     nop
     
-    read_sensors:
     ; setup for indirect adressing
 	; you need to use 'LFSR FSR0, XYZh' before calling this 
 	; X is the bank
@@ -843,6 +847,7 @@ SUBROUTINE2:
 	bcf	    blue_pin,a
 
 	return
+	GOTO	SUB_TRANSITIONS2
 
 	read_all_sensors:
 	; read from AN0
@@ -940,13 +945,13 @@ SUB_TRANSITIONS2:
     
         
 SUBROUTINE3:
+detect_colour:
     BTFSS   check_colour,a
     GOTO    SUBROUTINE4
     
     TODO_make_this_work_with_states_1:  ; to-do todo to do
     nop
     
-    detect_colour:
 	clrf    SENSOR0,a
 	clrf    SENSOR1,a
 	clrf    SENSOR2,a
@@ -959,99 +964,105 @@ SUBROUTINE3:
 	LFSR    0, 200h	
 
 	white_check:
-	    red_check_bits  equ	0x45
+		white_red_check:
+	    red_check_bits  equ	0x49
 	    ;sensor 0
 	    clrf	red_check_bits,a
 
-	    movf    red_thresh,w,a
+	    movf    white_red_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    red_check_bits,0,a
 
 
-	    movf    red_thresh,w,a
+	    ; movf    white_red_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    red_check_bits,1,a
 
-	    movf    red_thresh,w,a
+	    ; movf    white_red_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    red_check_bits,2,a
 
-	    movf    red_thresh,w,a
+	    ; movf    white_red_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    red_check_bits,3,a
 
-	    movf    red_thresh,w,a
+	    ; movf    white_red_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    red_check_bits,4,a
 
 
-	    green_check_bits  equ	0x46
+		white_green_check:
+
+	    green_check_bits  equ	0x4A
+
 	    ;sensor 0
 	    clrf	green_check_bits,a
-	    movf    green_thresh,w,a
+
+	    movf    white_green_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    green_check_bits,0,a
 
-
-	    movf    green_thresh,w,a
+	    ; movf    white_green_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    green_check_bits,1,a
 
-	    movf    green_thresh,w,a
+	    ; movf    white_green_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    green_check_bits,2,a
 
-	    movf    green_thresh,w,a
+	    ; movf    white_green_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    green_check_bits,3,a
 
-	    movf    green_thresh,w,a
+	    ; movf    white_green_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    green_check_bits,4,a
 
 
+		white_blue_check:
 
+	    blue_check_bits  equ	0x4B
 
-	    blue_check_bits  equ	0x47
 	    ;sensor 0
 	    clrf	blue_check_bits,a
-	    movf    blue_thresh,w,a
+
+	    movf    white_blue_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,0,a
 
-	    movf    blue_thresh,w,a
+	    ; movf    white_blue_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,1,a
 
-	    movf    blue_thresh,w,a
+	    ; movf    white_blue_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,2,a
 
-	    movf    blue_thresh,w,a
+	    ; movf    white_blue_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,3,a
 
-	    movf    blue_thresh,w,a
+	    ; movf    white_blue_thresh,w,a
 	    cpfsgt  POSTINC0,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,4,a
 
 	    ;checking colours
-	    check	equ 0x48
+	    check	equ 0x4C
 	    CLRF    check,a
 	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
@@ -1138,7 +1149,7 @@ SUBROUTINE3:
 	    ;addwf	FSR0,f,a
 	    addwf	FSR1,f,a
 
-	green_check_bits  equ	0x46
+	; green_check_bits  equ	0x46
 	    ;sensor 0
 	    clrf	green_check_bits,a
 	    movf    POSTINC1,w,a
@@ -1170,7 +1181,7 @@ SUBROUTINE3:
 	    red_checks:
 	    LFSR    1, 200h	
 
-	red_check_bits  equ	0x45
+	; red_check_bits  equ	0x45
 
 	    clrf	red_check_bits,a
 	    btfsc	green_check_bits,0,a
@@ -1214,7 +1225,7 @@ SUBROUTINE3:
 	    movlw	10
 	    addwf	FSR1,f,a
 
-	blue_check_bits  equ	0x47
+	; blue_check_bits  equ	0x47
 
 	    clrf	blue_check_bits,a
 	    btfss	red_check_bits,0,a
@@ -1466,7 +1477,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     
 ;======INTERRUPTS===========
     
-    ISR:
+ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
     goto    register_dump   
     
