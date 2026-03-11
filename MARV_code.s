@@ -15,6 +15,10 @@
 ;   RGB:
 ;       Pins:   RA4,6,7 (HIGH turns the colour on)
 ;       Colours:  R,G,B
+;	external interrupts:
+;		Pins:	RB0,1
+;		Enabled interrupts: RB1
+;		Button press to wait for: RB2
 ;	Register dump:
 ;	    Port C
 ;	Colour display:
