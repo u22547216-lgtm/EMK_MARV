@@ -763,7 +763,13 @@ delay_333:
     GOTO    SUBROUTINE1
     BTFSC   skip_delay_333,A
     return
+    
+	; save context
+	movwf    extra,a
+	
     ; decide timer 0 setup for this specific timer
+	; sets timer 0 to overflow in (2*256+139)*4 = 166656 instruction cycles
+	    ; is about 166656us, half the period of a 3Hz flash
 	; TMR0H = -2
 	movlw	-2
 	movwf	TMR0H,a
@@ -780,26 +786,11 @@ delay_333:
 	movlw	0b10000111
 	movwf	T0CON,a
 	
+	; option to wait for the timer
 	btfsc	wait_for_timer333,a
 	bra	$-2
 	
-	return
-	
-    
-	movwf    extra,a
-    ; 0.166442 seconds of delay
-	movlw   217
-	movwf   delay_outer,a
-    delay_outside:
-	movlw   254
-	movwf   delay_inner,a
-    delay_inside:
-	decfsz  delay_inner,a
-	goto delay_inside
-
-	decfsz  delay_outer,a
-	goto delay_outside
-
+	; restore context
 	movf    extra,w,a
 	return
     
@@ -808,39 +799,36 @@ SUB_TRANSITIONS0:
     
         
 SUBROUTINE1:
-TODO_CHANGE_RGB_DELAY_TO_TIMER:
-    NOP	; to be done after the circuit is finalised
 delay_RGB:
     BTFSS   RGB_delay_call,a
     GOTO    SUBROUTINE2
 	BTFSC	skip_delay_RGB,A
 	return
 	
+	; save context
+	movwf    extra,a
+	
+	TODO_maybe_give_the_option_to_wait_for_it:
+	; set the timer to overflow in 40 instruction cycles
+	; about 40 us, which is the settling time 
+	    ; might change to 20us, because that is the rise time
+	    ; would have to change the calibration code a bit to account for the 
+	    ; range of values between 90% and 100% of the steady state
+		; this might distort the ADC reading tho, so nah
 	movlw	-40
 	movwf	TMR1L,a
 	setf	TMR1H,a
-	
+	; turn the timer on
 	bsf	TMR1ON
-	
+	; wait for the timer
 	btfss	TMR1IF
 	bra	$-2
-	
+	; turn the timer off
 	bcf	TMR1ON
 	bcf	TMR1IF
 	
-	return
-    
-	; 1.2ms = 1200 instruction cycles
-	movlw   151		    ;150 loops  + 1
-	movwf   delay_inner,a
-    delay_rgb_inner:    ; need 8 instruction cycles here
-	dcfsnz  delay_inner,a   ;1	    1
-	goto    delay_rgb_end   ;2	    3
-	nop			    ;1	    4
-	nop			    ;1	    5
-	nop			    ;1	    6
-	goto    delay_rgb_inner ;2	    8
-    delay_rgb_end:
+	; restore context
+	movf    extra,w,a
 	return
     
 SUB_TRANSITIONS1:
