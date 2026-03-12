@@ -219,6 +219,11 @@ init:
     bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
+    ; Timer setup
+    clrf    T0CON,a
+    clrf    T1CON,a
+    clrf    T1GCON,a
+    
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
@@ -272,7 +277,7 @@ STATE_MACHINE_SETUP:
     
 	; tests
     ; BSF code_tests,a
-    ; BSF hardware_tests,a
+    BSF hardware_tests,a
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
@@ -735,7 +740,12 @@ test_hardware:
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
-    nop
+    
+    lfsr    0,100h
+    bsf	    read_sensors_call,a
+    call read_sensors
+    bcf	    read_sensors_call,a
+    goto TODO_hardware_tests
 ;   state 2 code
     ; to be added later
     
@@ -805,6 +815,20 @@ delay_RGB:
     GOTO    SUBROUTINE2
 	BTFSC	skip_delay_RGB,A
 	return
+	
+	movlw	-40
+	movwf	TMR1L,a
+	setf	TMR1H,a
+	
+	bsf	TMR1ON
+	
+	btfss	TMR1IF
+	bra	$-2
+	
+	bcf	TMR1ON
+	bcf	TMR1IF
+	
+	return
     
 	; 1.2ms = 1200 instruction cycles
 	movlw   151		    ;150 loops  + 1
@@ -839,7 +863,9 @@ read_sensors:
 
     ; shine red
 	bsf	    red_pin,a
+	bsf	RGB_delay_call,a
 	call delay_RGB
+	bcf	RGB_delay_call,a
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -853,7 +879,9 @@ read_sensors:
 
     ; shine green
 	bsf	    green_pin,a
+	bsf	RGB_delay_call,a
 	call delay_RGB
+	bcf	RGB_delay_call,a
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -867,7 +895,9 @@ read_sensors:
 
     ; shine blue
 	bsf	    blue_pin,a
+	bsf	RGB_delay_call,a
 	call delay_RGB
+	bcf	RGB_delay_call,a
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -1536,9 +1566,11 @@ register_dump:
 timer0_interrupt:
     ; check if the wait bit for timmer333 was set
     btfsc   wait_for_timer333,a
-    bra	    $+6
+    bra	    $+10
     ; if it was, just clear the wait and return
     bcf	    wait_for_timer333,a
+    clrf    T0CON,a
+    bcf	    TMR0IF
     retfie
     ; if not, do other things first, then return
     
