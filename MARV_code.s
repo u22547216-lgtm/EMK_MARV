@@ -106,6 +106,15 @@ count		equ 0x11
 extra		equ 0x19
 
 ; colour detection registers
+red_thresh	    equ	0x40
+green_thresh	    equ	0x41
+blue_thresh	    equ	0x42
+black_red_thresh	equ 0x43
+black_green_thresh	equ 0x44
+black_blue_thresh	equ 0x45
+white_red_thresh	equ 0x46
+white_green_thresh	equ 0x47
+white_blue_thresh	equ 0x48
 red_check_bits	    equ	0x49
 green_check_bits    equ	0x4A
 blue_check_bits	    equ	0x4B
@@ -313,7 +322,7 @@ calibration:
     BTFSS   calibrate,a
     GOTO    STATE1
     
-	;desperate times
+	; red
 	LFSR    0, 100h
 	movlw   1
 	movwf   number_of_readings,a
@@ -321,8 +330,7 @@ calibration:
 
 	call    wait_for_button_press
 	call    read_sensors
-
-	red_thresh	    equ	0x40
+	
 
 	lfsr    0, 100h
 	movf    INDF0,w,a    ;sensor 0
@@ -354,8 +362,7 @@ calibration:
 
 	call    wait_for_button_press
 	call    read_sensors
-
-	green_thresh	    equ	0x41
+	
 
 	lfsr    0, 105h
 	movf    INDF0,w,a    ;sensor 0
@@ -387,8 +394,7 @@ calibration:
 
 	call    wait_for_button_press
 	call    read_sensors
-
-	blue_thresh	    equ	0x42
+	
 
 	lfsr    0, 10Ah
 	movf    INDF0,w,a    ;sensor 0
@@ -420,10 +426,7 @@ calibration:
 
 	call    wait_for_button_press
 	call    read_sensors
-
-	black_red_thresh    equ 0x43
-	black_green_thresh    equ 0x44
-	black_blue_thresh    equ 0x45
+	
 
 	lfsr    0, 100h
 	movf    INDF0,w,a    ;sensor 0
@@ -501,11 +504,8 @@ calibration:
 
 	call    wait_for_button_press
 	call    read_sensors
-
-	white_red_thresh    equ 0x46
-	white_green_thresh    equ 0x47
-	white_blue_thresh    equ 0x48
-
+	
+	
 	lfsr    0, 100h
 	movf    INDF0,w,a    ;sensor 0
 
@@ -1034,7 +1034,6 @@ detect_colour:
     
 		white_red_check:
     
-	    ; red_check_bits  equ	0x49
 	    
 	    ;sensor 0
 	    clrf	red_check_bits,a
@@ -1068,7 +1067,6 @@ detect_colour:
 
 		white_green_check:
 
-	    ; green_check_bits  equ	0x4A
 
 	    ;sensor 0
 	    clrf	green_check_bits,a
@@ -1101,7 +1099,6 @@ detect_colour:
 
 		white_blue_check:
 
-	    ; blue_check_bits  equ	0x4B
 
 	    ;sensor 0
 	    clrf	blue_check_bits,a
@@ -1132,7 +1129,6 @@ detect_colour:
 	    bsf	    blue_check_bits,4,a
 
 	    final_white_check:
-	    ; check	equ 0x4C
 	    CLRF    check,a
 	    
 	    ;check sensor 0
@@ -1243,7 +1239,7 @@ detect_colour:
 	    ;addwf	FSR0,f,a
 	    addwf	FSR1,f,a
 
-	; green_check_bits  equ	0x4A
+	    
 	    ; sensor 0
 	    clrf	green_check_bits,a
 	    movf    POSTINC1,w,a
@@ -1278,7 +1274,7 @@ detect_colour:
 	    red_checks:
 	    LFSR    1, 200h	
 
-	; red_check_bits  equ	0x49
+	    
 	    clrf	red_check_bits,a
 	    
 	    ; sensor 0
@@ -1327,7 +1323,7 @@ detect_colour:
 	    movlw	10
 	    addwf	FSR1,f,a
 
-	; blue_check_bits  equ	0x4B
+	    
 	    clrf	blue_check_bits,a
 	    
 	    ; sensor 0
@@ -1377,9 +1373,8 @@ detect_colour:
 
 
 	    checking_colours:
-	    ; check	equ 0x4C
-	    
 	    CLRF    check,a
+	    
 	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
 	    bsf     check,0,a
