@@ -2,8 +2,12 @@
 ; EMK310
 ; MARV CODE
 ; TEAM: 28
-; MEMBERS: Darius van Niekerk
-; Date of last revision: February 2026
+; MEMBERS: 
+;	    Darius van Niekerk
+;	    Owam Bandile Ntlemeza
+;	    Elmor Van Der Walt
+;	    Bianca Mkhize
+; Date of last revision: March 2026
 ;------------------------------------------------------------------------------
 ; Description: 
 ;   Code for the MARV of team 28 for EMK 310 in 2026
