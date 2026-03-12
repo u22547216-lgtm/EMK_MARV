@@ -15,14 +15,14 @@
 ;   RGB:
 ;       Pins:   RA4,6,7 (HIGH turns the colour on)
 ;       Colours:  R,G,B
-;	external interrupts:
-;		Pins:	RB0,1
-;		Enabled interrupts: RB1
-;		Button press to wait for: RB2
-;	Register dump:
-;	    Port C
-;	Colour display:
-;	    Port D
+;   external interrupts:
+;	Pins:	RB0,1
+;	Enabled interrupts: RB1
+;	Button press to wait for: RB2
+;   Register dump:
+;	Port C
+;   Colour display:
+;	Port D
 ;SENSOR STORAGES TO BE USED IN LLI
 ;
 ;	SENSOR0        EQU 0x55
@@ -101,7 +101,13 @@ count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
 
+; colour detection registers
+red_check_bits	    equ	0x49
+green_check_bits    equ	0x4A
+blue_check_bits	    equ	0x4B
+check		    equ 0x4C
 
+; LLI registers
 SENSOR_START	equ 059h
 SENSOR0        EQU 0x59
 SENSOR1        EQU 0x5A
@@ -1005,22 +1011,27 @@ detect_colour:
     GOTO    SUBROUTINE4
     
     TODO_make_this_work_with_states_1:  ; to-do todo to do
-    nop
     
+	; clear the previous colours
 	clrf    SENSOR0,a
 	clrf    SENSOR1,a
 	clrf    SENSOR2,a
 	clrf    SENSOR3,a
 	clrf    SENSOR4,a
-	; desperate times
+	
+	; read sensors to bank 2 for now
 	LFSR    0, 200h	
 	call read_sensors
-
+	; back to bank 2
 	LFSR    0, 200h	
 
+	; always check for white first
 	white_check:
+    
 		white_red_check:
-	    red_check_bits  equ	0x49
+    
+	    ; red_check_bits  equ	0x49
+	    
 	    ;sensor 0
 	    clrf	red_check_bits,a
 
@@ -1053,7 +1064,7 @@ detect_colour:
 
 		white_green_check:
 
-	    green_check_bits  equ	0x4A
+	    ; green_check_bits  equ	0x4A
 
 	    ;sensor 0
 	    clrf	green_check_bits,a
@@ -1086,7 +1097,7 @@ detect_colour:
 
 		white_blue_check:
 
-	    blue_check_bits  equ	0x4B
+	    ; blue_check_bits  equ	0x4B
 
 	    ;sensor 0
 	    clrf	blue_check_bits,a
@@ -1116,9 +1127,10 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    blue_check_bits,4,a
 
-	    ;checking colours
-	    check	equ 0x4C
+	    final_white_check:
+	    ; check	equ 0x4C
 	    CLRF    check,a
+	    
 	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
 	    bsf     check,0,a
@@ -1127,10 +1139,12 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
+	    TODO_change_from_FSR1_to_FSR0:
 	    lfsr    1,059h
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
+	    ; it sees white
 	    movlw	'W'
 	    movwf	INDF1,a
 
@@ -1147,6 +1161,7 @@ detect_colour:
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
+	    ; it sees white
 	    movlw	'W'
 	    movwf	INDF1,a
 
@@ -1163,6 +1178,7 @@ detect_colour:
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
+	    ; it sees white
 	    movlw	'W'
 	    movwf	INDF1,a
 
@@ -1179,6 +1195,7 @@ detect_colour:
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
+	    ; it sees white
 	    movlw	'W'
 	    movwf	INDF1,a
 
@@ -1195,8 +1212,26 @@ detect_colour:
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
+	    ; it sees white
 	    movlw	'W'
 	    movwf	INDF1,a
+	    
+	    TODO_change_how_the_colour_checks_are_done:
+	    ; best ideas so far:
+		; check how close the colours are to their white thresholds.
+		    ; this can be used to resolve error cases where two colours
+		    ; are higher than their thresholds.
+		; check how far the colours are from their black thresholds.
+		    ; can be used when all the colours are lower than their thresholds
+		    ; but the sensor is not seeing black.
+	    ; comments:
+		; need to check how much noise is on the output of the new amplifier
+		; circuit to see how generous i have to be with the error tollerance 
+	    nop
+	    TODO_also_change_FSR1_to_FSR0_for_these_checks:
+	    nop
+	    TODO_maybe_put_a_checking_order_for_the_colours:
+	    nop
 
 	check_green:
 	    lfsr	1,200h
@@ -1204,30 +1239,33 @@ detect_colour:
 	    ;addwf	FSR0,f,a
 	    addwf	FSR1,f,a
 
-	; green_check_bits  equ	0x46
-	    ;sensor 0
+	; green_check_bits  equ	0x4A
+	    ; sensor 0
 	    clrf	green_check_bits,a
 	    movf    POSTINC1,w,a
 	    cpfslt  green_thresh,a
 	    bra	    $+4
 	    bsf	    green_check_bits,0,a
 
-
+	    ; sensor 1
 	    movf    POSTINC1,w,a
 	    cpfslt  green_thresh,a
 	    bra	    $+4
 	    bsf	    green_check_bits,1,a
 
+	    ; sensor 2
 	    movf    POSTINC1,w,a
 	    cpfslt  green_thresh,a
 	    bra	    $+4
 	    bsf	    green_check_bits,2,a
 
+	    ; sensor 3
 	    movf    POSTINC1,w,a
 	    cpfslt  green_thresh,a
 	    bra	    $+4
 	    bsf	    green_check_bits,3,a
 
+	    ; sensor 4
 	    movf    POSTINC1,w,a
 	    cpfslt  green_thresh,a
 	    bra	    $+4
@@ -1236,9 +1274,10 @@ detect_colour:
 	    red_checks:
 	    LFSR    1, 200h	
 
-	; red_check_bits  equ	0x45
-
+	; red_check_bits  equ	0x49
 	    clrf	red_check_bits,a
+	    
+	    ; sensor 0
 	    btfsc	green_check_bits,0,a
 	    bra	$+10
 	    movf    POSTINC1,w,a
@@ -1246,6 +1285,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    red_check_bits,0,a
 
+	    ; sensor 1
 	    btfsc	green_check_bits,1,a
 	    bra	$+10
 	    movf    POSTINC1,w,a
@@ -1253,6 +1293,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    red_check_bits,1,a
 
+	    ; sensor 2
 	    btfsc	green_check_bits,2,a
 	    bra	$+10
 	    movf    POSTINC1,w,a
@@ -1260,6 +1301,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    red_check_bits,2,a
 
+	    ; sensor 3
 	    btfsc	green_check_bits,3,a
 	    bra	$+10
 	    movf    POSTINC1,w,a
@@ -1267,6 +1309,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    red_check_bits,3,a
 
+	    ; sensor 4
 	    btfsc	green_check_bits,4,a
 	    bra	$+10
 	    movf    POSTINC1,w,a
@@ -1280,9 +1323,10 @@ detect_colour:
 	    movlw	10
 	    addwf	FSR1,f,a
 
-	; blue_check_bits  equ	0x47
-
+	; blue_check_bits  equ	0x4B
 	    clrf	blue_check_bits,a
+	    
+	    ; sensor 0
 	    btfss	red_check_bits,0,a
 	    btfsc	green_check_bits,0,a
 	    bra	$+10
@@ -1291,6 +1335,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    blue_check_bits,0,a
 
+	    ; sensor 1
 	    btfss	red_check_bits,1,a
 	    btfsc	green_check_bits,1,a
 	    bra	$+10
@@ -1299,6 +1344,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    blue_check_bits,1,a
 
+	    ; sensor 2
 	    btfss	red_check_bits,2,a
 	    btfsc	green_check_bits,2,a
 	    bra	$+10
@@ -1307,6 +1353,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    blue_check_bits,2,a
 
+	    ; sensor 3
 	    btfss	red_check_bits,3,a
 	    btfsc	green_check_bits,3,a
 	    bra	$+10
@@ -1315,6 +1362,7 @@ detect_colour:
 	    bra	    $+4
 	    bsf	    blue_check_bits,3,a
 
+	    ; sensor 4
 	    btfss	red_check_bits,4,a
 	    btfsc	green_check_bits,4,a
 	    bra	$+10
@@ -1325,7 +1373,8 @@ detect_colour:
 
 
 	    checking_colours:
-	    check	equ 0x4C
+	    ; check	equ 0x4C
+	    
 	    CLRF    check,a
 	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
@@ -1337,10 +1386,10 @@ detect_colour:
 
 	    lfsr    1,059h
 	    movlw	'W'
-	    cpfseq	SENSOR0,a
+	    cpfseq	SENSOR0,a   ; did the white check give this a colour already?
 	    bra	$+4
 	    bra	$+6
-	    call    run_detection_checks
+	    call    run_detection_checks    ; no
 
 	    CLRF    check,a
 	    ;check sensor 1
@@ -1353,10 +1402,10 @@ detect_colour:
 
 	    lfsr    1,05Ah
 	    movlw	'W'
-	    cpfseq	SENSOR1,a
+	    cpfseq	SENSOR1,a   ; did the white check give this a colour already?
 	    bra	$+4
 	    bra	$+6
-	    call    run_detection_checks
+	    call    run_detection_checks    ; no
 
 	    CLRF    check,a
 	    ;check sensor 2
@@ -1369,10 +1418,10 @@ detect_colour:
 
 	    lfsr    1,05Bh
 	    movlw	'W'
-	    cpfseq	SENSOR2,a
+	    cpfseq	SENSOR2,a   ; did the white check give this a colour already?
 	    bra	$+4
 	    bra	$+6
-	    call    run_detection_checks
+	    call    run_detection_checks    ; no
 
 	    CLRF    check,a
 	    ;check sensor 3
@@ -1385,10 +1434,10 @@ detect_colour:
 
 	    lfsr    1,05Ch
 	    movlw	'W'
-	    cpfseq	SENSOR3,a
+	    cpfseq	SENSOR3,a   ; did the white check give this a colour already?
 	    bra	$+4
 	    bra	$+6
-	    call    run_detection_checks
+	    call    run_detection_checks    ; no
 
 	    CLRF    check,a
 	    ;check sensor 4
@@ -1401,15 +1450,17 @@ detect_colour:
 
 	    lfsr    1,05Dh
 	    movlw	'W'
-	    cpfseq	SENSOR4,a
+	    cpfseq	SENSOR4,a   ; did the white check give this a colour already?
 	    bra	$+4
 	    bra	$+6
-	    call    run_detection_checks
+	    call    run_detection_checks    ; no
 	return
 	    run_detection_checks:
+    
 		movlw   0
 		cpfseq  check,a
 		bra	    $+8
+		; it sees black
 		movlw   'K'
 		movwf   INDF1,a
 		RETURN
@@ -1417,6 +1468,7 @@ detect_colour:
 		movlw   1
 		cpfseq  check,a
 		bra	    $+8
+		; it sees red
 		movlw   'R'
 		movwf   INDF1,a
 		RETURN
@@ -1424,6 +1476,7 @@ detect_colour:
 		movlw   2
 		cpfseq  check,a
 		bra	    $+8
+		; it sees green
 		movlw   'G'
 		movwf   INDF1,a
 		RETURN
@@ -1431,10 +1484,13 @@ detect_colour:
 		movlw   4
 		cpfseq  check,a
 		bra	    $+8
+		; it sees blue
 		movlw   'B'
 		movwf   INDF1,a
 		RETURN
 
+		TODO_add_error_case_for_this:
+		; default to white for now
 		movlw   'W'
 		movwf   INDF1,a
 
@@ -1446,10 +1502,13 @@ SUB_TRANSITIONS3:
         
     
 SUBROUTINE4:
+    TODO_this_should_be_changed_for_serial_bridge_comms:
+    nop
 show_colour:
     BTFSS   show_the_colours,a
     GOTO    SUBROUTINE5
     
+    ; check solid colour
 	movf	SENSOR0,w,a
 	andwf	SENSOR1,w,a
 	andwf	SENSOR2,w,a
@@ -1495,21 +1554,31 @@ flash:
     BTFSS   flash_port_d,a
     GOTO    SUBROUTINE6
     
+	; number of flashes
 	movlw   3
 	movwf   count,a
+	; save portD
 	movf    PORTD,w,a
+	BEGIN_FLASH:
+	; begin flashing
+	    ; turn off
 	clrf    PORTD,a
+	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
+	    ; turn on
 	movwf   PORTD,a
+	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
+	; did we flash enough?
 	decfsz  count,a
-	bra	    $-14
+	bra	BEGIN_FLASH	; no
+	; yes
 	return
     
 SUB_TRANSITIONS5:
@@ -1523,11 +1592,14 @@ wait_for_button_press:
     
 	btfss   INT0IF	    ;wait for button press
 	bra	    $-2
+	; delay so that we dont have to debounce
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
+	; reset button wait
 	bcf	    INT0IF
+	; go back
 	return
     
 SUB_TRANSITIONS6:
