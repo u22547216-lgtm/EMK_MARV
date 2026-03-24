@@ -247,6 +247,34 @@ init:
     clrf    T1CON,a
     clrf    T1GCON,a
     
+    PWM_setup:
+    ; use RD1, CCP4, TMR2
+	; make relavant pin an input
+    BSF	    TRISD1
+	; select Timer source in CCPTMRSx
+    SETF    CCPTMRS0,b
+    MOVLW   0b11111100
+    MOVWF   CCPTMRS1,b
+	; load period register
+    MOVLW   9
+    MOVWF   PR2,a
+	; configure CCP for PWM
+    MOVLW   0b00001100
+    MOVWF   CCP4CON,b
+	; load CCPRxL and DCxB of CCPxCON with duty cycle of PWM
+    MOVLW   5
+    MOVWF   CCPR4L,a
+	; configure 8 bit timer
+	    ; clear the interrupt lag
+	    ; configure prescaler value
+	    ; enable timer
+    CLRF    T2CON,a
+    CLRF    TMR2,a
+    BCF	    TMR2IF
+    BSF	    TMR2ON
+	; enable PWM output pin
+    BCF	    TRISD1
+    
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
     ; just in case some flags are set or some interrupts are enabled when i enable interrupts
@@ -299,8 +327,8 @@ STATE_MACHINE_SETUP:
     ;BSF follow_line,a
     
 	; tests
-    ; BSF code_tests,a
-    BSF hardware_tests,a
+     BSF code_tests,a
+;    BSF hardware_tests,a
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
@@ -743,6 +771,7 @@ software_tests:
 	nop
 ;   state 2 code
     ; to be added later
+    BRA	    $-2
     
 TRANSITION2:
     BCF	    code_tests,a
