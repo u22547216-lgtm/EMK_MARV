@@ -22,11 +22,14 @@
 ;   external interrupts:
 ;	Pins:	RB0,1
 ;	Enabled interrupts: RB1
-;	Button press to wait for: RB2
-;   Register dump:
-;	Port C
-;   Colour display:
-;	Port D
+;	Button press to wait for: RB0
+;   PWM:
+;	Pins:	RD1 so far
+;	Timers: TMR2 so far
+;   Register dump:	{N/A}
+;	Port C		{N/A}
+;   Colour display:	{N/A}
+;	Port D		{N/A}
 ;SENSOR STORAGES TO BE USED IN LLI
 ;
 ;	SENSOR0        EQU 0x55
@@ -220,14 +223,14 @@ init:
 			; ADC works for 8+12* = 20us. ie: 20 instruction cycles.
     ; need to remember the ADC cooldown of 2 TAD, or 2us, which is 2 instruction cycle.
     
-    ; setup debug ports(C and D)
-    ; register dump port
+    ; setup misc ports(C and D)
+    ; Port C, as output (used to be register dump)
     clrf    PORTC, a
     clrf    LATC, a
     clrf    ANSELC, b
     clrf    TRISC, a
     
-    ; colour show port
+    ; Port D, as output (used to be colour display)
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
@@ -250,30 +253,30 @@ init:
     PWM_setup:
     ; use RD1, CCP4, TMR2
 	; make relavant pin an input
-    BSF	    TRISD1
+    ; BSF	    TRISD1
 	; select Timer source in CCPTMRSx
-    SETF    CCPTMRS0,b
-    MOVLW   0b11111100
-    MOVWF   CCPTMRS1,b
-	; load period register
+    ;SETF    CCPTMRS0,b
+    ;MOVLW   0b00001100
+    ;MOVWF   CCPTMRS1,b
+	; load period register 2
     MOVLW   9
     MOVWF   PR2,a
-	; configure CCP for PWM
+	; configure CCP4 for PWM
     MOVLW   0b00001100
-    MOVWF   CCP4CON,b
+    MOVWF   CCP1CON,b
 	; load CCPRxL and DCxB of CCPxCON with duty cycle of PWM
     MOVLW   5
-    MOVWF   CCPR4L,a
+    MOVWF   CCPR1L,a
 	; configure 8 bit timer
 	    ; clear the interrupt lag
 	    ; configure prescaler value
 	    ; enable timer
     CLRF    T2CON,a
     CLRF    TMR2,a
-    BCF	    TMR2IF
+    ; BCF	    TMR2IF
     BSF	    TMR2ON
 	; enable PWM output pin
-    BCF	    TRISD1
+    ;BCF	    TRISD1
     
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
