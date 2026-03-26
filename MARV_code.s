@@ -342,7 +342,7 @@ calibration:
 	movwf   number_of_readings,a
 	bsf	    red_indicator,a
 
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 	call    read_sensors
 	
 
@@ -374,7 +374,7 @@ calibration:
 	bcf	    red_indicator,a
 	bsf	    green_indicator,a
 
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 	call    read_sensors
 	
 
@@ -406,7 +406,7 @@ calibration:
 	bcf	    green_indicator,a
 	bsf	    blue_indicator,a
 
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 	call    read_sensors
 	
 
@@ -438,7 +438,7 @@ calibration:
 	bcf	    blue_indicator,a
 	bsf	    black_indicator,a
 
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 	call    read_sensors
 	
 
@@ -516,7 +516,7 @@ calibration:
 	bcf	    black_indicator,a
 	bsf	    white_indicator,a
 
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 	call    read_sensors
 	
 	
@@ -590,7 +590,7 @@ calibration:
 	subwf   white_blue_thresh,f,a
 
 	setf    PORTD,a
-	call    wait_for_button_press
+	call    wait_for_button_press_calibration
 
 	call    detect_colour
 
@@ -627,7 +627,7 @@ calibration:
 	display_race_colour:
 
 	call flash
-	call wait_for_button_press
+	call wait_for_button_press_calibration
 
 	return
     
@@ -1594,7 +1594,7 @@ flash:
 	BCF	colour_display,a
 	    ;wait 0.166 seconds
 	btfsc	wait_for_timer333,a
-	bra	$-4
+	bra	$-8
 	; did we flash enough?
 	decfsz  count,a
 	bra	BEGIN_FLASH	; no
@@ -1606,12 +1606,17 @@ SUB_TRANSITIONS5:
         
     
 SUBROUTINE6:
-wait_for_button_press:
+wait_for_button_press_calibration:
     BTFSS   button_press_check,a
     GOTO    STATE_MACHINE_END
     
+	; show the colour to calibrate
+	BSF	colour_display,a
+	call	display_colour
+	BCF	colour_display,a
+	
 	btfss   INT0IF	    ;wait for button press
-	bra	    $-2
+	bra	    $-8
 	; delay so that we dont have to debounce
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
