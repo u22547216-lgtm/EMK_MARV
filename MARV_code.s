@@ -88,6 +88,7 @@ subroutine_0	equ 0x07
 #define show_the_colours    subroutine_0,4
 #define	flash_port_d	    subroutine_0,5
 #define button_press_check  subroutine_0,6
+#define colour_display	    subroutine_0,7
 
 ; delay skip bits
 DELAY_SKIP		equ	0x08
@@ -105,20 +106,43 @@ count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
 
+; RGB control stuff
+; RGB pins
+#define red_pin     PORTA,4
+#define green_pin   PORTA,6
+#define blue_pin    PORTA,7
+; colour indicator pins
+colour_displays	    equ 0x3F
+#define red_indicator       colour_displays,0
+#define green_indicator     colour_displays,1
+#define blue_indicator      colour_displays,2
+#define black_indicator     colour_displays,3
+#define white_indicator     colour_displays,4
+		
 ; colour detection registers
 red_thresh	    equ	0x40
 green_thresh	    equ	0x41
 blue_thresh	    equ	0x42
+	    
 black_red_thresh	equ 0x43
 black_green_thresh	equ 0x44
 black_blue_thresh	equ 0x45
+	
 white_red_thresh	equ 0x46
 white_green_thresh	equ 0x47
 white_blue_thresh	equ 0x48
+	
 red_check_bits	    equ	0x49
 green_check_bits    equ	0x4A
 blue_check_bits	    equ	0x4B
 check		    equ 0x4C
+		    
+; colour detection tolerances
+red_tol		    equ 0x4D
+green_tol	    equ 0x4E
+blue_tol	    equ 0x4F
+white_tol	    equ 0x50
+black_tol	    equ 0x51
 
 ; LLI registers
 SENSOR_START	equ 059h
@@ -130,16 +154,6 @@ SENSOR4        EQU 0x5D
 RACE_COLOUR    EQU 0x5E
 BLACK_FLAG     EQU 0x5F
 
-; RGB pins
-#define red_pin     PORTA,4
-#define green_pin   PORTA,6
-#define blue_pin    PORTA,7
-; colour indicator pins
-#define red_indicator       PORTD,0
-#define green_indicator     PORTD,1
-#define blue_indicator      PORTD,2
-#define black_indicator     PORTD,3
-#define white_indicator     PORTD,4
 
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
@@ -1557,7 +1571,7 @@ flash:
 	movlw   3
 	movwf   count,a
 	; save portD
-	movf    PORTD,w,a
+	; movf    PORTD,w,a
 	BEGIN_FLASH:
 	; begin flashing
 	    ; turn off
@@ -1603,6 +1617,100 @@ wait_for_button_press:
     
 SUB_TRANSITIONS6:
     BCF	    button_press_check,a
+    
+    
+SUBROUTINE7:
+display_colour:
+    BTFSS   colour_display,a
+    GOTO    STATE_MACHINE_END
+    
+	BTFSC   black_indicator,a
+	bra	    display_black
+	BTFSC   white_indicator,a
+	bra	    display_white
+	BTFSC   red_indicator,a
+	bra	    display_red
+	BTFSC   green_indicator,a
+	bra	    display_green
+	BTFSC   blue_indicator,a
+	bra	    display_blue
+    
+	RETURN
+    
+	    display_black:
+	    ; orange = RGB(255,102,0), means 40% duty cycle on green
+	    bsf	green_pin,a
+	    bsf	red_pin,a
+	    nop
+	    nop
+	    bcf	green_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	red_pin,a
+
+	    return
+
+	    display_white:
+	    ; white = RGB(255,255,255)
+	    bsf	red_pin,a
+	    bsf	green_pin,a
+	    bsf	blue_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	red_pin,a
+	    bcf	green_pin,a
+	    bcf	blue_pin,a
+
+	    return
+
+	    display_red:
+	    bsf	red_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	red_pin,a
+
+	    return
+
+	    display_green:
+	    bsf	green_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	green_pin,a
+
+	    return
+
+	    display_blue:
+	    bsf	blue_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	blue_pin,a
+
+	    return
+    
+SUB_TRANSITIONS6:
+    BCF	    colour_display,a
     
     
 STATE_MACHINE_END:
