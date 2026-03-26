@@ -1570,24 +1570,31 @@ flash:
 	; number of flashes
 	movlw   3
 	movwf   count,a
-	; save portD
-	; movf    PORTD,w,a
+	
 	BEGIN_FLASH:
 	; begin flashing
 	    ; turn off
-	clrf    PORTD,a
+	bcf	red_pin,a
+	bcf	green_pin,a
+	bcf	blue_pin,a
 	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
+	    ;start 0.166 second timer
+	bsf	delay_333_call,a
+	call    delay_333
+	bcf	delay_333_call,a
+	; do this because i will do things while waiting for the timer.
+	bsf	wait_for_timer333,a
 	    ; turn on
-	movwf   PORTD,a
+	BSF	colour_display,a
+	call	display_colour
+	BCF	colour_display,a
 	    ;wait 0.166 seconds
-	bsf	wait_for_timer333,a
-	bsf	delay_333_call,a
-	call    delay_333
-	bcf	delay_333_call,a
+	btfsc	wait_for_timer333,a
+	bra	$-4
 	; did we flash enough?
 	decfsz  count,a
 	bra	BEGIN_FLASH	; no
