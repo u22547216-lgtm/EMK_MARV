@@ -1069,46 +1069,49 @@ detect_colour:
 		white_red_check:
     
 	    
-	    ;sensor 0
 	    clrf	red_check_bits,a
 
+	    ;sensor 0
 	    movf    white_red_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,0,a
 
-
+	    ;sensor 1
 	    movf    white_red_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,1,a
 
+	    ;sensor 2
 	    movf    white_red_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,2,a
 
+	    ;sensor 3
 	    movf    white_red_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,3,a
 
+	    ;sensor 4
 	    movf    white_red_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,4,a
@@ -1117,45 +1120,49 @@ detect_colour:
 		white_green_check:
 
 
-	    ;sensor 0
 	    clrf	green_check_bits,a
 
+	    ;sensor 0
 	    movf    white_green_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,0,a
 
+	    ;sensor 1
 	    movf    white_green_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,1,a
 
+	    ;sensor 2
 	    movf    white_green_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,2,a
 
+	    ;sensor 3
 	    movf    white_green_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,3,a
 
+	    ;sensor 4
 	    movf    white_green_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,4,a
@@ -1164,45 +1171,49 @@ detect_colour:
 		white_blue_check:
 
 
-	    ;sensor 0
 	    clrf	blue_check_bits,a
 
+	    ;sensor 0
 	    movf    white_blue_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,0,a
 
+	    ;sensor 1
 	    movf    white_blue_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,1,a
 
+	    ;sensor 2
 	    movf    white_blue_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,2,a
 
+	    ;sensor 3
 	    movf    white_blue_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,3,a
 
+	    ;sensor 4
 	    movf    white_blue_thresh,w,a
-	    SUBWF   POSTINC0,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
-	    NEGF    WREG,a
+	    NEGF    WREG,a		    ; make positive if negative
 	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,4,a
