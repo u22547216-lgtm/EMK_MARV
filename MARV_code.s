@@ -86,7 +86,7 @@ subroutine_0	equ 0x07
 #define check_colour	    subroutine_0,3
 	
 #define show_the_colours    subroutine_0,4
-#define	flash_port_d	    subroutine_0,5
+#define	flash_colour_display	    subroutine_0,5
 #define button_press_check  subroutine_0,6
 #define colour_display	    subroutine_0,7
 
@@ -118,6 +118,9 @@ colour_displays	    equ 0x3F
 #define blue_indicator      colour_displays,2
 #define black_indicator     colour_displays,3
 #define white_indicator     colour_displays,4
+	    
+#define race_error_indicator      colour_displays,5
+#define error_indicator     colour_displays,6
 		
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -322,7 +325,7 @@ STATE_MACHINE_SETUP:
     ;BSF read_sensors_call,a
     ;BSF check_colour,a
     ;BSF show_the_colours,a
-    ;BSF flash_port_d,a
+    ;BSF flash_colour_display,a
     ;BSF button_press_check,a
 
 	; Delay skips
@@ -342,7 +345,9 @@ calibration:
 	movwf   number_of_readings,a
 	bsf	    red_indicator,a
 
-	call    wait_for_button_press_calibration
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -374,7 +379,9 @@ calibration:
 	bcf	    red_indicator,a
 	bsf	    green_indicator,a
 
-	call    wait_for_button_press_calibration
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -406,7 +413,9 @@ calibration:
 	bcf	    green_indicator,a
 	bsf	    blue_indicator,a
 
-	call    wait_for_button_press_calibration
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -438,7 +447,9 @@ calibration:
 	bcf	    blue_indicator,a
 	bsf	    black_indicator,a
 
-	call    wait_for_button_press_calibration
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -516,7 +527,9 @@ calibration:
 	bcf	    black_indicator,a
 	bsf	    white_indicator,a
 
-	call    wait_for_button_press_calibration
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 	
@@ -589,14 +602,17 @@ calibration:
 	subwf   white_green_thresh,f,a
 	subwf   white_blue_thresh,f,a
 
-	setf    PORTD,a
-	call    wait_for_button_press_calibration
+	bcf	    white_indicator,a
+	; setf    PORTD,a
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 
 	call    detect_colour
 
     ; calibrated colour
 	movff   SENSOR2,RACE_COLOUR
-	clrf    PORTD,a
+	; clrf    PORTD,a
 
 	movlw   'R'
 	cpfseq  RACE_COLOUR,a
@@ -626,8 +642,12 @@ calibration:
 
 	display_race_colour:
 
-	call flash
-	call wait_for_button_press_calibration
+	bsf		flash_colour_display,a
+	call 	flash
+	bcf		flash_colour_display,a
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 
 	return
     
@@ -1028,7 +1048,7 @@ detect_colour:
     BTFSS   check_colour,a
     GOTO    SUBROUTINE4
     
-    TODO_make_this_work_with_states_1:  ; to-do todo to do
+    ;TODO_make_this_work_with_states_1:  ; to-do todo to do
     
 	; clear the previous colours
 	clrf    SENSOR0,a
@@ -1522,13 +1542,13 @@ show_colour:
     GOTO    SUBROUTINE5
     
     ; check solid colour
-	movf	SENSOR0,w,a
-	andwf	SENSOR1,w,a
-	andwf	SENSOR2,w,a
-	andwf	SENSOR3,w,a
-	andwf	SENSOR4,w,a
+	; movf	SENSOR0,w,a
+	; andwf	SENSOR1,w,a
+	; andwf	SENSOR2,w,a
+	; andwf	SENSOR3,w,a
+	; andwf	SENSOR4,w,a
 
-	clrf	PORTD,a
+	; clrf	PORTD,a
 
 	movwf	extra,a
 	movlw	'W'
@@ -1564,7 +1584,7 @@ SUB_TRANSITIONS4:
     
 SUBROUTINE5:
 flash:
-    BTFSS   flash_port_d,a
+    BTFSS   flash_colour_display,a
     GOTO    SUBROUTINE6
     
 	; number of flashes
@@ -1602,11 +1622,11 @@ flash:
 	return
     
 SUB_TRANSITIONS5:
-    BCF	    flash_port_d,a
+    BCF	    flash_colour_display,a
         
     
 SUBROUTINE6:
-wait_for_button_press_calibration:
+wait_for_button_press_show_colour:
     BTFSS   button_press_check,a
     GOTO    STATE_MACHINE_END
     
@@ -1646,13 +1666,23 @@ display_colour:
 	bra	    display_green
 	BTFSC   blue_indicator,a
 	bra	    display_blue
+	BTFSC	race_error_indicator,a
+	bra		display_race_error
+	BTFSC 	error_indicator,a
+	bra		display_error
+	
+	display_colour_end:
+	; clrf	colour_displays,a
     
 	RETURN
+	bra	SUB_TRANSITIONS7
+	
     
 	    display_black:
 	    ; orange = RGB(255,102,0), means 40% duty cycle on green
-	    bsf	green_pin,a
 	    bsf	red_pin,a
+	    bsf	green_pin,a
+	    nop
 	    nop
 	    nop
 	    bcf	green_pin,a
@@ -1666,9 +1696,7 @@ display_colour:
 
 	    display_white:
 	    ; white = RGB(255,255,255)
-	    bsf	red_pin,a
-	    bsf	green_pin,a
-	    bsf	blue_pin,a
+		SETF	LATA,a
 	    nop
 	    nop
 	    nop
@@ -1676,14 +1704,16 @@ display_colour:
 	    nop
 	    nop
 	    nop
-	    bcf	red_pin,a
-	    bcf	green_pin,a
-	    bcf	blue_pin,a
+		nop
+		nop
+		CLRF	LATA,a
 
 	    return
 
 	    display_red:
 	    bsf	red_pin,a
+	    nop
+	    nop
 	    nop
 	    nop
 	    nop
@@ -1704,6 +1734,8 @@ display_colour:
 	    nop
 	    nop
 	    nop
+	    nop
+	    nop
 	    bcf	green_pin,a
 
 	    return
@@ -1717,11 +1749,44 @@ display_colour:
 	    nop
 	    nop
 	    nop
+	    nop
+	    nop
 	    bcf	blue_pin,a
 
 	    return
+
+		display_race_error:
+		SETF	LATA,a
+	    nop
+	    nop
+	    MOVF	race_error_colour_magic,w,a
+	    SUBWF	LATA,a
+	    nop
+	    nop
+	    nop
+		nop
+		nop
+		CLRF	LATA,a
+
+		return
+
+		display_error:
+		; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
+	    bsf	red_pin,a
+	    bsf	green_pin,a
+		nop
+		bcf	green_pin,a
+		bcf	red_pin,a
+		nop
+		nop
+		nop
+		nop
+		nop
+		nop
+
+		return
     
-SUB_TRANSITIONS6:
+SUB_TRANSITIONS7:
     BCF	    colour_display,a
     
     
