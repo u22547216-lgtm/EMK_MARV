@@ -1073,28 +1073,43 @@ detect_colour:
 	    clrf	red_check_bits,a
 
 	    movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,0,a
 
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,1,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,2,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,3,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    red_check_bits,4,a
 
@@ -1106,27 +1121,42 @@ detect_colour:
 	    clrf	green_check_bits,a
 
 	    movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,0,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,1,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,2,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,3,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,4,a
 
@@ -1138,27 +1168,42 @@ detect_colour:
 	    clrf	blue_check_bits,a
 
 	    movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,0,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,1,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,2,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,3,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a
+	    BNN	    $+4
+	    NEGF    WREG,a
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    blue_check_bits,4,a
 
