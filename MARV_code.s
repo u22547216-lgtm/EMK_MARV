@@ -1215,14 +1215,12 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
-	    TODO_change_from_FSR1_to_FSR0:
-	    lfsr    1,059h
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR0,a
 
 	    CLRF    check,a
 	    ;check sensor 1
@@ -1233,13 +1231,12 @@ detect_colour:
 	    btfsc   blue_check_bits,1,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ah
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR1,a
 
 	    CLRF    check,a
 	    ;check sensor 2
@@ -1250,13 +1247,12 @@ detect_colour:
 	    btfsc   blue_check_bits,2,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Bh
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR2,a
 
 	    CLRF    check,a
 	    ;check sensor 3
@@ -1267,13 +1263,12 @@ detect_colour:
 	    btfsc   blue_check_bits,3,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ch
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR3,a
 
 	    CLRF    check,a
 	    ;check sensor 4
@@ -1284,13 +1279,12 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Dh
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR4,a
 	    
 	    TODO_change_how_the_colour_checks_are_done:
 	    ; best ideas so far:
@@ -1303,8 +1297,6 @@ detect_colour:
 	    ; comments:
 		; need to check how much noise is on the output of the new amplifier
 		; circuit to see how generous i have to be with the error tollerance 
-	    nop
-	    TODO_also_change_FSR1_to_FSR0_for_these_checks:
 	    nop
 	    TODO_maybe_put_a_checking_order_for_the_colours:
 	    nop
@@ -1441,7 +1433,7 @@ detect_colour:
 	    bsf	    blue_check_bits,4,a
 
 
-	    checking_colours:
+	checking_colours:
 	    CLRF    check,a
 	    
 	    ;check sensor 0
@@ -1452,12 +1444,12 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
-	    lfsr    1,059h
 	    movlw	'W'
 	    cpfseq	SENSOR0,a   ; did the white check give this a colour already?
 	    bra	$+4
-	    bra	$+6
+	    bra	$+8
 	    call    run_detection_checks    ; no
+		movwf	SENSOR0,a
 
 	    CLRF    check,a
 	    ;check sensor 1
@@ -1468,12 +1460,12 @@ detect_colour:
 	    btfsc   blue_check_bits,1,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ah
 	    movlw	'W'
 	    cpfseq	SENSOR1,a   ; did the white check give this a colour already?
 	    bra	$+4
-	    bra	$+6
+	    bra	$+8
 	    call    run_detection_checks    ; no
+		movwf	SENSOR1,a
 
 	    CLRF    check,a
 	    ;check sensor 2
@@ -1484,12 +1476,12 @@ detect_colour:
 	    btfsc   blue_check_bits,2,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Bh
 	    movlw	'W'
 	    cpfseq	SENSOR2,a   ; did the white check give this a colour already?
 	    bra	$+4
-	    bra	$+6
+	    bra	$+8
 	    call    run_detection_checks    ; no
+		movwf	SENSOR2,a
 
 	    CLRF    check,a
 	    ;check sensor 3
@@ -1500,12 +1492,12 @@ detect_colour:
 	    btfsc   blue_check_bits,3,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ch
 	    movlw	'W'
 	    cpfseq	SENSOR3,a   ; did the white check give this a colour already?
 	    bra	$+4
-	    bra	$+6
+	    bra	$+8
 	    call    run_detection_checks    ; no
+		movwf	SENSOR3,a
 
 	    CLRF    check,a
 	    ;check sensor 4
@@ -1516,81 +1508,61 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Dh
 	    movlw	'W'
 	    cpfseq	SENSOR4,a   ; did the white check give this a colour already?
 	    bra	$+4
-	    bra	$+6
+	    bra	$+8
 	    call    run_detection_checks    ; no
+		movwf	SENSOR4,a
+
 	return
 	    run_detection_checks:
     
 		movlw   0
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees black
-		movlw   'K'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'K'
 
 		movlw   1
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees red
-		movlw   'R'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'R'
 
 		movlw   2
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees green
-		movlw   'G'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'G'
 
 		movlw   4
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees blue
-		movlw   'B'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'B'
 		
 		; race error check
 		movlw	'R'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+4
-		btfss	check,0,a
 		bra	$+8
-		movlw	'e'
-		movwf   INDF1,a
-		RETURN
+		btfsc	check,0,a
+		RETLW	'e'
 		
 		movlw	'G'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+4
-		btfss	check,1,a
 		bra	$+8
-		movlw	'e'
-		movwf   INDF1,a
-		RETURN
+		btfsc	check,1,a
+		RETLW	'e'
 		
 		movlw	'B'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+4
-		btfss	check,0,a
 		bra	$+8
-		movlw	'e'
-		movwf   INDF1,a
-		RETURN
+		btfsc	check,0,a
+		RETLW	'e'
 
 		; default to ERROR
-		movlw   'E'
-		movwf   INDF1,a
-
-		return
-
+		RETLW   'E'
     
 SUB_TRANSITIONS3:
     BCF	    check_colour,a
