@@ -1561,10 +1561,37 @@ blue_tol	    equ 0x4F
 		movlw   'B'
 		movwf   INDF1,a
 		RETURN
+		
+		; race error check
+		movlw	'R'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+4
+		btfss	check,0,a
+		bra	$+8
+		movlw	'e'
+		movwf   INDF1,a
+		RETURN
+		
+		movlw	'G'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+4
+		btfss	check,1,a
+		bra	$+8
+		movlw	'e'
+		movwf   INDF1,a
+		RETURN
+		
+		movlw	'B'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+4
+		btfss	check,0,a
+		bra	$+8
+		movlw	'e'
+		movwf   INDF1,a
+		RETURN
 
-		TODO_add_error_case_for_this:
-		; default to white for now
-		movlw   'W'
+		; default to ERROR
+		movlw   'E'
 		movwf   INDF1,a
 
 		return
