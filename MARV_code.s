@@ -1357,11 +1357,6 @@ detect_colour:
 	check_green:
 	    clrf	green_check_bits,a
 	    
-	    
-red_tol		    equ 0x4D
-green_tol	    equ 0x4E
-blue_tol	    equ 0x4F
-	    
 	    ; sensor 0
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
