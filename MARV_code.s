@@ -1307,6 +1307,10 @@ detect_colour:
 	    clrf	red_check_bits,a
 	    
 	    ; sensor 0
+		; is it white?
+		TSTFSZ	SENSOR0,a
+		bra		$+14
+
 	    movf    red_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1315,6 +1319,10 @@ detect_colour:
 	    bsf	    red_check_bits,0,a
 
 	    ; sensor 1
+		; is it white?
+		TSTFSZ	SENSOR1,a
+		bra		$+14
+
 	    movf    red_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1323,6 +1331,10 @@ detect_colour:
 	    bsf	    red_check_bits,1,a
 
 	    ; sensor 2
+		; is it white?
+		TSTFSZ	SENSOR2,a
+		bra		$+14
+
 	    movf    red_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1331,6 +1343,13 @@ detect_colour:
 	    bsf	    red_check_bits,2,a
 
 	    ; sensor 3
+		; is it white?
+		TSTFSZ	SENSOR3,a
+		bra		$+14
+
+		; is it white?
+		TSTFSZ	SENSOR3,a
+		bra		$+14
 	    movf    red_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1339,6 +1358,10 @@ detect_colour:
 	    bsf	    red_check_bits,3,a
 
 	    ; sensor 4
+		; is it white?
+		TSTFSZ	SENSOR4,a
+		bra		$+14
+
 	    movf    red_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1346,10 +1369,14 @@ detect_colour:
 	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,4,a
 
-	check_green:
+	green_checks:
 	    clrf	green_check_bits,a
 	    
 	    ; sensor 0
+		; is it white?
+		TSTFSZ	SENSOR0,a
+		bra		$+14
+		
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1358,6 +1385,10 @@ detect_colour:
 	    bsf	    green_check_bits,0,a
 
 	    ; sensor 1
+		; is it white?
+		TSTFSZ	SENSOR1,a
+		bra		$+14
+
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1366,6 +1397,10 @@ detect_colour:
 	    bsf	    green_check_bits,1,a
 
 	    ; sensor 2
+		; is it white?
+		TSTFSZ	SENSOR2,a
+		bra		$+14
+
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1374,6 +1409,10 @@ detect_colour:
 	    bsf	    green_check_bits,2,a
 
 	    ; sensor 3
+		; is it white?
+		TSTFSZ	SENSOR3,a
+		bra		$+14
+
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1382,6 +1421,10 @@ detect_colour:
 	    bsf	    green_check_bits,3,a
 
 	    ; sensor 4
+		; is it white?
+		TSTFSZ	SENSOR4,a
+		bra		$+14
+
 	    movf    green_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1389,10 +1432,14 @@ detect_colour:
 	    cpfslt  green_tol,a
 	    bsf	    green_check_bits,4,a
 
-	check_blue:
+	blue_checks:
 	    clrf	blue_check_bits,a
 	    
 	    ; sensor 0
+		; is it white?
+		TSTFSZ	SENSOR0,a
+		bra		$+14
+
 	    movf    blue_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1401,6 +1448,10 @@ detect_colour:
 	    bsf	    blue_check_bits,0,a
 
 	    ; sensor 1
+		; is it white?
+		TSTFSZ	SENSOR1,a
+		bra		$+14
+
 	    movf    blue_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1409,6 +1460,10 @@ detect_colour:
 	    bsf	    blue_check_bits,1,a
 
 	    ; sensor 2
+		; is it white?
+		TSTFSZ	SENSOR2,a
+		bra		$+14
+
 	    movf    blue_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1417,6 +1472,10 @@ detect_colour:
 	    bsf	    blue_check_bits,2,a
 
 	    ; sensor 3
+		; is it white?
+		TSTFSZ	SENSOR3,a
+		bra		$+14
+
 	    movf    blue_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1425,6 +1484,10 @@ detect_colour:
 	    bsf	    blue_check_bits,3,a
 
 	    ; sensor 4
+		; is it white?
+		TSTFSZ	SENSOR4,a
+		bra		$+14
+
 	    movf    blue_thresh,w,a
 	    SUBWF   POSTINC0,w,a	    ; get error
 	    BNN	    $+4
@@ -1434,9 +1497,13 @@ detect_colour:
 
 
 	checking_colours:
+	    ; check sensor 0
+		; check if it is white
+		TSTFSZ	SENSOR0,a
+		bra		sensor0_colour_check_end
+
 	    CLRF    check,a
 	    
-	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,0,a
@@ -1444,15 +1511,17 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
-	    movlw	'W'
-	    cpfseq	SENSOR0,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+8
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
 		movwf	SENSOR0,a
+			sensor0_colour_check_end:
 
+	    ; check sensor 1
+		; check if it is white
+		TSTFSZ	SENSOR1,a
+		bra		sensor1_colour_check_end
+		
 	    CLRF    check,a
-	    ;check sensor 1
+
 	    btfsc   red_check_bits,1,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,1,a
@@ -1460,15 +1529,17 @@ detect_colour:
 	    btfsc   blue_check_bits,1,a
 	    bsf     check,2,a
 
-	    movlw	'W'
-	    cpfseq	SENSOR1,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+8
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
 		movwf	SENSOR1,a
+			sensor1_colour_check_end:
 
+	    ; check sensor 2
+		; check if it is white
+		TSTFSZ	SENSOR2,a
+		bra		sensor2_colour_check_end
+		
 	    CLRF    check,a
-	    ;check sensor 2
+
 	    btfsc   red_check_bits,2,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,2,a
@@ -1476,15 +1547,17 @@ detect_colour:
 	    btfsc   blue_check_bits,2,a
 	    bsf     check,2,a
 
-	    movlw	'W'
-	    cpfseq	SENSOR2,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+8
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
 		movwf	SENSOR2,a
+			sensor2_colour_check_end:
 
+	    ; check sensor 3
+		; check if it is white
+		TSTFSZ	SENSOR3,a
+		bra		sensor3_colour_check_end
+		
 	    CLRF    check,a
-	    ;check sensor 3
+		
 	    btfsc   red_check_bits,3,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,3,a
@@ -1492,15 +1565,17 @@ detect_colour:
 	    btfsc   blue_check_bits,3,a
 	    bsf     check,2,a
 
-	    movlw	'W'
-	    cpfseq	SENSOR3,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+8
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
 		movwf	SENSOR3,a
+			sensor3_colour_check_end:
 
+	    ; check sensor 4
+		; check if it is white
+		TSTFSZ	SENSOR4,a
+		bra		sensor4_colour_check_end
+		
 	    CLRF    check,a
-	    ;check sensor 4
+		
 	    btfsc   red_check_bits,4,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,4,a
@@ -1508,12 +1583,10 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    movlw	'W'
-	    cpfseq	SENSOR4,a   ; did the white check give this a colour already?
-	    bra	$+4
 	    bra	$+8
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
 		movwf	SENSOR4,a
+			sensor4_colour_check_end:
 
 	return
 	    run_detection_checks:
