@@ -107,6 +107,7 @@ count		equ 0x11
 extra		equ 0x19
 
 ; RGB control stuff
+race_error_colour_magic	    EQU	0X3E
 ; RGB pins
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
@@ -616,20 +617,23 @@ calibration:
 
 	movlw   'R'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+8
+	bra	    $+10
 	bsf	    red_indicator,a
+	BSF	race_error_colour_magic,4,a
 	goto    display_race_colour
 
 	movlw   'G'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+8
+	bra	    $+10
 	bsf	    green_indicator,a
+	BSF	race_error_colour_magic,6,a
 	goto    display_race_colour
 
 	movlw   'B'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+8
+	bra	    $+10
 	bsf	    blue_indicator,a
+	BSF	race_error_colour_magic,7,a
 	goto    display_race_colour
 
 	movlw   'K'
@@ -787,7 +791,24 @@ test_hardware:
     BTFSS   hardware_tests,a
     GOTO    SUBROUTINE0
     
+    movlb   0x1
     TODO_hardware_tests: ; to-do todo to do
+
+SENSOR0_RED	EQU 0X100
+SENSOR1_RED	EQU 0X101
+SENSOR2_RED	EQU 0X102
+SENSOR3_RED	EQU 0X103
+SENSOR4_RED	EQU 0X104
+SENSOR0_GREEN	EQU 0X105
+SENSOR1_GREEN	EQU 0X106
+SENSOR2_GREEN	EQU 0X107
+SENSOR3_GREEN	EQU 0X108
+SENSOR4_GREEN	EQU 0X109
+SENSOR0_BLUE	EQU 0X10A
+SENSOR1_BLUE	EQU 0X10B
+SENSOR2_BLUE	EQU 0X10C
+SENSOR3_BLUE	EQU 0X10D
+SENSOR4_BLUE	EQU 0X10E
     
     lfsr    0,100h
     bsf	    read_sensors_call,a
@@ -1795,7 +1816,7 @@ display_colour:
 
 	    display_white:
 	    ; white = RGB(255,255,255)
-		SETF	LATA,a
+	    SETF	LATA,a
 	    nop
 	    nop
 	    nop
@@ -1803,9 +1824,9 @@ display_colour:
 	    nop
 	    nop
 	    nop
-		nop
-		nop
-		CLRF	LATA,a
+	    nop
+	    nop
+	    CLRF	LATA,a
 
 	    return
 
@@ -1854,8 +1875,8 @@ display_colour:
 
 	    return
 
-		display_race_error:
-		SETF	LATA,a
+	    display_race_error:
+	    SETF	LATA,a
 	    nop
 	    nop
 	    MOVF	race_error_colour_magic,w,a
@@ -1863,27 +1884,27 @@ display_colour:
 	    nop
 	    nop
 	    nop
-		nop
-		nop
-		CLRF	LATA,a
+	    nop
+	    nop
+	    CLRF	LATA,a
 
-		return
+	    return
 
-		display_error:
-		; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
+	    display_error:
+	    ; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
 	    bsf	red_pin,a
 	    bsf	green_pin,a
-		nop
-		bcf	green_pin,a
-		bcf	red_pin,a
-		nop
-		nop
-		nop
-		nop
-		nop
-		nop
+	    nop
+	    bcf	green_pin,a
+	    bcf	red_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
 
-		return
+	    return
     
 SUB_TRANSITIONS7:
     BCF	    colour_display,a
