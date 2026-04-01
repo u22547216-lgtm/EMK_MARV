@@ -114,14 +114,15 @@ race_error_colour_magic	    EQU	0X3E
 #define blue_pin    PORTA,7
 ; colour indicator offsets in code
 DISPLAYED_COLOUR	equ 0x3F
-    black_indicator	    EQU 0b0000010
-    white_indicator	    EQU 0b0000100
-    red_indicator	    EQU 0b0000110
-    green_indicator	    EQU 0b0001000
-    blue_indicator	    EQU 0b0001010
+    no_indicator	    EQU 0b00000010
+    black_indicator	    EQU 0b00000100
+    white_indicator	    EQU 0b00000110
+    red_indicator	    EQU 0b00001000
+    green_indicator	    EQU 0b00001010
+    blue_indicator	    EQU 0b00001100
 	    
-    race_error_indicator    EQU 0b0001100
-    error_indicator	    EQU 0b0001110
+    race_error_indicator    EQU 0b00001110
+    error_indicator	    EQU 0b00010000
 		
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -376,7 +377,7 @@ calibration:
 
 	MOVWF   red_thresh,a
 	movlw   10
-	subwf   red_thresh,f,a
+	MOVWF   red_tol,a
 
 	;green
 	lfsr    0, 100h
@@ -410,7 +411,7 @@ calibration:
 
 	MOVWF green_thresh,a
 	movlw   10
-	subwf   green_thresh,f,a
+	MOVWF   green_tol,a
 
 	;blue
 	lfsr    0, 100h
@@ -444,7 +445,7 @@ calibration:
 
 	MOVWF blue_thresh,a
 	movlw   10
-	subwf   blue_thresh,f,a
+	MOVWF   blue_tol,a
 
 	;black
 	lfsr    0, 100h
@@ -523,9 +524,8 @@ calibration:
 
 
 	movlw   10
-	subwf   black_red_thresh,f,a
-	subwf   black_green_thresh,f,a
-	subwf   black_blue_thresh,f,a
+	MOVWF   black_tol,a
+	
 	;white
 	lfsr    0, 100h
 	MOVLW	white_indicator
@@ -602,11 +602,11 @@ calibration:
 
 
 	movlw   10
-	subwf   white_red_thresh,f,a
-	subwf   white_green_thresh,f,a
-	subwf   white_blue_thresh,f,a
+	MOVWF   white_tol,a
 
-	bcf	    white_indicator,a
+	MOVLW	no_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+	
 	; setf    PORTD,a
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -1789,6 +1789,7 @@ display_colour:
     GOTO    STATE_MACHINE_END
     
 	ADDWF	PCL,a
+	bra	    display_nothing
 	;BTFSC   black_indicator,a
 	bra	    display_black
 	;BTFSC   white_indicator,a
@@ -1810,6 +1811,19 @@ display_colour:
 	RETURN
 	bra	SUB_TRANSITIONS7
 	
+	    display_nothing:
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    
+	    return
     
 	    display_black:
 	    ; orange = RGB(255,102,0), means 40% duty cycle on green
