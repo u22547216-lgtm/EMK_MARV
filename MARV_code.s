@@ -76,6 +76,7 @@ state_0		equ 0x06
 #define follow_line	state_0,1
 #define code_tests	state_0,2
 #define hardware_tests	state_0,3
+#define	touch_start	state_0,4
 
 ; sub-routine bits
 subroutine_0	equ 0x07
@@ -86,8 +87,9 @@ subroutine_0	equ 0x07
 #define check_colour	    subroutine_0,3
 	
 #define show_the_colours    subroutine_0,4
-#define	flash_port_d	    subroutine_0,5
+#define	flash_colour_display	    subroutine_0,5
 #define button_press_check  subroutine_0,6
+#define colour_display	    subroutine_0,7
 
 ; delay skip bits
 DELAY_SKIP		equ	0x08
@@ -105,20 +107,46 @@ count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
 
+; RGB control stuff
+; RGB pins
+#define red_pin     PORTA,4
+#define green_pin   PORTA,6
+#define blue_pin    PORTA,7
+; colour indicator pins
+colour_displays	    equ 0x3F
+#define red_indicator       colour_displays,0
+#define green_indicator     colour_displays,1
+#define blue_indicator      colour_displays,2
+#define black_indicator     colour_displays,3
+#define white_indicator     colour_displays,4
+	    
+#define race_error_indicator      colour_displays,5
+#define error_indicator     colour_displays,6
+		
 ; colour detection registers
 red_thresh	    equ	0x40
 green_thresh	    equ	0x41
 blue_thresh	    equ	0x42
+	    
 black_red_thresh	equ 0x43
 black_green_thresh	equ 0x44
 black_blue_thresh	equ 0x45
+	
 white_red_thresh	equ 0x46
 white_green_thresh	equ 0x47
 white_blue_thresh	equ 0x48
+	
 red_check_bits	    equ	0x49
 green_check_bits    equ	0x4A
 blue_check_bits	    equ	0x4B
 check		    equ 0x4C
+		    
+; colour detection tolerances
+red_tol		    equ 0x4D
+green_tol	    equ 0x4E
+blue_tol	    equ 0x4F
+white_tol	    equ 0x50
+black_tol	    equ 0x51
 
 ; LLI registers
 SENSOR_START	equ 059h
@@ -130,16 +158,13 @@ SENSOR4        EQU 0x5D
 RACE_COLOUR    EQU 0x5E
 BLACK_FLAG     EQU 0x5F
 
-; RGB pins
-#define red_pin     PORTA,4
-#define green_pin   PORTA,6
-#define blue_pin    PORTA,7
-; colour indicator pins
-#define red_indicator       PORTD,0
-#define green_indicator     PORTD,1
-#define blue_indicator      PORTD,2
-#define black_indicator     PORTD,3
-#define white_indicator     PORTD,4
+;Touch Start variables
+touch_flag	EQU 0x60
+Vread		EQU 0x61
+OpenSW		EQU 0x62
+Trip		EQU 0x63
+Hyst		EQU 0x64
+DIFF		EQU 0x65
 
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
@@ -168,6 +193,7 @@ ADC_AN2 	equ 0b00001011 ; 0 00010 1 1
 ADC_AN3 	equ 0b00001111 ; 0 00011 1 1
 ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 
+ADC_TOUCH	equ 0b00010101 ;Use AN5 for cap touch. Can change later
 calib_address	equ 100h
 	
 ;
@@ -179,6 +205,8 @@ calib_address	equ 100h
     org	    0x00 			; startup address = 0000h
     goto init
     org     0x08            ; interrupt start
+    btfsc   TMR2IF	    ;was it timer 2?
+    goto    TIMER2_ISR
     goto ISR
 
 init:
@@ -257,6 +285,22 @@ init:
     clrf    PIE3,a
     clrf    PIE4,a
     clrf    PIE5,a
+    
+    ;Setup for touch pad
+    ;CTMU modules
+    CLRF    CTMUCONH
+    movlw   0b00000010
+    movwf   CTMUICON
+    movlw   0b10010000 
+    movwf   CTMUCONL
+    movlw   0b10001000
+    movwf   CTMUCONH
+    
+    ;Timer2 init for touch pad
+    movlw   0b00000000
+    movwf   T2CON
+    movlw   125
+    movwf   PR2
 
     ; INTCON2 = 0b 0 0 0 0 x 0 x 0 
     ; bsf	    INTCON2,7,a	; no RBPU
@@ -267,10 +311,13 @@ init:
     bsf	    INT1IE	    ; INT1I is enabled
     ; INTCON = 0b 1 0 1 0 0 0 0 0
     bsf	    TMR0IE	    ; enable timer 0 interrupts
+    bsf	    TMR2IE	    ;enable timer 2 interrupts
+    BSF	    PEIE
     bsf	    GIEH	    ; enable high priority interupts
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
+    
     movlw   1
     movwf   number_of_readings,a
     clrf    calibrated_color,a
@@ -281,6 +328,14 @@ init:
     clrf    SENSOR3,a
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
+    ;initializing touch pad variables
+    clrf    touch_flag,a	
+    clrf    Vread,a		
+    clrf    OpenSW,a		
+    clrf    Trip,a		
+    clrf    Hyst,a		
+    clrf    DIFF,a
+    
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -294,6 +349,8 @@ STATE_MACHINE_SETUP:
 	CLRF	DELAY_SKIP,a
 	CLRF	timer_waits,a
     
+    ;Set touch start bit first so that the program waits for the touch pad to be touched
+    BSF	touch_start,a
     ; State activation bits
     ;BSF calibrate,a
     ;BSF follow_line,a
@@ -308,7 +365,7 @@ STATE_MACHINE_SETUP:
     ;BSF read_sensors_call,a
     ;BSF check_colour,a
     ;BSF show_the_colours,a
-    ;BSF flash_port_d,a
+    ;BSF flash_colour_display,a
     ;BSF button_press_check,a
 
 	; Delay skips
@@ -316,6 +373,93 @@ STATE_MACHINE_SETUP:
 	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
+    
+STATE_TOUCH:
+    BTFSS   touch_start,a
+    GOTO    STATE0
+    ;Load threshold values. Change according to the touch pad used
+    CAP_TOUCH:
+	MOVLW	0b00001001
+	MOVWF	ADCON0,a
+	movlw   8
+	movwf   OpenSW	;unpressed switch value
+	movlw   1
+	movwf   Trip	;difference between pressed and unpressed switch
+	movlw   1
+	movwf   Hyst	;amount tp change from pressed to unpressed
+    CHECK_TOUCH:
+	MOVF    Trip,W
+	SUBWF   OpenSW,0
+	MOVWF   DIFF	;DIFF is OpenSW - Trip. This is the base comparison
+	
+	;Discharge touch pad
+	BSF	    CTMUEN
+	BCF	    EDG1STAT
+	BCF	    EDG2STAT
+	BSF	    IDISSEN
+	CALL	    CAP_DELAY
+	BCF	    IDISSEN
+
+	;Charge circuit
+	BSF	    EDG1STAT
+	CALL	    CAP_DELAY
+	BCF	    EDG1STAT
+
+	;AD conversion
+	BSF	    GO
+	BTFSC	    GO
+	BRA	    $-2
+	MOVF	    ADRESH,W
+	MOVWF	    Vread
+	
+	;test if Vread = 0
+	MOVLW   0
+	CPFSEQ  Vread
+	GOTO    CHK_P_OR_UP
+	BSF	PORTA,7
+	GOTO    CHECK_TOUCH
+	
+    ;Check if pressed or unpressed
+    CHK_P_OR_UP:
+	;Check for pressed
+	MOVF    DIFF,W
+	CPFSLT  Vread  
+	GOTO    PAD_PRESS
+	;Check for unpressed
+	MOVF    Hyst,W
+	ADDWF   DIFF
+	MOVF    DIFF,W
+	CPFSGT  Vread
+	GOTO    PAD_UNPRESS
+	GOTO    STATE_TOUCH	;Loop touch start sequence until pad is pressed
+    
+    PAD_PRESS:
+	BCF	    PORTA,7
+	BSF	    PORTA,4
+	GOTO	    TOUCH_TRANSITION
+    PAD_UNPRESS:
+	BCF	    PORTA,4
+	BSF	    PORTA,7
+	GOTO	    CHECK_TOUCH
+    TOUCH_TRANSITION:
+	BCF	    touch_start
+	BCF	    PORTA,4
+	BCF	    PORTA,7
+	GOTO	    STATE_TOUCH
+    CAP_DELAY:    
+	CLRF	    TMR2
+	BSF	    TMR2ON
+    WAIT1:
+	BTFSS	    touch_flag,0
+	BRA	    WAIT1
+	BCF	    touch_flag,0
+	BCF	    TMR2ON
+	RETURN
+    TIMER2_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
+    ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
+	BSF	    touch_flag,0
+	BCF	    TMR2IF
+	RETFIE
 		
 STATE0:
 calibration:
@@ -328,7 +472,9 @@ calibration:
 	movwf   number_of_readings,a
 	bsf	    red_indicator,a
 
-	call    wait_for_button_press
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -360,7 +506,9 @@ calibration:
 	bcf	    red_indicator,a
 	bsf	    green_indicator,a
 
-	call    wait_for_button_press
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -392,7 +540,9 @@ calibration:
 	bcf	    green_indicator,a
 	bsf	    blue_indicator,a
 
-	call    wait_for_button_press
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -424,7 +574,9 @@ calibration:
 	bcf	    blue_indicator,a
 	bsf	    black_indicator,a
 
-	call    wait_for_button_press
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 
@@ -502,7 +654,9 @@ calibration:
 	bcf	    black_indicator,a
 	bsf	    white_indicator,a
 
-	call    wait_for_button_press
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 	call    read_sensors
 	
 	
@@ -575,14 +729,17 @@ calibration:
 	subwf   white_green_thresh,f,a
 	subwf   white_blue_thresh,f,a
 
-	setf    PORTD,a
-	call    wait_for_button_press
+	bcf	    white_indicator,a
+	; setf    PORTD,a
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 
 	call    detect_colour
 
     ; calibrated colour
 	movff   SENSOR2,RACE_COLOUR
-	clrf    PORTD,a
+	; clrf    PORTD,a
 
 	movlw   'R'
 	cpfseq  RACE_COLOUR,a
@@ -612,8 +769,12 @@ calibration:
 
 	display_race_colour:
 
-	call flash
-	call wait_for_button_press
+	bsf		flash_colour_display,a
+	call 	flash
+	bcf		flash_colour_display,a
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
 
 	return
     
@@ -1014,7 +1175,7 @@ detect_colour:
     BTFSS   check_colour,a
     GOTO    SUBROUTINE4
     
-    TODO_make_this_work_with_states_1:  ; to-do todo to do
+    ;TODO_make_this_work_with_states_1:  ; to-do todo to do
     
 	; clear the previous colours
 	clrf    SENSOR0,a
@@ -1035,97 +1196,139 @@ detect_colour:
 		white_red_check:
     
 	    
-	    ;sensor 0
 	    clrf	red_check_bits,a
 
+	    ;sensor 0
 	    movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    red_check_bits,0,a
 
-
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 1
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    red_check_bits,1,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 2
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    red_check_bits,2,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 3
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    red_check_bits,3,a
 
-	    ; movf    white_red_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 4
+	    movf    white_red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    red_check_bits,4,a
 
 
 		white_green_check:
 
 
-	    ;sensor 0
 	    clrf	green_check_bits,a
 
+	    ;sensor 0
 	    movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    green_check_bits,0,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
+	    ;sensor 1
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfsgt  white_tol,a
 	    bra	    $+4
 	    bsf	    green_check_bits,1,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 2
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    green_check_bits,2,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 3
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    green_check_bits,3,a
 
-	    ; movf    white_green_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 4
+	    movf    white_green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    green_check_bits,4,a
 
 
 		white_blue_check:
 
 
-	    ;sensor 0
 	    clrf	blue_check_bits,a
 
+	    ;sensor 0
 	    movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    blue_check_bits,0,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 1
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    blue_check_bits,1,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 2
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    blue_check_bits,2,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 3
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    blue_check_bits,3,a
 
-	    ; movf    white_blue_thresh,w,a
-	    cpfsgt  POSTINC0,a
-	    bra	    $+4
+	    ;sensor 4
+	    movf    white_blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  white_tol,a
 	    bsf	    blue_check_bits,4,a
 
 	    final_white_check:
@@ -1139,14 +1342,12 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
-	    TODO_change_from_FSR1_to_FSR0:
-	    lfsr    1,059h
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR0,a
 
 	    CLRF    check,a
 	    ;check sensor 1
@@ -1157,13 +1358,12 @@ detect_colour:
 	    btfsc   blue_check_bits,1,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ah
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR1,a
 
 	    CLRF    check,a
 	    ;check sensor 2
@@ -1174,13 +1374,12 @@ detect_colour:
 	    btfsc   blue_check_bits,2,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Bh
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR2,a
 
 	    CLRF    check,a
 	    ;check sensor 3
@@ -1191,13 +1390,12 @@ detect_colour:
 	    btfsc   blue_check_bits,3,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ch
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR3,a
 
 	    CLRF    check,a
 	    ;check sensor 4
@@ -1208,13 +1406,12 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Dh
 	    movlw	7
 	    cpfseq	check,a
 	    bra	$+6
 	    ; it sees white
 	    movlw	'W'
-	    movwf	INDF1,a
+	    movwf	SENSOR4,a
 	    
 	    TODO_change_how_the_colour_checks_are_done:
 	    ; best ideas so far:
@@ -1228,154 +1425,209 @@ detect_colour:
 		; need to check how much noise is on the output of the new amplifier
 		; circuit to see how generous i have to be with the error tollerance 
 	    nop
-	    TODO_also_change_FSR1_to_FSR0_for_these_checks:
-	    nop
 	    TODO_maybe_put_a_checking_order_for_the_colours:
 	    nop
 
-	check_green:
-	    lfsr	1,200h
-	    movlw	5
-	    ;addwf	FSR0,f,a
-	    addwf	FSR1,f,a
+	    lfsr	0,200h
 
-	    
-	    ; sensor 0
-	    clrf	green_check_bits,a
-	    movf    POSTINC1,w,a
-	    cpfslt  green_thresh,a
-	    bra	    $+4
-	    bsf	    green_check_bits,0,a
-
-	    ; sensor 1
-	    movf    POSTINC1,w,a
-	    cpfslt  green_thresh,a
-	    bra	    $+4
-	    bsf	    green_check_bits,1,a
-
-	    ; sensor 2
-	    movf    POSTINC1,w,a
-	    cpfslt  green_thresh,a
-	    bra	    $+4
-	    bsf	    green_check_bits,2,a
-
-	    ; sensor 3
-	    movf    POSTINC1,w,a
-	    cpfslt  green_thresh,a
-	    bra	    $+4
-	    bsf	    green_check_bits,3,a
-
-	    ; sensor 4
-	    movf    POSTINC1,w,a
-	    cpfslt  green_thresh,a
-	    bra	    $+4
-	    bsf	    green_check_bits,4,a
-
-	    red_checks:
-	    LFSR    1, 200h	
-
-	    
+	red_checks:
 	    clrf	red_check_bits,a
 	    
 	    ; sensor 0
-	    btfsc	green_check_bits,0,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  red_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR0,a
+	    bra	    $+14
+
+	    movf    red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,0,a
 
 	    ; sensor 1
-	    btfsc	green_check_bits,1,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  red_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR1,a
+	    bra	    $+14
+
+	    movf    red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,1,a
 
 	    ; sensor 2
-	    btfsc	green_check_bits,2,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  red_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR2,a
+	    bra	    $+14
+
+	    movf    red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,2,a
 
 	    ; sensor 3
-	    btfsc	green_check_bits,3,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  red_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR3,a
+	    bra	    $+14
+		
+	    movf    red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,3,a
 
 	    ; sensor 4
-	    btfsc	green_check_bits,4,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  red_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR4,a
+	    bra	    $+14
+
+	    movf    red_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,4,a
 
-	    check_blue:
-
-	    LFSR    1, 200h	
-	    movlw	10
-	    addwf	FSR1,f,a
-
+	green_checks:
+	    clrf	green_check_bits,a
 	    
+	    ; sensor 0
+	    ; is it white?
+	    TSTFSZ  SENSOR0,a
+	    bra	    $+14
+		
+	    movf    green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  green_tol,a
+	    bsf	    green_check_bits,0,a
+
+	    ; sensor 1
+	    ; is it white?
+	    TSTFSZ  SENSOR1,a
+	    bra	    $+14
+
+	    movf    green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  green_tol,a
+	    bsf	    green_check_bits,1,a
+
+	    ; sensor 2
+	    ; is it white?
+	    TSTFSZ  SENSOR2,a
+	    bra	    $+14
+
+	    movf    green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  green_tol,a
+	    bsf	    green_check_bits,2,a
+
+	    ; sensor 3
+	    ; is it white?
+	    TSTFSZ  SENSOR3,a
+	    bra	    $+14
+
+	    movf    green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  green_tol,a
+	    bsf	    green_check_bits,3,a
+
+	    ; sensor 4
+	    ; is it white?
+	    TSTFSZ  SENSOR4,a
+	    bra	    $+14
+
+	    movf    green_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  green_tol,a
+	    bsf	    green_check_bits,4,a
+
+	blue_checks:
 	    clrf	blue_check_bits,a
 	    
 	    ; sensor 0
-	    btfss	red_check_bits,0,a
-	    btfsc	green_check_bits,0,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  blue_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR0,a
+	    bra	    $+14
+
+	    movf    blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,0,a
 
 	    ; sensor 1
-	    btfss	red_check_bits,1,a
-	    btfsc	green_check_bits,1,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  blue_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR1,a
+	    bra	    $+14
+
+	    movf    blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,1,a
 
 	    ; sensor 2
-	    btfss	red_check_bits,2,a
-	    btfsc	green_check_bits,2,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  blue_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR2,a
+	    bra	    $+14
+
+	    movf    blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,2,a
 
 	    ; sensor 3
-	    btfss	red_check_bits,3,a
-	    btfsc	green_check_bits,3,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  blue_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR3,a
+	    bra	    $+14
+
+	    movf    blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,3,a
 
 	    ; sensor 4
-	    btfss	red_check_bits,4,a
-	    btfsc	green_check_bits,4,a
-	    bra	$+10
-	    movf    POSTINC1,w,a
-	    cpfslt  blue_thresh,a
-	    bra	    $+4
+	    ; is it white?
+	    TSTFSZ  SENSOR4,a
+	    bra	    $+14
+
+	    movf    blue_thresh,w,a
+	    SUBWF   POSTINC0,w,a	    ; get error
+	    BNN	    $+4
+	    NEGF    WREG,a		    ; make positive if negative
+	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,4,a
 
 
-	    checking_colours:
+	checking_colours:
+	    ; check sensor 0
+	    ; check if it is white
+	    TSTFSZ  SENSOR0,a
+	    bra	    $+22
+
 	    CLRF    check,a
 	    
-	    ;check sensor 0
 	    btfsc   red_check_bits,0,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,0,a
@@ -1383,15 +1635,16 @@ detect_colour:
 	    btfsc   blue_check_bits,0,a
 	    bsf     check,2,a
 
-	    lfsr    1,059h
-	    movlw	'W'
-	    cpfseq	SENSOR0,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+6
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
+	    movwf   SENSOR0,a
 
+	    ; check sensor 1
+	    ; check if it is white
+	    TSTFSZ  SENSOR1,a
+	    bra	    $+22
+		
 	    CLRF    check,a
-	    ;check sensor 1
+
 	    btfsc   red_check_bits,1,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,1,a
@@ -1399,15 +1652,16 @@ detect_colour:
 	    btfsc   blue_check_bits,1,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ah
-	    movlw	'W'
-	    cpfseq	SENSOR1,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+6
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
+	    movwf   SENSOR1,a
 
+	    ; check sensor 2
+	    ; check if it is white
+	    TSTFSZ  SENSOR2,a
+	    bra	    $+22
+		
 	    CLRF    check,a
-	    ;check sensor 2
+
 	    btfsc   red_check_bits,2,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,2,a
@@ -1415,15 +1669,16 @@ detect_colour:
 	    btfsc   blue_check_bits,2,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Bh
-	    movlw	'W'
-	    cpfseq	SENSOR2,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+6
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
+	    movwf   SENSOR2,a
 
+	    ; check sensor 3
+	    ; check if it is white
+	    TSTFSZ  SENSOR3,a
+	    bra	    $+22
+		
 	    CLRF    check,a
-	    ;check sensor 3
+		
 	    btfsc   red_check_bits,3,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,3,a
@@ -1431,15 +1686,16 @@ detect_colour:
 	    btfsc   blue_check_bits,3,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Ch
-	    movlw	'W'
-	    cpfseq	SENSOR3,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+6
-	    call    run_detection_checks    ; no
+	    call    run_detection_checks
+	    movwf   SENSOR3,a
 
+	    ; check sensor 4
+	    ; check if it is white
+	    TSTFSZ  SENSOR4,a
+	    bra	    $+22
+		
 	    CLRF    check,a
-	    ;check sensor 4
+		
 	    btfsc   red_check_bits,4,a
 	    bsf     check,0,a
 	    btfsc   green_check_bits,4,a
@@ -1447,54 +1703,58 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    lfsr    1,05Dh
-	    movlw	'W'
-	    cpfseq	SENSOR4,a   ; did the white check give this a colour already?
-	    bra	$+4
-	    bra	$+6
-	    call    run_detection_checks    ; no
+	    bra	$+8
+	    call    run_detection_checks
+	    movwf   SENSOR4,a
+
 	return
 	    run_detection_checks:
     
 		movlw   0
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees black
-		movlw   'K'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'K'
 
 		movlw   1
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees red
-		movlw   'R'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'R'
 
 		movlw   2
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees green
-		movlw   'G'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'G'
 
 		movlw   4
 		cpfseq  check,a
-		bra	    $+8
+		bra	    $+6
 		; it sees blue
-		movlw   'B'
-		movwf   INDF1,a
-		RETURN
+		RETLW   'B'
+		
+		; race error check
+		movlw	'R'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+8
+		btfsc	check,0,a
+		RETLW	'e'
+		
+		movlw	'G'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+8
+		btfsc	check,1,a
+		RETLW	'e'
+		
+		movlw	'B'
+		CPFSEQ	RACE_COLOUR,a
+		bra	$+8
+		btfsc	check,0,a
+		RETLW	'e'
 
-		TODO_add_error_case_for_this:
-		; default to white for now
-		movlw   'W'
-		movwf   INDF1,a
-
-		return
-
+		; default to ERROR
+		RETLW   'E'
     
 SUB_TRANSITIONS3:
     BCF	    check_colour,a
@@ -1508,13 +1768,13 @@ show_colour:
     GOTO    SUBROUTINE5
     
     ; check solid colour
-	movf	SENSOR0,w,a
-	andwf	SENSOR1,w,a
-	andwf	SENSOR2,w,a
-	andwf	SENSOR3,w,a
-	andwf	SENSOR4,w,a
+	; movf	SENSOR0,w,a
+	; andwf	SENSOR1,w,a
+	; andwf	SENSOR2,w,a
+	; andwf	SENSOR3,w,a
+	; andwf	SENSOR4,w,a
 
-	clrf	PORTD,a
+	; clrf	PORTD,a
 
 	movwf	extra,a
 	movlw	'W'
@@ -1550,30 +1810,37 @@ SUB_TRANSITIONS4:
     
 SUBROUTINE5:
 flash:
-    BTFSS   flash_port_d,a
+    BTFSS   flash_colour_display,a
     GOTO    SUBROUTINE6
     
 	; number of flashes
 	movlw   3
 	movwf   count,a
-	; save portD
-	movf    PORTD,w,a
+	
 	BEGIN_FLASH:
 	; begin flashing
 	    ; turn off
-	clrf    PORTD,a
+	bcf	red_pin,a
+	bcf	green_pin,a
+	bcf	blue_pin,a
 	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
+	    ;start 0.166 second timer
+	bsf	delay_333_call,a
+	call    delay_333
+	bcf	delay_333_call,a
+	; do this because i will do things while waiting for the timer.
+	bsf	wait_for_timer333,a
 	    ; turn on
-	movwf   PORTD,a
+	BSF	colour_display,a
+	call	display_colour
+	BCF	colour_display,a
 	    ;wait 0.166 seconds
-	bsf	wait_for_timer333,a
-	bsf	delay_333_call,a
-	call    delay_333
-	bcf	delay_333_call,a
+	btfsc	wait_for_timer333,a
+	bra	$-8
 	; did we flash enough?
 	decfsz  count,a
 	bra	BEGIN_FLASH	; no
@@ -1581,16 +1848,21 @@ flash:
 	return
     
 SUB_TRANSITIONS5:
-    BCF	    flash_port_d,a
+    BCF	    flash_colour_display,a
         
     
 SUBROUTINE6:
-wait_for_button_press:
+wait_for_button_press_show_colour:
     BTFSS   button_press_check,a
     GOTO    STATE_MACHINE_END
     
+	; show the colour to calibrate
+	BSF	colour_display,a
+	call	display_colour
+	BCF	colour_display,a
+	
 	btfss   INT0IF	    ;wait for button press
-	bra	    $-2
+	bra	    $-8
 	; delay so that we dont have to debounce
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
@@ -1605,6 +1877,145 @@ SUB_TRANSITIONS6:
     BCF	    button_press_check,a
     
     
+SUBROUTINE7:
+display_colour:
+    BTFSS   colour_display,a
+    GOTO    STATE_MACHINE_END
+    
+	BTFSC   black_indicator,a
+	bra	    display_black
+	BTFSC   white_indicator,a
+	bra	    display_white
+	BTFSC   red_indicator,a
+	bra	    display_red
+	BTFSC   green_indicator,a
+	bra	    display_green
+	BTFSC   blue_indicator,a
+	bra	    display_blue
+	BTFSC	race_error_indicator,a
+	bra		display_race_error
+	BTFSC 	error_indicator,a
+	bra		display_error
+	
+	display_colour_end:
+	; clrf	colour_displays,a
+    
+	RETURN
+	bra	SUB_TRANSITIONS7
+	
+    
+	    display_black:
+	    ; orange = RGB(255,102,0), means 40% duty cycle on green
+	    bsf	red_pin,a
+	    bsf	green_pin,a
+	    nop
+	    nop
+	    nop
+	    bcf	green_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	red_pin,a
+
+	    return
+
+	    display_white:
+	    ; white = RGB(255,255,255)
+		SETF	LATA,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+		nop
+		nop
+		CLRF	LATA,a
+
+	    return
+
+	    display_red:
+	    bsf	red_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	red_pin,a
+
+	    return
+
+	    display_green:
+	    bsf	green_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	green_pin,a
+
+	    return
+
+	    display_blue:
+	    bsf	blue_pin,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    bcf	blue_pin,a
+
+	    return
+
+		display_race_error:
+		SETF	LATA,a
+	    nop
+	    nop
+;	    MOVF	race_error_colour_magic,w,a
+;	    SUBWF	LATA,a
+	    nop
+	    nop
+	    nop
+		nop
+		nop
+		CLRF	LATA,a
+
+		return
+
+		display_error:
+		; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
+	    bsf	red_pin,a
+	    bsf	green_pin,a
+		nop
+		bcf	green_pin,a
+		bcf	red_pin,a
+		nop
+		nop
+		nop
+		nop
+		nop
+		nop
+
+		return
+    
+SUB_TRANSITIONS7:
+    BCF	    colour_display,a
+    
+    
 STATE_MACHINE_END:
     
 GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
@@ -1617,9 +2028,15 @@ ISR:
     goto    register_dump   
     btfsc   TMR0IF	    ; was it timer 0?
     goto    timer0_interrupt
+;    btfsc   TMR2IF	    ;was it timer 2?
+;    goto    TIMER2_ISR
     
     retfie
 
+;TIMER2_ISR:   
+;    BSF	    touch_flag,0
+;    BCF	    TMR2IF
+;    RETFIE
 
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
@@ -2001,9 +2418,4 @@ test_read_sensor:
     
     return
     
-    end			
-
-
-
-
-
+end			
