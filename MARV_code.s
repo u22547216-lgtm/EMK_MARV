@@ -301,6 +301,24 @@ init:
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
     clrf    race_error_colour_magic,a
+    
+    COLOUR_TOLERANCES:
+	movlw   10
+	MOVWF   red_tol,a
+	
+	movlw   10
+	MOVWF   green_tol,a
+	
+	movlw   10
+	MOVWF   blue_tol,a
+
+	movlw   10
+	MOVWF   black_tol,a
+
+	movlw   10
+	MOVWF   white_tol,a
+    
+    
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -376,8 +394,6 @@ calibration:
 	movf    INDF0,w,a
 
 	MOVWF   red_thresh,a
-	movlw   10
-	MOVWF   red_tol,a
 
 	;green
 	lfsr    0, 100h
@@ -410,8 +426,6 @@ calibration:
 	movf    INDF0,w,a
 
 	MOVWF green_thresh,a
-	movlw   10
-	MOVWF   green_tol,a
 
 	;blue
 	lfsr    0, 100h
@@ -444,8 +458,6 @@ calibration:
 	movf    INDF0,w,a
 
 	MOVWF blue_thresh,a
-	movlw   10
-	MOVWF   blue_tol,a
 
 	;black
 	lfsr    0, 100h
@@ -522,9 +534,6 @@ calibration:
 	
 	movwf	black_blue_thresh,a
 
-
-	movlw   10
-	MOVWF   black_tol,a
 	
 	;white
 	lfsr    0, 100h
@@ -600,9 +609,6 @@ calibration:
 
 	movwf	white_blue_thresh,a
 
-
-	movlw   10
-	MOVWF   white_tol,a
 
 	MOVLW	no_indicator
 	MOVWF	DISPLAYED_COLOUR,a
