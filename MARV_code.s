@@ -112,16 +112,16 @@ race_error_colour_magic	    EQU	0X3E
 #define red_pin     PORTA,4
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
-; colour indicator pins
-colour_displays	    equ 0x3F
-#define red_indicator       colour_displays,0
-#define green_indicator     colour_displays,1
-#define blue_indicator      colour_displays,2
-#define black_indicator     colour_displays,3
-#define white_indicator     colour_displays,4
+; colour indicator offsets in code
+DISPLAYED_COLOUR	equ 0x3F
+    black_indicator	    EQU 0b0000010
+    white_indicator	    EQU 0b0000100
+    red_indicator	    EQU 0b0000110
+    green_indicator	    EQU 0b0001000
+    blue_indicator	    EQU 0b0001010
 	    
-#define race_error_indicator      colour_displays,5
-#define error_indicator     colour_displays,6
+    race_error_indicator    EQU 0b0001100
+    error_indicator	    EQU 0b0001110
 		
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -299,6 +299,7 @@ init:
     clrf    SENSOR3,a
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
+    clrf    race_error_colour_magic,a
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -309,8 +310,8 @@ end_test:
 STATE_MACHINE_SETUP:
     CLRF    state_0,a
     CLRF    subroutine_0,a
-	CLRF	DELAY_SKIP,a
-	CLRF	timer_waits,a
+    CLRF    DELAY_SKIP,a
+    CLRF    timer_waits,a
     
     ; State activation bits
     ;BSF calibrate,a
@@ -328,6 +329,7 @@ STATE_MACHINE_SETUP:
     ;BSF show_the_colours,a
     ;BSF flash_colour_display,a
     ;BSF button_press_check,a
+    ;BSF colour_display,a
 
 	; Delay skips
 	;BSF skip_delay_333,a
@@ -344,7 +346,8 @@ calibration:
 	LFSR    0, 100h
 	movlw   1
 	movwf   number_of_readings,a
-	bsf	    red_indicator,a
+	MOVLW	red_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -377,8 +380,8 @@ calibration:
 
 	;green
 	lfsr    0, 100h
-	bcf	    red_indicator,a
-	bsf	    green_indicator,a
+	MOVLW	green_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -411,8 +414,8 @@ calibration:
 
 	;blue
 	lfsr    0, 100h
-	bcf	    green_indicator,a
-	bsf	    blue_indicator,a
+	MOVLW	blue_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -445,8 +448,8 @@ calibration:
 
 	;black
 	lfsr    0, 100h
-	bcf	    blue_indicator,a
-	bsf	    black_indicator,a
+	MOVLW	black_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -525,8 +528,8 @@ calibration:
 	subwf   black_blue_thresh,f,a
 	;white
 	lfsr    0, 100h
-	bcf	    black_indicator,a
-	bsf	    white_indicator,a
+	MOVLW	white_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
@@ -617,32 +620,37 @@ calibration:
 
 	movlw   'R'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+10
-	bsf	    red_indicator,a
+	bra	    $+12
+	MOVLW	red_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 	BSF	race_error_colour_magic,4,a
 	goto    display_race_colour
 
 	movlw   'G'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+10
-	bsf	    green_indicator,a
+	bra	    $+12
+	MOVLW	green_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 	BSF	race_error_colour_magic,6,a
 	goto    display_race_colour
 
 	movlw   'B'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+10
-	bsf	    blue_indicator,a
+	bra	    $+12
+	MOVLW	blue_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 	BSF	race_error_colour_magic,7,a
 	goto    display_race_colour
 
 	movlw   'K'
 	cpfseq  RACE_COLOUR,a
-	bra	    $+8
-	bsf	    black_indicator,a
+	bra	    $+10
+	MOVLW	black_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 	goto    display_race_colour
 
-	bsf	    white_indicator,a
+	MOVLW	white_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	display_race_colour:
 
@@ -1672,28 +1680,33 @@ show_colour:
 	movwf	extra,a
 	movlw	'W'
 	cpfseq	extra,a
-	bra	$+4
-	bsf	white_indicator,a
+	bra	$+6
+	MOVLW	white_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	movlw	'K'
 	cpfseq	extra,a
-	bra	$+4
-	bsf	black_indicator,a
+	bra	$+6
+	MOVLW	black_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	movlw	'R'
 	cpfseq	extra,a
-	bra	$+4
-	bsf	red_indicator,a
+	bra	$+6
+	MOVLW	red_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	movlw	'G'
 	cpfseq	extra,a
-	bra	$+4
-	bsf	green_indicator,a
+	bra	$+6
+	MOVLW	green_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 
 	movlw	'B'
 	cpfseq	extra,a
-	bra	$+4
-	bsf	blue_indicator,a
+	bra	$+6
+	MOVLW	blue_indicator
+	MOVWF	DISPLAYED_COLOUR,a
 	return
 
     
@@ -1713,9 +1726,7 @@ flash:
 	BEGIN_FLASH:
 	; begin flashing
 	    ; turn off
-	bcf	red_pin,a
-	bcf	green_pin,a
-	bcf	blue_pin,a
+	CLRF	LATA,a
 	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
@@ -1728,6 +1739,7 @@ flash:
 	; do this because i will do things while waiting for the timer.
 	bsf	wait_for_timer333,a
 	    ; turn on
+	MOVF	DISPLAYED_COLOUR,w,a
 	BSF	colour_display,a
 	call	display_colour
 	BCF	colour_display,a
@@ -1747,9 +1759,10 @@ SUB_TRANSITIONS5:
 SUBROUTINE6:
 wait_for_button_press_show_colour:
     BTFSS   button_press_check,a
-    GOTO    STATE_MACHINE_END
+    GOTO    display_colour
     
 	; show the colour to calibrate
+	MOVF	DISPLAYED_COLOUR,w,a
 	BSF	colour_display,a
 	call	display_colour
 	BCF	colour_display,a
@@ -1775,19 +1788,20 @@ display_colour:
     BTFSS   colour_display,a
     GOTO    STATE_MACHINE_END
     
-	BTFSC   black_indicator,a
+	ADDWF	PCL,a
+	;BTFSC   black_indicator,a
 	bra	    display_black
-	BTFSC   white_indicator,a
+	;BTFSC   white_indicator,a
 	bra	    display_white
-	BTFSC   red_indicator,a
+	;BTFSC   red_indicator,a
 	bra	    display_red
-	BTFSC   green_indicator,a
+	;BTFSC   green_indicator,a
 	bra	    display_green
-	BTFSC   blue_indicator,a
+	;BTFSC   blue_indicator,a
 	bra	    display_blue
-	BTFSC	race_error_indicator,a
+	;BTFSC	race_error_indicator,a
 	bra		display_race_error
-	BTFSC 	error_indicator,a
+	;BTFSC 	error_indicator,a
 	bra		display_error
 	
 	display_colour_end:
@@ -1878,8 +1892,8 @@ display_colour:
 	    SETF	LATA,a
 	    nop
 	    nop
-	    MOVF	race_error_colour_magic,w,a
-	    SUBWF	LATA,a
+	    MOVFF	race_error_colour_magic,LATA
+	    ;spacer because MOVFF is 2 Tcy
 	    nop
 	    nop
 	    nop
