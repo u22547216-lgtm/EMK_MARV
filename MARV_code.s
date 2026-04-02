@@ -270,6 +270,14 @@ init:
     bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
+    ;Setup PORTE
+    CLRF    ANSELE,b
+    CLRF    PORTE,a
+    CLRF    LATE,a
+    CLRF    TRISE,a
+    BSF	    ANSELE,1,b
+    BSF	    TRISE,1,a
+    
     ; Timer setup
     clrf    T0CON,a
     clrf    T1CON,a
@@ -373,14 +381,15 @@ STATE_MACHINE_SETUP:
 	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
-    
+;    MOVLW	0b00001001; AN2
+    MOVLW	0b00011001; AN6
+    MOVWF	ADCON0,a
 STATE_TOUCH:
     BTFSS   touch_start,a
     GOTO    STATE0
     ;Load threshold values. Change according to the touch pad used
     CAP_TOUCH:
-	MOVLW	0b00001001
-	MOVWF	ADCON0,a
+	
 	movlw   8
 	movwf   OpenSW	;unpressed switch value
 	movlw   1
