@@ -22,11 +22,14 @@
 ;   external interrupts:
 ;	Pins:	RB0,1
 ;	Enabled interrupts: RB1
-;	Button press to wait for: RB2
-;   Register dump:
-;	Port C
-;   Colour display:
-;	Port D
+;	Button press to wait for: RB0
+;   PWM:
+;	Pins:	RD1 so far
+;	Timers: TMR2 so far
+;   Register dump:	{N/A}
+;	Port C		{N/A}
+;   Colour display:	{N/A}
+;	Port D		{N/A}
 ;SENSOR STORAGES TO BE USED IN LLI
 ;
 ;	SENSOR0        EQU 0x55
@@ -44,6 +47,7 @@
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
     CONFIG WDTEN = OFF      ; Turn off the watchdog timer
+    CONFIG  CCP2MX = PORTC1
     
     CONFIG  MCLRE = EXTMCLR
     CONFIG  LVP	= ON
@@ -104,6 +108,21 @@ reading_count	equ 0x10
 count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
+;DUTY CYCLE DEFINITIONS
+#define DUTY_25     62
+#define DUTY_50     125
+#define DUTY_75     187
+#define DUTY_STOP   0
+;OTHER MOTOR DEFINTIONS
+#define left_dir_pin    PORTD,5
+#define right_dir_pin   PORTD,6
+		
+; MOTOR variables
+;--------------------------------------------------------
+motor_left_speed   equ 0x70
+motor_right_speed  equ 0x71
+GOING_LEFT   equ 0x72    ; 0 = forward, 1 = reverse
+GOING_RIGHT  equ 0x73
 
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -220,14 +239,39 @@ init:
 			; ADC works for 8+12* = 20us. ie: 20 instruction cycles.
     ; need to remember the ADC cooldown of 2 TAD, or 2us, which is 2 instruction cycle.
     
-    ; setup debug ports(C and D)
-    ; register dump port
+    ; setup misc ports(C and D)
+    ; Port C, as output (Now used for motor control)
     clrf    PORTC, a
     clrf    LATC, a
     clrf    ANSELC, b
     clrf    TRISC, a
     
-    ; colour show port
+    ; All PORTC digital
+    clrf    ANSELC,1
+
+    ; Clear outputs
+    clrf    LATC,1
+
+    ; RC1 = CCP2 output, RC2 = CCP1 output
+    bcf     TRISC,1,1
+    bcf     TRISC,2,1
+    
+    
+
+    ; Clear software variables
+    clrf    motor_left_speed,0
+    clrf    motor_right_speed,0
+
+    call    PWM_Init
+    
+; Default both motors to 50%
+    movlw   DUTY_50
+    movwf   motor_left_speed,0
+    movlw   DUTY_50
+    movwf   motor_right_speed,0
+    call    Update_Speeds
+    
+    ; Port D, as output (used to be colour display)
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
@@ -246,6 +290,231 @@ init:
     clrf    T0CON,a
     clrf    T1CON,a
     clrf    T1GCON,a
+    
+PWM_Init:
+    ; Use Timer2 for CCP1 and CCP2 PWM
+    clrf    CCPTMRS0,1
+    clrf    CCPTMRS1,1
+
+    ; PWM period:
+    ; Fpwm = Fosc / (4 * (PR2 + 1) * prescale)
+    ; 4MHz / (4 * 250 * 4) = 1kHz
+    movlw   249
+    movwf   PR2,1
+
+    ; Clear CCP registers
+    clrf    CCPR1L,1
+    clrf    CCPR2L,1
+
+    ; PWM mode on CCP1 and CCP2
+    movlw   00001100B
+    movwf   CCP1CON,1
+    movwf   CCP2CON,1
+
+    ; Timer2 prescaler = 1:4, postscaler = 1:1, Timer2 ON
+    movlw   00000101B
+    movwf   T2CON,1
+
+    return
+
+;--------------------------------------------------------
+; Update both speeds
+;--------------------------------------------------------
+Update_Speeds:
+    movf    motor_left_speed,0,0
+    call    Set_Left_Speed
+
+    movf    motor_right_speed,0,0
+    call    Set_Right_Speed
+
+    return
+
+;--------------------------------------------------------
+; Set left speed
+; W = duty value
+;--------------------------------------------------------
+Set_Left_Speed:
+	movwf   CCPR1L,1
+	bcf     CCP1CON,4,1
+	bcf     CCP1CON,5,1
+	btfss   GOING_LEFT,0,0
+	bcf     left_dir_pin,a      ; forward
+	btfsc   GOING_LEFT,0,0
+	bsf     left_dir_pin,a      ; reverse
+	return
+
+;--------------------------------------------------------
+; Set right speed
+; W = duty value
+;--------------------------------------------------------
+Set_Right_Speed:
+	movwf   CCPR2L,1
+	bcf     CCP2CON,4,1
+	bcf     CCP2CON,5,1
+	btfss   GOING_RIGHT,0,0
+	bcf     right_dir_pin,a      ; forward
+	btfsc   GOING_RIGHT,0,0
+	bsf     right_dir_pin,a      ; reverse
+	return
+
+;--------------------------------------------------------
+; Left motor helpers
+;--------------------------------------------------------
+Left_Speed_25:
+        MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_25
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+	
+Left_Speed_25_Rev:
+	MOVLW   11111111B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_25
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+
+Left_Speed_50:
+        MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_50
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+
+Left_Speed_50_Rev:
+        MOVLW   11111111B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_50
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+
+Left_Speed_75:
+	MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_75
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+	
+Left_Speed_75_Rev:
+        MOVLW   11111111B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_75
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+	
+
+Left_Stop:
+	movlw   DUTY_STOP
+	movwf   motor_left_speed,0
+	call    Update_Speeds
+	return
+
+;--------------------------------------------------------
+; Right motor helpers
+;--------------------------------------------------------
+Right_Speed_25:
+	MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_25
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Right_Speed_25_Rev:
+        MOVLW   11111111B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_25
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+	
+
+Right_Speed_50:
+	MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_50
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+	
+Right_Speed_50_Rev:
+        MOVLW   11111111B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_50
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Right_Speed_75:
+	MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_75
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Right_Speed_75_Rev:
+        MOVLW   11111111B
+        MOVF    GOING_RIGHT,a
+	movlw   DUTY_75
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Right_Stop:
+	movlw   DUTY_STOP
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+;--------------------------------------------------------
+; Both motors helpers
+;--------------------------------------------------------
+Set_Both_Speed_25:
+        MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_25
+	movwf   motor_left_speed,0
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Set_Both_Speed_50:
+	MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_50
+	movwf   motor_left_speed,0
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Set_Both_Speed_75:
+	MOVLW   00000000B
+        MOVF    GOING_RIGHT,a
+	MOVLW   00000000B
+        MOVF    GOING_LEFT,a
+	movlw   DUTY_75
+	movwf   motor_left_speed,0
+	movwf   motor_right_speed,0
+	call    Update_Speeds
+	return
+
+Set_Both_Stop:
+	clrf    motor_left_speed,0
+	clrf    motor_right_speed,0
+	call    Update_Speeds
+	return
+
     
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
@@ -299,8 +568,8 @@ STATE_MACHINE_SETUP:
     ;BSF follow_line,a
     
 	; tests
-    ; BSF code_tests,a
-    BSF hardware_tests,a
+     BSF code_tests,a
+;    BSF hardware_tests,a
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
@@ -663,24 +932,23 @@ LLI:
 	    SUBWF   SENSOR2,W,a
 	    BNZ	    CHECK_BLACK
 	    
-	    MOVLW   0b00100000
-	    MOVWF   line_reg,a
+	    CALL    Set_Both_Speed_75
 	    RETURN
 	TURN_LEFT_ALOT:
-	    MOVLW 0b10000000
-	    MOVWF line_reg,a
+	    CALL    Left_Speed_50_Rev
+	    CALL    Right_Speed_50
 	    RETURN
 	TURN_LEFT_ALITTLE:
-	    MOVLW 0b01000000
-	    MOVWF line_reg,a
+	    CALL    Left_Speed_25_Rev
+	    CALL    Right_Speed_50
 	    RETURN
 	TURN_RIGHT_ALOT:
-	    MOVLW 0b00001000
-	    MOVWF line_reg,a
+	    CALL    Right_Speed_50_Rev
+	    CALL    Left_Speed_50
 	    RETURN
 	TURN_RIGHT_ALITTLE:
-	    MOVLW 0b00010000
-	    MOVWF line_reg,a
+	    CALL    Right_Speed_25_Rev
+	    CALL    Left_Speed_50
 	    RETURN
 	LOST:
 	    CALL LOST_STOP
@@ -689,19 +957,17 @@ LLI:
 	    BRA STRAIGHT
 	    RETURN
 	    
-	    LOST_STOP:
-		CALL BRAKES
-		bsf	wait_for_timer333,a
-		bsf	delay_333_call,a
-		CALL delay_333
-		bcf	delay_333_call,a
-		    ;call    wait_for_button_press	; this is here for the purposes of the demo
-		CLRF line_reg,a
-		RETURN
+	LOST_STOP:
+	    CALL BRAKES
+	    bsf	wait_for_timer333,a
+	    bsf	delay_333_call,a
+	    CALL delay_333
+	    bcf	delay_333_call,a
+		;call    wait_for_button_press	; this is here for the purposes of the dem0
+	    RETURN
          
 	BRAKES:
-	    MOVLW 0b11111000
-	    MOVWF line_reg,a
+	    CALL Set_Both_Stop
 	    RETURN   
 	    
 	CHECK_BLACK:
@@ -743,6 +1009,7 @@ software_tests:
 	nop
 ;   state 2 code
     ; to be added later
+    BRA	    $-2
     
 TRANSITION2:
     BCF	    code_tests,a
@@ -2002,8 +2269,3 @@ test_read_sensor:
     return
     
     end			
-
-
-
-
-
