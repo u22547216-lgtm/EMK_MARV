@@ -114,8 +114,8 @@ extra		equ 0x19
 #define DUTY_75     187
 #define DUTY_STOP   0
 ;OTHER MOTOR DEFINTIONS
-#define left_dir_pin    PORTD,5
-#define right_dir_pin   PORTD,6
+#define left_dir_pin    PORTD,0
+#define right_dir_pin   PORTD,1
 ;PID variables
 error0          equ   0x74
 prev_error	equ   0x75
@@ -176,8 +176,8 @@ BLACK_FLAG     EQU 0x5F
 #define green_pin   PORTA,6
 #define blue_pin    PORTA,7
 ; colour indicator pins
-#define red_indicator       PORTD,0
-#define green_indicator     PORTD,1
+;#define red_indicator       PORTD,0
+;#define green_indicator     PORTD,1
 #define blue_indicator      PORTD,2
 #define black_indicator     PORTD,3
 #define white_indicator     PORTD,4
