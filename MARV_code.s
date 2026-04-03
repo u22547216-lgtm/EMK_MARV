@@ -192,8 +192,9 @@ ADC_AN1 	equ 0b00000111 ; 0 00001 1 1
 ADC_AN2 	equ 0b00001011 ; 0 00010 1 1
 ADC_AN3 	equ 0b00001111 ; 0 00011 1 1
 ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
+	
+ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
-ADC_TOUCH	equ 0b00010101 ;Use AN5 for cap touch. Can change later
 calib_address	equ 100h
 	
 ;
@@ -206,7 +207,7 @@ calib_address	equ 100h
     goto init
     org     0x08            ; interrupt start
     
-    btfsc   TMR4IF	    ;was it timer 2?
+    btfsc   TMR4IF	    ;was it timer 4?
     goto    TIMER4_ISR
     goto ISR
 
@@ -387,99 +388,7 @@ STATE_MACHINE_SETUP:
 	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
-;    MOVLW	0b00001001; AN2
-    MOVLW	0b00011001; AN6, PORTE 1
-    MOVWF	ADCON0,a
-STATE_TOUCH:
-    BTFSS   touch_start,a
-    GOTO    STATE0
-    ;Load threshold values. Change according to the touch pad used
-    CAP_TOUCH:
-	
-	movlw   40
-	movwf   OpenSW	;unpressed switch value
-	movlw   1
-	movwf   Trip	;difference between pressed and unpressed switch
-	movlw   1
-	movwf   Hyst	;amount tp change from pressed to unpressed
-    CHECK_TOUCH:
-	MOVF    Trip,W
-	SUBWF   OpenSW,0
-	MOVWF   DIFF	;DIFF is OpenSW - Trip. This is the base comparison
-	
-	;Discharge touch pad
-	BSF	    CTMUEN
-	BCF	    EDG1STAT
-	BCF	    EDG2STAT
-	BSF	    IDISSEN
-	CALL	    CAP_DELAY
-	BCF	    IDISSEN
-
-	;Charge circuit
-	BSF	    EDG1STAT
-	CALL	    CAP_DELAY
-	BCF	    EDG1STAT
-
-	;AD conversion
-	BSF	    GO
-	BTFSC	    GO
-	BRA	    $-2
-	MOVF	    ADRESH,W
-	MOVWF	    Vread
-	
-	;test if Vread = 0
-	MOVLW   0
-	CPFSEQ  Vread
-	GOTO    CHK_P_OR_UP
-	BSF	PORTA,7
-	GOTO    CHECK_TOUCH
-	
-    ;Check if pressed or unpressed
-    CHK_P_OR_UP:
-	;Check for pressed
-	MOVF    DIFF,W
-	CPFSLT  Vread  
-	GOTO    PAD_PRESS
-	;Check for unpressed
-	MOVF    Hyst,W
-	ADDWF   DIFF
-	MOVF    DIFF,W
-	CPFSGT  Vread
-	GOTO    PAD_UNPRESS
-	GOTO    STATE_TOUCH	;Loop touch start sequence until pad is pressed
-    
-    PAD_PRESS:
-	BCF	    PORTA,7
-	BSF	    PORTA,4
-	GOTO	    TOUCH_TRANSITION
-    PAD_UNPRESS:
-	BCF	    PORTA,4
-	BSF	    PORTA,7
-	GOTO	    CHECK_TOUCH
-    TOUCH_TRANSITION:
-	BCF	    touch_start
-	BCF	    PORTA,4
-	BCF	    PORTA,7
-	GOTO	    STATE_TOUCH
-    CAP_DELAY: 
-	MOVLB	    0xF
-	CLRF	    TMR4
-	BSF	    TMR4ON
-	MOVLB	    0x0
-    WAIT1:
-	BTFSS	    touch_flag,0
-	BRA	    WAIT1
-	BCF	    touch_flag,0
-	BCF	    TMR4ON
-	
-	RETURN
-    TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
-    ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
-	BSF	    touch_flag,0
-	
-	BCF	    TMR4IF
-	
-	RETFIE
+   
 		
 STATE0:
 calibration:
@@ -803,11 +712,110 @@ TRANSITION0:
     BCF	    calibrate,a
     BSF	    follow_line,a
     
+
+STATE_TOUCH:
+    BTFSS   touch_start,a
+    GOTO    STATE2
+    ;Load threshold values. Change according to the touch pad used
+    
+;    MOVLW	0b00001001; AN2
+    MOVLW	ADC_AN6; AN6, PORTE 1
+    MOVWF	ADCON0,a
+    
+    CAP_TOUCH:
+	
+	movlw   40
+	movwf   OpenSW	;unpressed switch value
+	movlw   1
+	movwf   Trip	;difference between pressed and unpressed switch
+	movlw   1
+	movwf   Hyst	;amount to change from pressed to unpressed
+    CHECK_TOUCH:
+	MOVF    Trip,W
+	SUBWF   OpenSW,0
+	MOVWF   DIFF	;DIFF is OpenSW - Trip. This is the base comparison
+	
+	;Discharge touch pad
+	BSF	    CTMUEN
+	BCF	    EDG1STAT
+	BCF	    EDG2STAT
+	BSF	    IDISSEN
+	CALL	    CAP_DELAY
+	BCF	    IDISSEN
+
+	;Charge circuit
+	BSF	    EDG1STAT
+	CALL	    CAP_DELAY
+	BCF	    EDG1STAT
+
+	;AD conversion
+	BSF	    GO
+	BTFSC	    GO
+	BRA	    $-2
+	MOVF	    ADRESH,W
+	MOVWF	    Vread
+	
+	;test if Vread = 0
+	MOVLW   0
+	CPFSEQ  Vread
+	GOTO    CHK_P_OR_UP
+	BSF	PORTA,7
+	GOTO    CHECK_TOUCH
+	
+    ;Check if pressed or unpressed
+    CHK_P_OR_UP:
+	;Check for pressed
+	MOVF    DIFF,W
+	CPFSLT  Vread  
+	GOTO    PAD_PRESS
+	;Check for unpressed
+	MOVF    Hyst,W
+	ADDWF   DIFF
+	MOVF    DIFF,W
+	CPFSGT  Vread
+	GOTO    PAD_UNPRESS
+	GOTO    STATE_TOUCH	;Loop touch start sequence until pad is pressed
+    
+    PAD_PRESS:
+	BCF	    PORTA,7
+	BSF	    PORTA,4
+	GOTO	    TOUCH_TRANSITION
+    PAD_UNPRESS:
+	BCF	    PORTA,4
+	BSF	    PORTA,7
+	GOTO	    CHECK_TOUCH
+    TOUCH_TRANSITION:
+	BCF	    touch_start
+	BCF	    PORTA,4
+	BCF	    PORTA,7
+	GOTO	    STATE_TOUCH
+    CAP_DELAY: 
+	MOVLB	    0xF
+	CLRF	    TMR4
+	BSF	    TMR4ON
+	MOVLB	    0x0
+    WAIT1:
+	BTFSS	    touch_flag,0
+	BRA	    WAIT1
+	BCF	    touch_flag,0
+	BCF	    TMR4ON
+	
+	RETURN
+    TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
+    ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
+	BSF	    touch_flag,0
+	
+	BCF	    TMR4IF
+	
+	RETFIE
+TRANSITION_1:
+    BCF	    touch_start,a
+    BSF	    follow_line,a
     	
-STATE1:
+STATE2:
 LLI:	
     BTFSS   follow_line,a
-    GOTO    STATE2
+    GOTO    STATE3
     
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
@@ -911,25 +919,25 @@ LLI:
 	    RETURN
 	    BRA	    BRAKES
     
-TRANSITION1:
+TRANSITION2:
     BSF	    follow_line,a   ;LOOP OVER LLI
 
 		
-STATE2:
+STATE3:
 software_tests:
     BTFSS   code_tests,a
-    GOTO    STATE3
+    GOTO    STATE4
     
     TODO_code_tests: ; to-do todo to do
 	nop
 ;   state 2 code
     ; to be added later
     
-TRANSITION2:
+TRANSITION3:
     BCF	    code_tests,a
     
     		
-STATE3:
+STATE4:
 test_hardware:
     BTFSS   hardware_tests,a
     GOTO    SUBROUTINE0
@@ -944,7 +952,7 @@ test_hardware:
 ;   state 2 code
     ; to be added later
     
-TRANSITION3:
+TRANSITION4:
     BCF	    hardware_tests,a 
     
 ;==========SUBROUTINES=======================
