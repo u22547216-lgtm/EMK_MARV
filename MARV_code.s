@@ -333,7 +333,7 @@ init:
     bsf	    TMR4IE
     ; bsf	    GIEL,a	; enable low priority interupts
     
-    MOVLB   0x00	; back to bank 0 for normal opperations
+    MOVLB   0x0	; back to bank 0 for normal opperations
     
     movlw   1
     movwf   number_of_readings,a
@@ -739,8 +739,8 @@ TRANSITION0:
     BCF	    calibrate,a
     BSF	    touch_start,a
     
-
-STATE_TOUCH:
+STATE1:
+touch_to_start:
     BTFSS   touch_start,a
     GOTO    STATE2
     ;Load threshold values. Change according to the touch pad used
@@ -801,7 +801,7 @@ STATE_TOUCH:
 	MOVF    DIFF,W
 	CPFSGT  Vread
 	GOTO    PAD_UNPRESS
-	GOTO    STATE_TOUCH	;Loop touch start sequence until pad is pressed
+	GOTO    CAP_TOUCH	;Loop touch start sequence until pad is pressed
     
     PAD_PRESS:
 	BCF	    PORTA,7
@@ -815,7 +815,7 @@ STATE_TOUCH:
 	BCF	    touch_start
 	BCF	    PORTA,4
 	BCF	    PORTA,7
-	GOTO	    STATE_TOUCH
+	GOTO	    CAP_TOUCH
     CAP_DELAY: 
 	MOVLB	    0xF
 	CLRF	    TMR4
@@ -827,7 +827,7 @@ STATE_TOUCH:
 	BCF	    touch_flag,0
 	BCF	    TMR4ON
 	
-	RETURN
+	GOTO	TRANSITION1
     TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
     ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
 	BSF	    touch_flag,0
@@ -835,7 +835,7 @@ STATE_TOUCH:
 	BCF	    TMR4IF
 	
 	RETFIE
-TRANSITION_1:
+TRANSITION1:
     BCF	    touch_start,a
     BSF	    follow_line,a
     	
@@ -883,29 +883,29 @@ LLI:
 	    
 	    MOVLW   0b00100000
 	    MOVWF   line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	TURN_LEFT_ALOT:
 	    MOVLW 0b10000000
 	    MOVWF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	TURN_LEFT_ALITTLE:
 	    MOVLW 0b01000000
 	    MOVWF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	TURN_RIGHT_ALOT:
 	    MOVLW 0b00001000
 	    MOVWF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	TURN_RIGHT_ALITTLE:
 	    MOVLW 0b00010000
 	    MOVWF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	    
 	    LOST_STOP:
 		CALL BRAKES
@@ -915,12 +915,12 @@ LLI:
 		bcf	delay_333_call,a
 		    ;call    wait_for_button_press	; this is here for the purposes of the demo
 		CLRF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
          
 	BRAKES:
 	    MOVLW 0b11111000
 	    MOVWF line_reg,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	    
 	CHECK_BLACK:
 	    MOVLW   'K'
@@ -945,7 +945,7 @@ LLI:
 	    BSF	    BLACK_FLAG,4,a
 	    MOVLW   0b00011111
 	    CPFSEQ  BLACK_FLAG,a
-	    GOTO    TRANSITION1
+	    GOTO    TRANSITION2
 	    BRA	    BRAKES
     
 TRANSITION2:
