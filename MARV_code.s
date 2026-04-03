@@ -333,12 +333,12 @@ STATE_MACHINE_SETUP:
     CLRF    timer_waits,a
     
     ; State activation bits
-    ;BSF calibrate,a
+    BSF calibrate,a
     ;BSF follow_line,a
     
 	; tests
     ; BSF code_tests,a
-    BSF hardware_tests,a
+    ; BSF hardware_tests,a
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
@@ -371,7 +371,9 @@ calibration:
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
+	BSF read_sensors_call,a
 	call    read_sensors
+	BCF read_sensors_call,a
 	
 
 	lfsr    0, 100h
@@ -403,7 +405,9 @@ calibration:
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
+	BSF read_sensors_call,a
 	call    read_sensors
+	BCF read_sensors_call,a
 	
 
 	lfsr    0, 105h
@@ -435,7 +439,9 @@ calibration:
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
+	BSF read_sensors_call,a
 	call    read_sensors
+	BCF read_sensors_call,a
 	
 
 	lfsr    0, 10Ah
@@ -467,7 +473,9 @@ calibration:
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
+	BSF read_sensors_call,a
 	call    read_sensors
+	BCF read_sensors_call,a
 	
 
 	lfsr    0, 100h
@@ -543,7 +551,9 @@ calibration:
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
+	BSF read_sensors_call,a
 	call    read_sensors
+	BCF read_sensors_call,a
 	
 	
 	lfsr    0, 100h
@@ -618,7 +628,9 @@ calibration:
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
 
+	BSF	check_colour,a
 	call    detect_colour
+	BCF	check_colour,a
 
     ; calibrated colour
 	movff   SENSOR2,RACE_COLOUR
@@ -693,7 +705,9 @@ LLI:
     ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
-	    call detect_colour
+	BSF	check_colour,a
+	call    detect_colour
+	BCF	check_colour,a
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR0,W,a
@@ -1170,7 +1184,9 @@ detect_colour:
 	
 	; read sensors to bank 2 for now
 	LFSR    0, 200h	
-	call read_sensors
+	BSF read_sensors_call,a
+	call    read_sensors
+	BCF read_sensors_call,a
 	; back to bank 2
 	LFSR    0, 200h	
 
