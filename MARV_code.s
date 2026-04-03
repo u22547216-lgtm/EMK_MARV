@@ -748,10 +748,13 @@ touch_to_start:
 ;    MOVLW	0b00001001; AN2
     MOVLW	ADC_AN6; AN6, PORTE 1
     MOVWF	ADCON0,a
+    BCF		TRISE1
+    NOP
+    BSF		TRISE1
     
     CAP_TOUCH:
 	
-	movlw   40
+	movlw   20
 	movwf   OpenSW	;unpressed switch value
 	movlw   1
 	movwf   Trip	;difference between pressed and unpressed switch
@@ -812,10 +815,10 @@ touch_to_start:
 	BSF	    PORTA,7
 	GOTO	    CHECK_TOUCH
     TOUCH_TRANSITION:
-	BCF	    touch_start
+	; BCF	    touch_start
 	BCF	    PORTA,4
 	BCF	    PORTA,7
-	GOTO	    CAP_TOUCH
+	GOTO	    TRANSITION1
     CAP_DELAY: 
 	MOVLB	    0xF
 	CLRF	    TMR4
@@ -827,7 +830,7 @@ touch_to_start:
 	BCF	    touch_flag,0
 	BCF	    TMR4ON
 	
-	GOTO	TRANSITION1
+	RETURN
     TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
     ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
 	BSF	    touch_flag,0
@@ -860,6 +863,7 @@ LLI:
 	BSF	check_colour,a
 	call    detect_colour
 	BCF	check_colour,a
+	GOTO	TRANSITION2
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR0,W,a
@@ -1862,44 +1866,44 @@ detect_colour:
     
 		movlw   0
 		cpfseq  check,a
-		bra	    $+6
+		bra	    $+4
 		; it sees black
 		RETLW   'K'
 
 		movlw   1
 		cpfseq  check,a
-		bra	    $+6
+		bra	    $+4
 		; it sees red
 		RETLW   'R'
 
 		movlw   2
 		cpfseq  check,a
-		bra	    $+6
+		bra	    $+4
 		; it sees green
 		RETLW   'G'
 
 		movlw   4
 		cpfseq  check,a
-		bra	    $+6
+		bra	    $+4
 		; it sees blue
 		RETLW   'B'
 		
 		; race error check
 		movlw	'R'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+8
+		bra	$+6
 		btfsc	check,0,a
 		RETLW	'e'
 		
 		movlw	'G'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+8
+		bra	$+6
 		btfsc	check,1,a
 		RETLW	'e'
 		
 		movlw	'B'
 		CPFSEQ	RACE_COLOUR,a
-		bra	$+8
+		bra	$+6
 		btfsc	check,0,a
 		RETLW	'e'
 
@@ -1964,7 +1968,7 @@ SUB_TRANSITIONS4:
         
     
 SUBROUTINE5:
-flash:
+ flash:
     BTFSS   flash_colour_display,a
     GOTO    SUBROUTINE6
     
