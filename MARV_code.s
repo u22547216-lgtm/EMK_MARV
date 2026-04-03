@@ -205,17 +205,20 @@ calib_address	equ 100h
     org	    0x00 			; startup address = 0000h
     goto init
     org     0x08            ; interrupt start
-    btfsc   TMR2IF	    ;was it timer 2?
-    goto    TIMER2_ISR
+    
+    btfsc   TMR4IF	    ;was it timer 2?
+    goto    TIMER4_ISR
     goto ISR
 
 init:
-    MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
-    
-	; Set oscillator speed at 4 MHz
+    ; Set oscillator speed at 4 MHz
 	bsf 	IRCF0
 	bcf	IRCF1
 	bsf	IRCF2
+	
+    MOVLB   0xFF	; work in bank 15, not all SFRs are in access bank
+    
+	
 	
 	; config because of LVP change
 	bsf	TRISE,3,a
@@ -304,11 +307,12 @@ init:
     movlw   0b10001000
     movwf   CTMUCONH
     
-    ;Timer2 init for touch pad
+    ;Timer4 init for touch pad
+   
     movlw   0b00000000
-    movwf   T2CON
+    movwf   T4CON
     movlw   125
-    movwf   PR2
+    movwf   PR4
 
     ; INTCON2 = 0b 0 0 0 0 x 0 x 0 
     ; bsf	    INTCON2,7,a	; no RBPU
@@ -319,9 +323,11 @@ init:
     bsf	    INT1IE	    ; INT1I is enabled
     ; INTCON = 0b 1 0 1 0 0 0 0 0
     bsf	    TMR0IE	    ; enable timer 0 interrupts
-    bsf	    TMR2IE	    ;enable timer 2 interrupts
+    bsf	    TMR2IE	    ;enable timer 4 interrupts
+    
     BSF	    PEIE
     bsf	    GIEH	    ; enable high priority interupts
+    bsf	    TMR4IE
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
@@ -382,7 +388,7 @@ STATE_MACHINE_SETUP:
     
 STATE_MACHINE_START:
 ;    MOVLW	0b00001001; AN2
-    MOVLW	0b00011001; AN6
+    MOVLW	0b00011001; AN6, PORTE 1
     MOVWF	ADCON0,a
 STATE_TOUCH:
     BTFSS   touch_start,a
@@ -390,7 +396,7 @@ STATE_TOUCH:
     ;Load threshold values. Change according to the touch pad used
     CAP_TOUCH:
 	
-	movlw   8
+	movlw   40
 	movwf   OpenSW	;unpressed switch value
 	movlw   1
 	movwf   Trip	;difference between pressed and unpressed switch
@@ -455,19 +461,24 @@ STATE_TOUCH:
 	BCF	    PORTA,4
 	BCF	    PORTA,7
 	GOTO	    STATE_TOUCH
-    CAP_DELAY:    
-	CLRF	    TMR2
-	BSF	    TMR2ON
+    CAP_DELAY: 
+	MOVLB	    0xF
+	CLRF	    TMR4
+	BSF	    TMR4ON
+	MOVLB	    0x0
     WAIT1:
 	BTFSS	    touch_flag,0
 	BRA	    WAIT1
 	BCF	    touch_flag,0
-	BCF	    TMR2ON
+	BCF	    TMR4ON
+	
 	RETURN
-    TIMER2_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
+    TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
     ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
 	BSF	    touch_flag,0
-	BCF	    TMR2IF
+	
+	BCF	    TMR4IF
+	
 	RETFIE
 		
 STATE0:
