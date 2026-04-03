@@ -116,6 +116,28 @@ extra		equ 0x19
 ;OTHER MOTOR DEFINTIONS
 #define left_dir_pin    PORTD,5
 #define right_dir_pin   PORTD,6
+;PID variables
+error0          equ   0x74
+prev_error	equ   0x75
+prop_error      equ   0x76
+s0_value        equ   0x77
+s1_value        equ   0x78
+s2_value        equ   0x79
+s3_value        equ   0x7A
+s4_value        equ   0x7B
+PD_OUTPUT       EQU   0x7C
+Kp		equ   0x7D
+Kd              equ   0x7E
+deriv_error     equ   0x7F
+acc_error       equ   0x80
+error1          equ   0x81
+error2          equ   0x82
+error3          equ   0x83
+error4          equ   0x84
+PD_SIGN         EQU   0x85
+
+
+		
 		
 ; MOTOR variables
 ;--------------------------------------------------------
@@ -298,8 +320,8 @@ PWM_Init:
 
     ; PWM period:
     ; Fpwm = Fosc / (4 * (PR2 + 1) * prescale)
-    ; 4MHz / (4 * 250 * 4) = 1kHz
-    movlw   249
+    ; 4MHz / (4 * 125 * 16) = 0.5kHz
+    movlw   124
     movwf   PR2,1
 
     ; Clear CCP registers
@@ -311,11 +333,12 @@ PWM_Init:
     movwf   CCP1CON,1
     movwf   CCP2CON,1
 
-    ; Timer2 prescaler = 1:4, postscaler = 1:1, Timer2 ON
-    movlw   00000101B
+    ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
+    movlw   00000111B
     movwf   T2CON,1
 
     return
+   
 
 ;--------------------------------------------------------
 ; Update both speeds
@@ -357,130 +380,15 @@ Set_Right_Speed:
 	bsf     right_dir_pin,a      ; reverse
 	return
 
-;--------------------------------------------------------
-; Left motor helpers
-;--------------------------------------------------------
-Left_Speed_25:
-        MOVLW   00000000B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_25
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-	
-Left_Speed_25_Rev:
-	MOVLW   11111111B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_25
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-
-Left_Speed_50:
-        MOVLW   00000000B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_50
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-
-Left_Speed_50_Rev:
-        MOVLW   11111111B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_50
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-
-Left_Speed_75:
-	MOVLW   00000000B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_75
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-	
-Left_Speed_75_Rev:
-        MOVLW   11111111B
-        MOVF    GOING_LEFT,a
-	movlw   DUTY_75
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-	
-
-Left_Stop:
-	movlw   DUTY_STOP
-	movwf   motor_left_speed,0
-	call    Update_Speeds
-	return
-
-;--------------------------------------------------------
-; Right motor helpers
-;--------------------------------------------------------
-Right_Speed_25:
-	MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_25
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Right_Speed_25_Rev:
-        MOVLW   11111111B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_25
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-	
-
-Right_Speed_50:
-	MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_50
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-	
-Right_Speed_50_Rev:
-        MOVLW   11111111B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_50
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Right_Speed_75:
-	MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_75
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Right_Speed_75_Rev:
-        MOVLW   11111111B
-        MOVF    GOING_RIGHT,a
-	movlw   DUTY_75
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Right_Stop:
-	movlw   DUTY_STOP
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
 
 ;--------------------------------------------------------
 ; Both motors helpers
 ;--------------------------------------------------------
 Set_Both_Speed_25:
         MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
+        MOVWF    GOING_RIGHT,a
 	MOVLW   00000000B
-        MOVF    GOING_LEFT,a
+        MOVWF    GOING_LEFT,a
 	movlw   DUTY_25
 	movwf   motor_left_speed,0
 	movwf   motor_right_speed,0
@@ -489,9 +397,9 @@ Set_Both_Speed_25:
 
 Set_Both_Speed_50:
 	MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
+        MOVWF    GOING_RIGHT,a
 	MOVLW   00000000B
-        MOVF    GOING_LEFT,a
+        MOVWF    GOING_LEFT,a
 	movlw   DUTY_50
 	movwf   motor_left_speed,0
 	movwf   motor_right_speed,0
@@ -500,9 +408,9 @@ Set_Both_Speed_50:
 
 Set_Both_Speed_75:
 	MOVLW   00000000B
-        MOVF    GOING_RIGHT,a
+        MOVWF    GOING_RIGHT,a
 	MOVLW   00000000B
-        MOVF    GOING_LEFT,a
+        MOVWF    GOING_LEFT,a
 	movlw   DUTY_75
 	movwf   motor_left_speed,0
 	movwf   motor_right_speed,0
@@ -515,6 +423,7 @@ Set_Both_Stop:
 	call    Update_Speeds
 	return
 
+PID_SETUP:
     
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
@@ -896,7 +805,16 @@ STATE1:
 LLI:	
     BTFSS   follow_line,a
     GOTO    STATE2
-    
+MOVLW           0xFC   ;2's complement of -4
+MOVWF		s0_value
+MOVLW           0xFE   ;2's complement of -2
+MOVWF		s1_value
+MOVLW           0x00
+MOVWF		s2_value
+MOVLW           0x02
+MOVWF		s3_value
+MOVLW           0x04
+MOVWF		s4_value
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
@@ -911,53 +829,136 @@ LLI:
 
 	STRAIGHT:
 	    call detect_colour
-	    
+	    CALL    Set_Both_Speed_75
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR0,W,a
-	    BZ	    TURN_LEFT_ALOT
+	    MOVWF   error0,a
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR1,W,a
-	    BZ	    TURN_LEFT_ALITTLE
-	    
-	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR3,W,a
-	    BZ	    TURN_RIGHT_ALITTLE
-	    
-	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR4,W,a
-	    BZ	    TURN_RIGHT_ALOT
+	    MOVWF   error1,a
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    SUBWF   SENSOR2,W,a
-	    BNZ	    CHECK_BLACK
+	    MOVWF   error2,a
 	    
-	    CALL    Set_Both_Speed_75
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR3,W,a
+	    MOVWF   error3,a
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    SUBWF   SENSOR4,W,a
+	    MOVWF   error4,a
+	    
+	    CALL    ERROR_CALC
+	    CALL    PID1
+	    CALL    CHANGE_OF_OUTPUTS
+	    CALL    CHECK_BLACK
+	    
+	    GOTO    STRAIGHT
+	    
+	ERROR_CALC:
+            CLRF    acc_error, a
+            MOVF    s0_value,W,a
+            MULWF   error0,a
+	    MOVF    PRODH, W, a
+	    ADDWF   acc_error,a
+	    MOVF    s1_value,W,a
+            MULWF   error1,a
+	    MOVF    PRODH, W, a
+	    ADDWF   acc_error,a
+	    MOVF    s2_value,W,a
+            MULWF   error2,a
+	    MOVF    PRODH, W, a
+	    ADDWF   acc_error,a
+	    MOVF    s3_value,W,a
+            MULWF   error3,a
+	    MOVF    PRODH, W, a
+	    ADDWF   acc_error,a
+	    MOVF    s4_value, W,a
+            MULWF   error4,a
+	    MOVF    PRODH, W, a
+	    ADDWF   acc_error,a
+	    MOVFF   STATUS, PD_SIGN
+	    
 	    RETURN
-	TURN_LEFT_ALOT:
-	    CALL    Left_Speed_50_Rev
-	    CALL    Right_Speed_50
-	    RETURN
-	TURN_LEFT_ALITTLE:
-	    CALL    Left_Speed_25_Rev
-	    CALL    Right_Speed_50
-	    RETURN
-	TURN_RIGHT_ALOT:
-	    CALL    Right_Speed_50_Rev
-	    CALL    Left_Speed_50
-	    RETURN
-	TURN_RIGHT_ALITTLE:
-	    CALL    Right_Speed_25_Rev
-	    CALL    Left_Speed_50
-	    RETURN
-	LOST:
-	    CALL LOST_STOP
-	    CALL TURN_LEFT_ALOT
-		;call    wait_for_button_press	; this is here for the purposes of the demo
-	    BRA STRAIGHT
+	PID1:   
+	    MOVLW   16
+	    MOVWF   Kp,a
+	    MOVLW   100
+	    MOVWF   Kd,a
+	    Proportional:
+	    MOVF    Kp,a  ; loading Kp into W
+	    MULWF   acc_error,a
+	    MOVF    PRODH, W, a
+	    MOVWF   prop_error,a
+	    Derivative:
+            MOVF    acc_error,W,a
+	    SUBWF   prev_error,W,a; error = error - prev_error
+	    MOVWF   deriv_error, a
+	    MOVF    deriv_error, a
+	    MULWF   Kd, 0
+	    MOVWF   deriv_error,a
+	    MOVFF   acc_error, prev_error
+	    Output:
+            MOVF    prop_error,a
+	    ADDWF   deriv_error,a
+	    MOVWF   PD_OUTPUT,a
+	    
 	    RETURN
 	    
-	LOST_STOP:
+	CHANGE_OF_OUTPUTS:
+           BTFSC   PD_SIGN, 4, a  ; NEGATIVE = 0; POSITIVE = 1 SIGN-WISE
+	   CALL    RIGHT_ADJUST
+	   BTFSS   PD_SIGN, 4, a
+	   CALL    LEFT_ADJUST
+	 
+	   RETURN
+	   
+        RIGHT_ADJUST:
+	   MOVLW   00000000B
+           MOVWF   GOING_RIGHT,a
+	   MOVLW   11111111B
+           MOVWF   GOING_LEFT,a
+	   movlw   DUTY_75
+	   SUBWF   PD_OUTPUT, W, a
+	   movwf   motor_right_speed,0
+	   movlw   DUTY_25
+	   SUBWF   PD_OUTPUT, W, a
+	   movwf   motor_left_speed,0
+	   call    Update_Speeds
+	   return
+	   
+	LEFT_ADJUST:
+	   MOVLW   00000000B
+           MOVWF   GOING_LEFT,a
+	   MOVLW   11111111B
+           MOVWF   GOING_RIGHT,a
+	   movlw   DUTY_75
+	   SUBWF   PD_OUTPUT, W, a
+	   movwf   motor_left_speed,0
+	   movlw   DUTY_25
+	   SUBWF   PD_OUTPUT, W, a
+	   movwf   motor_right_speed,0
+	   call    Update_Speeds
+	   return     
+	    
+	    
+	;need to figure out lost algorithm now    
+	  LOST:
+          ;REVERSE UNTIL WE SEE LINE
+		REVERSE:
+		  MOVLW   11111111B
+		  MOVWF    GOING_RIGHT,a
+		  MOVLW   11111111B
+		  MOVWF    GOING_LEFT,a
+		  movlw   DUTY_75
+		  movwf   motor_left_speed,0
+		  movwf   motor_right_speed,0
+		  call    Update_Speeds
+		  return
+	  ;TURN UNTIL MIDDLE SENSOR IS ON THE LINE:THE PID TAKES CARE OF THE SECOND PART
+	  LOST_STOP:
 	    CALL BRAKES
 	    bsf	wait_for_timer333,a
 	    bsf	delay_333_call,a
