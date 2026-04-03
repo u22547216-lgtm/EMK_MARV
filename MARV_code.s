@@ -76,6 +76,7 @@ state_0		equ 0x06
 #define follow_line	state_0,1
 #define code_tests	state_0,2
 #define hardware_tests	state_0,3
+#define	touch_start	state_0,4
 
 ; sub-routine bits
 subroutine_0	equ 0x07
@@ -159,6 +160,13 @@ SENSOR4        EQU 0x5D
 RACE_COLOUR    EQU 0x5E
 BLACK_FLAG     EQU 0x5F
 
+;Touch Start variables
+touch_flag	EQU 0x60
+Vread		EQU 0x61
+OpenSW		EQU 0x62
+Trip		EQU 0x63
+Hyst		EQU 0x64
+DIFF		EQU 0x65
 
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
@@ -186,6 +194,8 @@ ADC_AN1 	equ 0b00000111 ; 0 00001 1 1
 ADC_AN2 	equ 0b00001011 ; 0 00010 1 1
 ADC_AN3 	equ 0b00001111 ; 0 00011 1 1
 ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
+	
+ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
 calib_address	equ 100h
 	
@@ -198,15 +208,20 @@ calib_address	equ 100h
     org	    0x00 			; startup address = 0000h
     goto init
     org     0x08            ; interrupt start
+    
+    btfsc   TMR4IF	    ;was it timer 4?
+    goto    TIMER4_ISR
     goto ISR
 
 init:
-    MOVLB   0xF		; work in bank 15, not all SFRs are in access bank
-    
-	; Set oscillator speed at 4 MHz
+    ; Set oscillator speed at 4 MHz
 	bsf 	IRCF0
 	bcf	IRCF1
 	bsf	IRCF2
+	
+    MOVLB   0xFF	; work in bank 15, not all SFRs are in access bank
+    
+	
 	
 	; config because of LVP change
 	bsf	TRISE,3,a
@@ -261,6 +276,14 @@ init:
     bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
+    ;Setup PORTE
+    CLRF    ANSELE,b
+    CLRF    PORTE,a
+    CLRF    LATE,a
+    CLRF    TRISE,a
+    BSF	    ANSELE,1,b
+    BSF	    TRISE,1,a
+    
     ; Timer setup
     clrf    T0CON,a
     clrf    T1CON,a
@@ -276,6 +299,23 @@ init:
     clrf    PIE3,a
     clrf    PIE4,a
     clrf    PIE5,a
+    
+    ;Setup for touch pad
+    ;CTMU modules
+    CLRF    CTMUCONH
+    movlw   0b00000010
+    movwf   CTMUICON
+    movlw   0b10010000 
+    movwf   CTMUCONL
+    movlw   0b10001000
+    movwf   CTMUCONH
+    
+    ;Timer4 init for touch pad
+   
+    movlw   0b00000000
+    movwf   T4CON
+    movlw   125
+    movwf   PR4
 
     ; INTCON2 = 0b 0 0 0 0 x 0 x 0 
     ; bsf	    INTCON2,7,a	; no RBPU
@@ -286,10 +326,15 @@ init:
     bsf	    INT1IE	    ; INT1I is enabled
     ; INTCON = 0b 1 0 1 0 0 0 0 0
     bsf	    TMR0IE	    ; enable timer 0 interrupts
+    bsf	    TMR2IE	    ;enable timer 4 interrupts
+    
+    BSF	    PEIE
     bsf	    GIEH	    ; enable high priority interupts
+    bsf	    TMR4IE
     ; bsf	    GIEL,a	; enable low priority interupts
     
     MOVLB   0x00	; back to bank 0 for normal opperations
+    
     movlw   1
     movwf   number_of_readings,a
     clrf    calibrated_color,a
@@ -300,6 +345,14 @@ init:
     clrf    SENSOR3,a
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
+    ;initializing touch pad variables
+    clrf    touch_flag,a	
+    clrf    Vread,a		
+    clrf    OpenSW,a		
+    clrf    Trip,a		
+    clrf    Hyst,a		
+    clrf    DIFF,a
+    
     clrf    race_error_colour_magic,a
     
     COLOUR_TOLERANCES:
@@ -332,6 +385,8 @@ STATE_MACHINE_SETUP:
     CLRF    DELAY_SKIP,a
     CLRF    timer_waits,a
     
+    ;Set touch start bit first so that the program waits for the touch pad to be touched
+    BSF	touch_start,a
     ; State activation bits
     BSF calibrate,a
     ;BSF follow_line,a
@@ -355,6 +410,7 @@ STATE_MACHINE_SETUP:
 	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
+   
 		
 STATE0:
 calibration:
@@ -683,11 +739,110 @@ TRANSITION0:
     BCF	    calibrate,a
     BSF	    follow_line,a
     
+
+STATE_TOUCH:
+    BTFSS   touch_start,a
+    GOTO    STATE2
+    ;Load threshold values. Change according to the touch pad used
+    
+;    MOVLW	0b00001001; AN2
+    MOVLW	ADC_AN6; AN6, PORTE 1
+    MOVWF	ADCON0,a
+    
+    CAP_TOUCH:
+	
+	movlw   40
+	movwf   OpenSW	;unpressed switch value
+	movlw   1
+	movwf   Trip	;difference between pressed and unpressed switch
+	movlw   1
+	movwf   Hyst	;amount to change from pressed to unpressed
+    CHECK_TOUCH:
+	MOVF    Trip,W
+	SUBWF   OpenSW,0
+	MOVWF   DIFF	;DIFF is OpenSW - Trip. This is the base comparison
+	
+	;Discharge touch pad
+	BSF	    CTMUEN
+	BCF	    EDG1STAT
+	BCF	    EDG2STAT
+	BSF	    IDISSEN
+	CALL	    CAP_DELAY
+	BCF	    IDISSEN
+
+	;Charge circuit
+	BSF	    EDG1STAT
+	CALL	    CAP_DELAY
+	BCF	    EDG1STAT
+
+	;AD conversion
+	BSF	    GO
+	BTFSC	    GO
+	BRA	    $-2
+	MOVF	    ADRESH,W
+	MOVWF	    Vread
+	
+	;test if Vread = 0
+	MOVLW   0
+	CPFSEQ  Vread
+	GOTO    CHK_P_OR_UP
+	BSF	PORTA,7
+	GOTO    CHECK_TOUCH
+	
+    ;Check if pressed or unpressed
+    CHK_P_OR_UP:
+	;Check for pressed
+	MOVF    DIFF,W
+	CPFSLT  Vread  
+	GOTO    PAD_PRESS
+	;Check for unpressed
+	MOVF    Hyst,W
+	ADDWF   DIFF
+	MOVF    DIFF,W
+	CPFSGT  Vread
+	GOTO    PAD_UNPRESS
+	GOTO    STATE_TOUCH	;Loop touch start sequence until pad is pressed
+    
+    PAD_PRESS:
+	BCF	    PORTA,7
+	BSF	    PORTA,4
+	GOTO	    TOUCH_TRANSITION
+    PAD_UNPRESS:
+	BCF	    PORTA,4
+	BSF	    PORTA,7
+	GOTO	    CHECK_TOUCH
+    TOUCH_TRANSITION:
+	BCF	    touch_start
+	BCF	    PORTA,4
+	BCF	    PORTA,7
+	GOTO	    STATE_TOUCH
+    CAP_DELAY: 
+	MOVLB	    0xF
+	CLRF	    TMR4
+	BSF	    TMR4ON
+	MOVLB	    0x0
+    WAIT1:
+	BTFSS	    touch_flag,0
+	BRA	    WAIT1
+	BCF	    touch_flag,0
+	BCF	    TMR4ON
+	
+	RETURN
+    TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
+    ;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
+	BSF	    touch_flag,0
+	
+	BCF	    TMR4IF
+	
+	RETFIE
+TRANSITION_1:
+    BCF	    touch_start,a
+    BSF	    follow_line,a
     	
-STATE1:
+STATE2:
 LLI:	
     BTFSS   follow_line,a
-    GOTO    STATE2
+    GOTO    STATE3
     
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
@@ -793,25 +948,25 @@ LLI:
 	    GOTO    TRANSITION1
 	    BRA	    BRAKES
     
-TRANSITION1:
+TRANSITION2:
     BSF	    follow_line,a   ;LOOP OVER LLI
 
 		
-STATE2:
+STATE3:
 software_tests:
     BTFSS   code_tests,a
-    GOTO    STATE3
+    GOTO    STATE4
     
     TODO_code_tests: ; to-do todo to do
 	nop
 ;   state 2 code
     ; to be added later
     
-TRANSITION2:
+TRANSITION3:
     BCF	    code_tests,a
     
     		
-STATE3:
+STATE4:
 test_hardware:
     BTFSS   hardware_tests,a
     GOTO    SUBROUTINE0
@@ -919,7 +1074,7 @@ SENSOR4_BLUE	EQU 0X10E
 ;   state 2 code
     ; to be added later
     
-TRANSITION3:
+TRANSITION4:
     BCF	    hardware_tests,a 
     
 ;==========SUBROUTINES=======================
@@ -1820,7 +1975,9 @@ flash:
 	BEGIN_FLASH:
 	; begin flashing
 	    ; turn off
-	CLRF	LATA,a
+	bcf	red_pin,a
+	bcf	green_pin,a
+	bcf	blue_pin,a
 	    ;wait 0.166 seconds
 	bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
@@ -2044,9 +2201,15 @@ ISR:
     goto    register_dump   
     btfsc   TMR0IF	    ; was it timer 0?
     goto    timer0_interrupt
+;    btfsc   TMR2IF	    ;was it timer 2?
+;    goto    TIMER2_ISR
     
     retfie
 
+;TIMER2_ISR:   
+;    BSF	    touch_flag,0
+;    BCF	    TMR2IF
+;    RETFIE
 
 register_dump:
     movff   line_reg, PORTC     ; put line_reg into PORTC
@@ -2428,9 +2591,4 @@ test_read_sensor:
     
     return
     
-    end			
-
-
-
-
-
+end			
