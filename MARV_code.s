@@ -55,7 +55,7 @@
     #include    <xc.inc>
     #include    "pic18f45k22.inc"
 
-; variables
+;<editor-fold defaultstate="collapsed" desc="Variables">
 
 delay_inner     equ 0x00
 delay_outer     equ 0x01
@@ -69,6 +69,8 @@ test_1		equ 0x03
 
 line_reg	equ 0x04
 number_of_readings	    equ 0x05
+	    
+;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
 	    
 ; state machine bits
 state_0		equ 0x06
@@ -95,6 +97,8 @@ subroutine_0	equ 0x07
 DELAY_SKIP		equ	0x08
 #define skip_delay_333		DELAY_SKIP,0
 #define skip_delay_RGB		DELAY_SKIP,1
+		
+;</editor-fold>
 	    
 timer_waits		equ	0x09
 #define	wait_for_timer333   timer_waits,0
@@ -107,6 +111,8 @@ count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
 
+;<editor-fold defaultstate="collapsed" desc="Colour Related Variables">
+		
 ; RGB control stuff
 race_error_colour_magic	    EQU	0X3E
 ; RGB pins
@@ -149,8 +155,11 @@ green_tol	    equ 0x4E
 blue_tol	    equ 0x4F
 white_tol	    equ 0x50
 black_tol	    equ 0x51
+	    
+;</editor-fold>
 
-; LLI registers
+;<editor-fold defaultstate="collapsed" desc="LLI registers">
+	    
 SENSOR_START	equ 059h
 SENSOR0        EQU 0x59
 SENSOR1        EQU 0x5A
@@ -159,15 +168,21 @@ SENSOR3        EQU 0x5C
 SENSOR4        EQU 0x5D
 RACE_COLOUR    EQU 0x5E
 BLACK_FLAG     EQU 0x5F
-
-;Touch Start variables
+     
+;</editor-fold>
+     
+;<editor-fold defaultstate="collapsed" desc="Touch Start variables">
+     
 touch_flag	EQU 0x60
 Vread		EQU 0x61
 OpenSW		EQU 0x62
 Trip		EQU 0x63
 Hyst		EQU 0x64
 DIFF		EQU 0x65
+		
+;</editor-fold>
 
+;<editor-fold defaultstate="collapsed" desc="Magic Numbers">
 ; Sensor storage variables, the adresses here can be used with indirect addressing
      ; name format is [colour flash]_[sensor number]
 ; red_0		equ 0x00
@@ -199,6 +214,10 @@ ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
 calib_address	equ 100h
 	
+;</editor-fold>
+	
+;</editor-fold>
+	
 ;
 ; -------------	
 ; PROGRAM START	
@@ -213,19 +232,22 @@ calib_address	equ 100h
     goto    TIMER4_ISR
     goto ISR
 
+
+;<editor-fold defaultstate="collapsed" desc="Initialisation">
 init:
+    
+    ;<editor-fold defaultstate="collapsed" desc="Clock Setup">
     ; Set oscillator speed at 4 MHz
 	bsf 	IRCF0
 	bcf	IRCF1
 	bsf	IRCF2
 	
-    MOVLB   0xFF	; work in bank 15, not all SFRs are in access bank
-    
+    ;</editor-fold>
 	
-	
-	; config because of LVP change
-	bsf	TRISE,3,a
+    MOVLB   0xF	; work in bank 15, not all SFRs are in access bank
     
+    ;<editor-fold defaultstate="collapsed" desc="Port A Setup">
+	
     ; setup ADC and RGB pins
     CLRF    PORTA,a 	; Initialize PORTA by clearing output data latches
     CLRF    LATA,a	; Alternate method to clear output data latches
@@ -234,8 +256,10 @@ init:
                         ; also sets pins A 4,6 and 7 to digital     RGB
     movwf   TRISA,a	; sets pins A 0,1,2,3 and 5 to input        ADC
                         ; also sets pins A 4,6 and 7 to outputs     RGB
-    ; movlw   0b11010000
-    ; movwf   PORTA,a     ; put RGB pins low, powers NPN transistor, turns RGB LEDs on
+			
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="ADC Setup">
 
     ; setup the ADC registers
     ; ADCON0 = x 00000 0 1
@@ -254,18 +278,29 @@ init:
 			; ADC works for 8+12* = 20us. ie: 20 instruction cycles.
     ; need to remember the ADC cooldown of 2 TAD, or 2us, which is 2 instruction cycle.
     
-    ; setup debug ports(C and D)
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Port C Setup">
+    
     ; register dump port
     clrf    PORTC, a
     clrf    LATC, a
     clrf    ANSELC, b
     clrf    TRISC, a
     
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Port D Setup">
+    
     ; colour show port
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
     clrf    TRISD, a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Port B Setup">
     
     ; Set up PORTB
     clrf    PORTB, a
@@ -276,6 +311,10 @@ init:
     bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
     ; clrf    WPUB,a      ; no more weak pull up for PORTB
     
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Port E Setup">
+    
     ;Setup PORTE
     CLRF    ANSELE,b
     CLRF    PORTE,a
@@ -283,11 +322,21 @@ init:
     CLRF    TRISE,a
     BSF	    ANSELE,1,b
     BSF	    TRISE,1,a
+	; config because of LVP change
+	bsf	TRISE,3,a
+	
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Timer 0 and 1 Setup">
     
     ; Timer setup
     clrf    T0CON,a
     clrf    T1CON,a
     clrf    T1GCON,a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Interrupt flag clears">
     
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
@@ -299,6 +348,10 @@ init:
     clrf    PIE3,a
     clrf    PIE4,a
     clrf    PIE5,a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Capacitive Touch Setup">
     
     ;Setup for touch pad
     ;CTMU modules
@@ -316,6 +369,10 @@ init:
     movwf   T4CON
     movlw   125
     movwf   PR4
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Interrupts">
 
     ; INTCON2 = 0b 0 0 0 0 x 0 x 0 
     ; bsf	    INTCON2,7,a	; no RBPU
@@ -333,7 +390,11 @@ init:
     bsf	    TMR4IE
     ; bsf	    GIEL,a	; enable low priority interupts
     
+    ;</editor-fold>
+    
     MOVLB   0x0	; back to bank 0 for normal opperations
+    
+    ;<editor-fold defaultstate="collapsed" desc="Clearing Variables">
     
     movlw   1
     movwf   number_of_readings,a
@@ -355,6 +416,11 @@ init:
     
     clrf    race_error_colour_magic,a
     
+    ;</editor-fold>
+    
+    
+    ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
+    
     COLOUR_TOLERANCES:
 	movlw   10
 	MOVWF   red_tol,a
@@ -370,20 +436,24 @@ init:
 
 	movlw   10
 	MOVWF   white_tol,a
-    
-    
-; testing setup		
-    bcf	    test_en, a
-    btfsc   test_en, a
-    goto    test
-end_test:
-    bcf	    test_en, a
+	
+    ;</editor-fold>
+
+;</editor-fold>
+
+;<editor-fold defaultstate="collapsed" desc="State Machine Setup">
     
 STATE_MACHINE_SETUP:
+    ;<editor-fold defaultstate="collapsed" desc="Clear State Control Bits">
+    
     CLRF    state_0,a
     CLRF    subroutine_0,a
     CLRF    DELAY_SKIP,a
     CLRF    timer_waits,a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="State Control Bits">
     
     ;Set touch start bit first so that the program waits for the touch pad to be touched
     ; State activation bits
@@ -391,9 +461,17 @@ STATE_MACHINE_SETUP:
     ;BSF	touch_start,a
     ;BSF follow_line,a
     
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Test States">
+    
 	; tests
     ; BSF code_tests,a
     ; BSF hardware_tests,a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Subroutine Control Bits">
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
@@ -404,19 +482,29 @@ STATE_MACHINE_SETUP:
     ;BSF flash_colour_display,a
     ;BSF button_press_check,a
     ;BSF colour_display,a
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Delay Skip Bits">
 
 	; Delay skips
 	;BSF skip_delay_333,a
 	;BSF skip_delay_RGB,a
+	
+    ;</editor-fold>
+    
+;</editor-fold>
     
 STATE_MACHINE_START:
    
-		
+	
+;<editor-fold defaultstate="collapsed" desc="Calibration">
 STATE0:
 calibration:
     BTFSS   calibrate,a
     GOTO    STATE1
     
+    ;<editor-fold defaultstate="collapsed" desc="Calibrate Red">
 	; red
 	LFSR    0, 100h
 	movlw   1
@@ -453,6 +541,9 @@ calibration:
 
 	MOVWF   red_thresh,a
 
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Calibrate Green">
 	;green
 	lfsr    0, 100h
 	MOVLW	green_indicator
@@ -486,6 +577,10 @@ calibration:
 	movf    INDF0,w,a
 
 	MOVWF green_thresh,a
+	
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Calibrate Blue">
 
 	;blue
 	lfsr    0, 100h
@@ -520,6 +615,10 @@ calibration:
 	movf    INDF0,w,a
 
 	MOVWF blue_thresh,a
+	
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Calibrate Black">
 
 	;black
 	lfsr    0, 100h
@@ -598,6 +697,9 @@ calibration:
 	
 	movwf	black_blue_thresh,a
 
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Calibrate White">
 	
 	;white
 	lfsr    0, 100h
@@ -674,12 +776,14 @@ calibration:
 	movf    INDF0,w,a
 
 	movwf	white_blue_thresh,a
-
+	
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
 
 	MOVLW	no_indicator
 	MOVWF	DISPLAYED_COLOUR,a
 	
-	; setf    PORTD,a
 	bsf		button_press_check,a
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
@@ -688,9 +792,8 @@ calibration:
 	call    detect_colour
 	BCF	check_colour,a
 
-    ; calibrated colour
+    ; Race colour
 	movff   SENSOR2,RACE_COLOUR
-	; clrf    PORTD,a
 
 	movlw   'R'
 	cpfseq  RACE_COLOUR,a
@@ -731,13 +834,15 @@ calibration:
 	bsf		flash_colour_display,a
 	call 	flash
 	bcf		flash_colour_display,a
-	;bsf		button_press_check,a
-	;call    wait_for_button_press_show_colour
-	;bcf		button_press_check,a
+	
+    ;</editor-fold>
 
 TRANSITION0:
     BCF	    calibrate,a
     BSF	    touch_start,a
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Touch start">
     
 STATE1:
 touch_to_start:
@@ -841,6 +946,10 @@ touch_to_start:
 TRANSITION1:
     BCF	    touch_start,a
     BSF	    follow_line,a
+    
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="LLI">
     	
 STATE2:
 LLI:	
@@ -955,6 +1064,9 @@ LLI:
 TRANSITION2:
     BSF	    follow_line,a   ;LOOP OVER LLI
 
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Code Tests">
 		
 STATE3:
 software_tests:
@@ -969,6 +1081,9 @@ software_tests:
 TRANSITION3:
     BCF	    code_tests,a
     
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Hardware tests">
     		
 STATE4:
 test_hardware:
@@ -1081,9 +1196,13 @@ SENSOR4_BLUE	EQU 0X10E
 TRANSITION4:
     BCF	    hardware_tests,a 
     
+;</editor-fold>
+    
 ;==========SUBROUTINES=======================
     
 TRY_ALL_SUBROUTINES:
+    
+;<editor-fold defaultstate="collapsed" desc="333ms Delay">
     
 SUBROUTINE0:
 TODO_DELAY_333_REPLACE_WITH_TIMER:
@@ -1126,6 +1245,9 @@ delay_333:
 SUB_TRANSITIONS0:
     BCF	    delay_333_call,a
     
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Delay for RGBs">
         
 SUBROUTINE1:
 delay_RGB:
@@ -1163,6 +1285,9 @@ delay_RGB:
 SUB_TRANSITIONS1:
     BCF	    RGB_delay_call,a
     
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Read Sensors">
         
 SUBROUTINE2:
 read_sensors:
@@ -1323,6 +1448,9 @@ read_sensors:
 SUB_TRANSITIONS2:
     BCF	    read_sensors_call,a
     
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Colour Detection">
         
 SUBROUTINE3:
 detect_colour:
@@ -1346,6 +1474,7 @@ detect_colour:
 	; back to bank 2
 	LFSR    0, 200h	
 
+    ;<editor-fold defaultstate="collapsed" desc="White Check">
 	; always check for white first
 	white_check:
     
@@ -1568,6 +1697,8 @@ detect_colour:
 	    movlw	'W'
 	    movwf	SENSOR4,a
 	    
+    ;</editor-fold>
+	    
 	    TODO_change_how_the_colour_checks_are_done:
 	    ; best ideas so far:
 		; check how close the colours are to their white thresholds.
@@ -1584,7 +1715,9 @@ detect_colour:
 	    nop
 
 	    lfsr	0,200h
-
+	    
+    ;<editor-fold defaultstate="collapsed" desc="Red Check">
+    
 	red_checks:
 	    clrf	red_check_bits,a
 	    
@@ -1647,7 +1780,11 @@ detect_colour:
 	    NEGF    WREG,a		    ; make positive if negative
 	    cpfslt  red_tol,a
 	    bsf	    red_check_bits,4,a
-
+    
+    ;</editor-fold>
+	    
+    ;<editor-fold defaultstate="collapsed" desc="Green Check">
+    
 	green_checks:
 	    clrf	green_check_bits,a
 	    
@@ -1710,6 +1847,10 @@ detect_colour:
 	    NEGF    WREG,a		    ; make positive if negative
 	    cpfslt  green_tol,a
 	    bsf	    green_check_bits,4,a
+	    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Blue Check">
 
 	blue_checks:
 	    clrf	blue_check_bits,a
@@ -1774,6 +1915,9 @@ detect_colour:
 	    cpfslt  blue_tol,a
 	    bsf	    blue_check_bits,4,a
 
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Get Sensor Colours">
 
 	checking_colours:
 	    ; check sensor 0
@@ -1860,8 +2004,13 @@ detect_colour:
 
 	    call    run_detection_checks
 	    movwf   SENSOR4,a
+	    
+    ;</editor-fold>
 
 	return
+	
+    ;<editor-fold defaultstate="collapsed" desc="Decode Colour">
+    
 	    run_detection_checks:
     
 		movlw   0
@@ -1910,13 +2059,19 @@ detect_colour:
 		; default to ERROR
 		RETLW   'E'
     
+    ;</editor-fold>
+		
 SUB_TRANSITIONS3:
     BCF	    check_colour,a
         
+;</editor-fold>
+
+;<editor-fold defaultstate="collapsed" desc="colour display">
     
 SUBROUTINE4:
     TODO_this_should_be_changed_for_serial_bridge_comms:
     nop
+    TODO_this_could_be_done_with_the_RGB_LEDs_if_we_connect_their_grounds_to_the_PIC:
 show_colour:
     BTFSS   show_the_colours,a
     GOTO    SUBROUTINE5
@@ -1966,6 +2121,9 @@ show_colour:
 SUB_TRANSITIONS4:
     BCF	    show_the_colours,a
         
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="3Hz Flash">
     
 SUBROUTINE5:
  flash:
@@ -2009,7 +2167,10 @@ SUBROUTINE5:
     
 SUB_TRANSITIONS5:
     BCF	    flash_colour_display,a
+    
+;</editor-fold>
         
+;<editor-fold defaultstate="collapsed" desc="Wait for Button Press and Show Colour">
     
 SUBROUTINE6:
 wait_for_button_press_show_colour:
@@ -2036,6 +2197,9 @@ wait_for_button_press_show_colour:
 SUB_TRANSITIONS6:
     BCF	    button_press_check,a
     
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="Colour Displays on RGB LEDs">
     
 SUBROUTINE7:
 display_colour:
@@ -2067,6 +2231,7 @@ display_colour:
 	RETURN
 	bra	SUB_TRANSITIONS7
 	
+	;<editor-fold defaultstate="collapsed" desc="Off">
 	    display_nothing:
 	    nop
 	    nop
@@ -2080,6 +2245,10 @@ display_colour:
 	    nop
 	    
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Black (orange)">
     
 	    display_black:
 	    ; orange = RGB(255,102,0), means 40% duty cycle on green
@@ -2096,6 +2265,10 @@ display_colour:
 	    bcf	red_pin,a
 
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="White">
 
 	    display_white:
 	    ; white = RGB(255,255,255)
@@ -2112,6 +2285,10 @@ display_colour:
 	    CLRF	LATA,a
 
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Red">
 
 	    display_red:
 	    bsf	red_pin,a
@@ -2127,6 +2304,10 @@ display_colour:
 	    bcf	red_pin,a
 
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Green">
 
 	    display_green:
 	    bsf	green_pin,a
@@ -2142,6 +2323,10 @@ display_colour:
 	    bcf	green_pin,a
 
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Blue">
 
 	    display_blue:
 	    bsf	blue_pin,a
@@ -2157,6 +2342,10 @@ display_colour:
 	    bcf	blue_pin,a
 
 	    return
+	
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Race error">
 
 	    display_race_error:
 	    movf	race_error_colour_magic,w,a
@@ -2172,6 +2361,10 @@ display_colour:
 	    nop
 
 	    return
+	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Error">
 
 	    display_error:
 	    ; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
@@ -2188,17 +2381,19 @@ display_colour:
 	    nop
 
 	    return
+	    
+	;</editor-fold>
     
 SUB_TRANSITIONS7:
     BCF	    colour_display,a
     
+;</editor-fold>
     
 STATE_MACHINE_END:
     
 GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
-    
-;======INTERRUPTS===========
+;<editor-fold defaultstate="collapsed" desc="INTERRUPTS">
     
 ISR:
     btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
@@ -2233,6 +2428,10 @@ timer0_interrupt:
     
     nop
     retfie
+    
+;</editor-fold>
+    
+;<editor-fold defaultstate="collapsed" desc="old tests">
     
 TODO_move_test_code_into_states:  ; to-do todo to do
     nop
@@ -2594,5 +2793,7 @@ test_read_sensor:
     bsf	    test_0,2,a
     
     return
+    
+;</editor-fold>
     
 end			
