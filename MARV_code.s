@@ -114,15 +114,15 @@ race_error_colour_magic	    EQU	0X3E
 #define blue_pin    PORTA,7
 ; colour indicator offsets in code
 DISPLAYED_COLOUR	equ 0x3F
-    no_indicator	    EQU 0b00000010
-    black_indicator	    EQU 0b00000100
-    white_indicator	    EQU 0b00000110
-    red_indicator	    EQU 0b00001000
-    green_indicator	    EQU 0b00001010
-    blue_indicator	    EQU 0b00001100
+    no_indicator	    EQU 0
+    black_indicator	    EQU 2
+    white_indicator	    EQU 4
+    red_indicator	    EQU 6
+    green_indicator	    EQU 8
+    blue_indicator	    EQU 10
 	    
-    race_error_indicator    EQU 0b00001110
-    error_indicator	    EQU 0b00010000
+    race_error_indicator    EQU 12
+    error_indicator	    EQU 14
 		
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -807,6 +807,82 @@ test_hardware:
     
     movlb   0x1
     TODO_hardware_tests: ; to-do todo to do
+    
+
+	
+	
+	MOVLW	black_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	
+	
+	MOVLW	error_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	
+	
+	MOVLW	red_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	
+	
+	bsf	race_error_colour_magic,4,a
+	MOVLW	race_error_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	clrf	race_error_colour_magic,a
+	
+	
+	MOVLW	green_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	
+	
+	bsf	race_error_colour_magic,6,a
+	MOVLW	race_error_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	clrf	race_error_colour_magic,a
+	
+	
+	MOVLW	blue_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	
+	
+	bsf	race_error_colour_magic,7,a
+	MOVLW	race_error_indicator    
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check,a
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check,a
+	clrf	race_error_colour_magic,a
+	
+	
+    goto    TODO_hardware_tests
+    
 
 SENSOR0_RED	EQU 0X100
 SENSOR1_RED	EQU 0X101
@@ -1768,15 +1844,14 @@ wait_for_button_press_show_colour:
     GOTO    display_colour
     
 	; show the colour to calibrate
-	MOVF	DISPLAYED_COLOUR,w,a
 	BSF	colour_display,a
 	call	display_colour
 	BCF	colour_display,a
 	
 	btfss   INT0IF	    ;wait for button press
-	bra	    $-8
+	bra	    $-10
 	; delay so that we dont have to debounce
-	bsf	wait_for_timer333,a
+    bsf	wait_for_timer333,a
 	bsf	delay_333_call,a
 	call    delay_333
 	bcf	delay_333_call,a
@@ -1794,7 +1869,9 @@ display_colour:
     BTFSS   colour_display,a
     GOTO    STATE_MACHINE_END
     
-	ADDWF	PCL,a
+	MOVF	PCL,w,a
+	MOVF	DISPLAYED_COLOUR,w,a
+	ADDWF	PCL,f,a
 	bra	    display_nothing
 	;BTFSC   black_indicator,a
 	bra	    display_black
@@ -1909,17 +1986,17 @@ display_colour:
 	    return
 
 	    display_race_error:
-	    SETF	LATA,a
-	    nop
-	    nop
-	    MOVFF	race_error_colour_magic,LATA
-	    ;spacer because MOVFF is 2 Tcy
-	    nop
-	    nop
-	    nop
-	    nop
-	    nop
+	    movf	race_error_colour_magic,w,a
+	    movwf	LATA,a
 	    CLRF	LATA,a
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
 
 	    return
 
@@ -1927,10 +2004,10 @@ display_colour:
 	    ; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
 	    bsf	red_pin,a
 	    bsf	green_pin,a
-	    nop
 	    bcf	green_pin,a
 	    bcf	red_pin,a
-	    nop
+	    bsf	blue_pin,a
+	    bcf	blue_pin,a
 	    nop
 	    nop
 	    nop
@@ -1966,7 +2043,7 @@ register_dump:
 
 timer0_interrupt:
     ; check if the wait bit for timmer333 was set
-    btfsc   wait_for_timer333,a
+    btfsS   wait_for_timer333,a
     bra	    $+10
     ; if it was, just clear the wait and return
     bcf	    wait_for_timer333,a
