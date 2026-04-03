@@ -386,9 +386,9 @@ STATE_MACHINE_SETUP:
     CLRF    timer_waits,a
     
     ;Set touch start bit first so that the program waits for the touch pad to be touched
-    BSF	touch_start,a
     ; State activation bits
     BSF calibrate,a
+    ;BSF	touch_start,a
     ;BSF follow_line,a
     
 	; tests
@@ -731,13 +731,13 @@ calibration:
 	bsf		flash_colour_display,a
 	call 	flash
 	bcf		flash_colour_display,a
-	bsf		button_press_check,a
-	call    wait_for_button_press_show_colour
-	bcf		button_press_check,a
+	;bsf		button_press_check,a
+	;call    wait_for_button_press_show_colour
+	;bcf		button_press_check,a
 
 TRANSITION0:
     BCF	    calibrate,a
-    BSF	    follow_line,a
+    BSF	    touch_start,a
     
 
 STATE_TOUCH:
