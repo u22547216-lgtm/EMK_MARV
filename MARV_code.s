@@ -679,9 +679,6 @@ calibration:
 	call    wait_for_button_press_show_colour
 	bcf		button_press_check,a
 
-	return
-    
-    
 TRANSITION0:
     BCF	    calibrate,a
     BSF	    follow_line,a
@@ -731,29 +728,29 @@ LLI:
 	    
 	    MOVLW   0b00100000
 	    MOVWF   line_reg,a
-	    RETURN
+	    GOTO    TRANSITION1
 	TURN_LEFT_ALOT:
 	    MOVLW 0b10000000
 	    MOVWF line_reg,a
-	    RETURN
+	    GOTO    TRANSITION1
 	TURN_LEFT_ALITTLE:
 	    MOVLW 0b01000000
 	    MOVWF line_reg,a
-	    RETURN
+	    GOTO    TRANSITION1
 	TURN_RIGHT_ALOT:
 	    MOVLW 0b00001000
 	    MOVWF line_reg,a
-	    RETURN
+	    GOTO    TRANSITION1
 	TURN_RIGHT_ALITTLE:
 	    MOVLW 0b00010000
 	    MOVWF line_reg,a
-	    RETURN
+	    GOTO    TRANSITION1
 	LOST:
 	    CALL LOST_STOP
 	    CALL TURN_LEFT_ALOT
 		;call    wait_for_button_press	; this is here for the purposes of the demo
 	    BRA STRAIGHT
-	    RETURN
+	    GOTO    TRANSITION1
 	    
 	    LOST_STOP:
 		CALL BRAKES
@@ -763,12 +760,12 @@ LLI:
 		bcf	delay_333_call,a
 		    ;call    wait_for_button_press	; this is here for the purposes of the demo
 		CLRF line_reg,a
-		RETURN
+	    GOTO    TRANSITION1
          
 	BRAKES:
 	    MOVLW 0b11111000
 	    MOVWF line_reg,a
-	    RETURN   
+	    GOTO    TRANSITION1
 	    
 	CHECK_BLACK:
 	    MOVLW   'K'
@@ -793,7 +790,7 @@ LLI:
 	    BSF	    BLACK_FLAG,4,a
 	    MOVLW   0b00011111
 	    CPFSEQ  BLACK_FLAG,a
-	    RETURN
+	    GOTO    TRANSITION1
 	    BRA	    BRAKES
     
 TRANSITION1:
@@ -1702,7 +1699,6 @@ detect_colour:
 	    btfsc   blue_check_bits,4,a
 	    bsf     check,2,a
 
-	    bra	$+8
 	    call    run_detection_checks
 	    movwf   SENSOR4,a
 
@@ -1843,7 +1839,7 @@ flash:
 	BCF	colour_display,a
 	    ;wait 0.166 seconds
 	btfsc	wait_for_timer333,a
-	bra	$-8
+	bra	$-10
 	; did we flash enough?
 	decfsz  count,a
 	bra	BEGIN_FLASH	; no
