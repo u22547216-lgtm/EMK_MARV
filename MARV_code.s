@@ -114,7 +114,7 @@ extra		equ 0x19
 #define DUTY_75     187
 #define DUTY_STOP   0
 ;OTHER MOTOR DEFINTIONS
-#define left_dir_pin    PORTD,5 ;I WANT PIN D0 AND D1
+#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
 #define right_dir_pin   PORTD,6
 ;PID variables
 error0          equ   0x74
@@ -274,9 +274,7 @@ init:
     ; Clear outputs
     clrf    LATC,1
 
-    ; RC1 = CCP2 output, RC2 = CCP1 output
-    bcf     TRISC,1,1
-    bcf     TRISC,2,1
+  
     
     
 
@@ -298,6 +296,12 @@ init:
     clrf    LATD, a
     clrf    ANSELD, b
     clrf    TRISD, a
+    
+    ; RD2 = CCP2 PWM output, RD3 = CCP2 STEERING, RD5 = CCP1 PWM OUTPUT, RD6 = CCP1 OUTPUT
+    bcf     TRISD,2,1
+    bcf     TRISD,3,1
+    bcf     TRISD,5,1
+    bcf     TRISD,6,1
     
     ; Set up PORTB
     clrf    PORTB, a
@@ -329,9 +333,15 @@ PWM_Init:
     clrf    CCPR2L,1
 
     ; PWM mode on CCP1 and CCP2
-    movlw   00001100B
+    movlw   01001100B
     movwf   CCP1CON,1
     movwf   CCP2CON,1
+    
+    ;ALLOWS POLARITY SWITCHING
+    MOVLW   00010110B
+    MOVWF   PSTR1CON
+    MOVWF   PSTR2CON
+    
 
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
     movlw   00000111B
@@ -722,17 +732,22 @@ TRANSITION0:
     	
 STATE1:
 LLI:	
-    BTFSS   follow_line,a
-    GOTO    STATE2
-MOVLW           0xFC   ;2's complement of -4
+BTFSS   follow_line,a
+GOTO    STATE2
+
+MOVLW           -4   
 MOVWF		s0_value
-MOVLW           0xFE   ;2's complement of -2
+MOVLW           -2   
 MOVWF		s1_value
-MOVLW           0x00
+MOVLW           -1   
+MOVWF		s1_value_e
+MOVLW           0
 MOVWF		s2_value
-MOVLW           0x02
+MOVLW           1
+MOVWF		s3_value_e
+MOVLW           2
 MOVWF		s3_value
-MOVLW           0x04
+MOVLW           4
 MOVWF		s4_value
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
@@ -747,6 +762,11 @@ MOVWF		s4_value
     ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
+	    CLRF error0,a
+	    CLRF error1,a
+	    CLRF error2,a
+	    CLRF error3,a
+	    CLRF error4,a
 	    call detect_colour
 	    MOVLW   170
 	    MOVWF   RACE_COLOUR
@@ -762,25 +782,45 @@ MOVWF		s4_value
 	    MOVWF   SENSOR4
 	    
 	    CALL    Set_Both_Speed_75
-	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR0,W,a
-	    MOVWF   error0,a
+	    MOVF    SENSOR0,W,a
+	    CPFSLT   'e'    ;Since CAPITAL ASCII CHARACTERS ARE LESS THAN LOWER CASE
+	    MOVFF   s1_value, error0
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR1,W,a
-	    MOVWF   error1,a
+	    CPFSGT   SENSOR0,W,a
+	    MOVFF   s0_value, error0
+	    
+	    MOVF    SENSOR1,W,a
+	    CPFSLT   'e'
+	    MOVFF   s1_value_e, error1
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR2,W,a
-	    MOVWF   error2,a
+	    CPFSLT  SENSOR1,W,a
+	    MOVFF   s1_value, error1
+	    
+	    MOVF    SENSOR3,W,a
+	    CPFSLT   'e'
+	    MOVFF   s3_value_e, error3
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR3,W,a
-	    MOVWF   error3,a
+	    CPFSLT   SENSOR3,W,a
+	    MOVWF   s3_value, error3
+	    
+	    MOVF    SENSOR4,W,a
+	    CPFSLT   'e'
+	    MOVFF   s3_value, error4
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    SUBWF   SENSOR4,W,a
-	    MOVWF   error4,a
+	    CPFSLT   SENSOR4,W,a
+	    MOVFF   s4_value, error4
+	    
+	    MOVF    SENSOR2,W,a
+	    CPFSLT   'e'
+	    MOVFF   s3_value, error2
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    CPFSEQ   SENSOR2,W,a
+	    MOVFF   s2_value, error2
 	    
 	    CALL    ERROR_CALC
 	    CALL    PID1
@@ -791,10 +831,12 @@ MOVWF		s4_value
 	    
 	ERROR_CALC:
             CLRF    acc_error, a
+	    NEGF    s0_value
             MOVF    s0_value,W,a
             MULWF   error0,a
 	    MOVF    PRODH, W, a
 	    ADDWF   acc_error,a
+	    NEGF    s1_value
 	    MOVF    s1_value,W,a
             MULWF   error1,a
 	    MOVF    PRODH, W, a
