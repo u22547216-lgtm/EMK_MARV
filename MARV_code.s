@@ -108,14 +108,9 @@ reading_count	equ 0x10
 count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
-;DUTY CYCLE DEFINITIONS
-#define DUTY_25     62
-#define DUTY_50     125
-#define DUTY_75     187
-#define DUTY_STOP   0
 ;OTHER MOTOR DEFINTIONS
-#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
-#define right_dir_pin   PORTD,6
+;#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
+;#define right_dir_pin   PORTD,6
 ;PID variables
 error0          equ   0x74
 prev_error	equ   0x75
@@ -201,6 +196,13 @@ BLACK_FLAG     EQU 0x5F
 ; blue_2		equ 0x0D
 ; blue_3		equ 0x0E
 ; blue_4		equ 0x0F
+     
+;DUTY CYCLE DEFINITIONS
+DUTY_25     equ 31
+DUTY_50     equ 62
+DUTY_75     equ 93
+DUTY_100    equ 125
+DUTY_STOP   equ 0
 
 ; variables to reduce magic numbers
 ADC_AN0		equ 0b00000011 ; 0 00000 1 1
@@ -291,7 +293,7 @@ init:
     movwf   motor_right_speed,0
     call    Update_Speeds
     
-    ; Port D, as output (used to be colour display)
+    ; Port D
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
@@ -333,14 +335,21 @@ PWM_Init:
     clrf    CCPR2L,1
 
     ; PWM mode on CCP1 and CCP2
-    movlw   01001100B
+    movlw   00001100B
     movwf   CCP1CON,1
     movwf   CCP2CON,1
     
     ;ALLOWS POLARITY SWITCHING
-    MOVLW   00010110B
+	; use PxB as forward and PxC as reverse for now
+	; only keep one port for each PWM active at a time. 
+	; might break the H-Bridge if you try to output from the reverse pin and the forward pin at the same time.
+    MOVLW   00010010B
     MOVWF   PSTR1CON
     MOVWF   PSTR2CON
+    
+    FORWARD_STEERING	    equ 00010010B
+    STEERING_MIDDLE_STEP    equ 00010000B
+    REVERSE_STEERING	    equ 00010100B
     
 
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
@@ -768,19 +777,26 @@ MOVWF		s4_value
 	    CLRF error3,a
 	    CLRF error4,a
 	    call detect_colour
-	    MOVLW   170
+	    MOVLW   'R'
 	    MOVWF   RACE_COLOUR
-	    MOVLW   170
+	    MOVLW   'R'
 	    MOVWF   SENSOR2
-	    MOVLW   255
+	    MOVLW   'W'
 	    MOVWF   SENSOR0
-	    MOVLW   255
+	    MOVLW   'W'
 	    MOVWF   SENSOR1
-	    MOVLW   255
+	    MOVLW   'W'
 	    MOVWF   SENSOR3
-	    MOVLW   255
+	    MOVLW   'W'
 	    MOVWF   SENSOR4
 	    
+		    ; Slap on fix for now
+		    BCF	    P1C
+		    BCF	    P2C
+	    
+		    BSF	    P1B
+		    BSF	    P2B
+		    
 	    CALL    Set_Both_Speed_75
 	    MOVF    SENSOR0,W,a
 	    CPFSLT   'e'    ;Since CAPITAL ASCII CHARACTERS ARE LESS THAN LOWER CASE
@@ -928,6 +944,13 @@ MOVWF		s4_value
 		bcf	delay_333_call,a
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
+		    ; need to change from the forward pins to the reverse pins
+		    BCF	    P1B
+		    BCF	    P2B
+		    
+		    BSF	    P1C
+		    BSF	    P2C
+    
 		  MOVLW   11111111B
 		  MOVWF    GOING_RIGHT,a
 		  MOVLW   11111111B
