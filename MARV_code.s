@@ -1024,21 +1024,85 @@ MOVWF		s4_value
 	    RETURN
 	    
 	CHANGE_OF_OUTPUTS:
-	    ; stop all PWM outputs
-		; stop gap measure, will remove if I think it is not needed
+	    
+	    ; now i dont know what it means when the PID output is positive or negative.
+		; positive maps to right on the sensors
+		; negative maps to left on the sensors
+		
+		; it stands to reason that a negative output means to turn left
+		    ; which just means to adjust the left motor.
+		    
+	    ; now i just need to check if the PID output is higher than the default wheel speed duty cycle register.
+		; if it is, then i need to invert the direction of the wheel that needs to be adjusted
+		    ; need to subtract the default value from the PID output
+			; then put that result in the duty cycle register of the wheel that needs to be adjusted.
+			
+	    ; left is connected to CPP1
+	    
+	    movf    PD_OUTPUT,w,b
+	    subwf   default_duty_cycle,w,b
+	    bnn	    $+8
+	    tstfsz  PD_SIGN
+	    bra	    right_reverse
+	    bra	    left_reverse
+	    tstfsz  PD_SIGN
+	    bra	    slow_right
+	    bra	    slow_left
+	    
+	    PWM_adjustments:
+    
+	    BTFSC   PD_SIGN, 4, a  ; NEGATIVE = 0; POSITIVE = 1 SIGN-WISE
+	    CALL    RIGHT_ADJUST
+	    BTFSS   PD_SIGN, 4, a
+	    CALL    LEFT_ADJUST
+	 
+	    RETURN
+	   
+	    right_reverse:
+		; never set one of these first, extra safety for the H-Bridge
+		BCF	    P1C
+		BSF	    P1B
+		
+		BCF	    P2B
+		BSF	    P2C
+		
+		negf	WREG,a
+		movwf   CCPR2L,a
+		
+		return
+		
+	    left_reverse:
+		BCF	    P2C
+		BSF	    P2B
+		
+		BCF	    P1B
+		BSF	    P1C
+		
+		negf	WREG,a
+		movwf   CCPR1L,a
+		
+		return
+		
+	    slow_right:
 		BCF	    P1C
 		BCF	    P2C
-		BCF	    P1B
-		BCF	    P2B
+		BSF	    P1B
+		BSF	    P2B
 		
-	    
-    
-           BTFSC   PD_SIGN, 4, a  ; NEGATIVE = 0; POSITIVE = 1 SIGN-WISE
-	   CALL    RIGHT_ADJUST
-	   BTFSS   PD_SIGN, 4, a
-	   CALL    LEFT_ADJUST
-	 
-	   RETURN
+		movwf   CCPR2L,a
+		
+		return
+		
+	    slow_left:
+		BCF	    P1C
+		BCF	    P2C
+		BSF	    P1B
+		BSF	    P2B
+		
+		movwf   CCPR1L,a
+		
+		return
+		
 	   
         RIGHT_ADJUST:
 	   MOVLW   00000000B
