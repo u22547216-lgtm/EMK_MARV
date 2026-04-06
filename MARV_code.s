@@ -797,46 +797,72 @@ MOVWF		s4_value
 		    BSF	    P1B
 		    BSF	    P2B
 		    
-	    CALL    Set_Both_Speed_75
-	    MOVF    SENSOR0,W,a
-	    CPFSLT   'e'    ;Since CAPITAL ASCII CHARACTERS ARE LESS THAN LOWER CASE
+		; the PWM shouldnt be changed untill after the PID is done
+	    ;CALL    Set_Both_Speed_75
+	    
+	    ;SENSOR0 check
+	    
+	    ; this check for race_error makes some sense because the value of 'e' is bigger than the other letters we use.
+	    ; only issue is (or was), you cant put letters into the CPFS functions because it will take the value of the letter and use that as an address
+		; i also went through and fixed some of the logic
+	    movlw   'e'
+	    ;MOVF    SENSOR0,W,a
+	    CPFSLT   SENSOR0,a
 	    MOVFF   s1_value, error0
 	    
+	    ; This is a check that is needed, but you kindof did it wrong because you arent specifically checking for the race colour.
+	    ; This means that if, for example, the race colour is red 'R' and the SENSOR sees green 'G' or error 'E', this would still trigger
+	    ; because 'G' and 'E' are smaller than 'R', and the MOVFF would only be skipped if SENSOR has 'W' or 'e'
+		; I have changed it so that it only works if SENSORx is equal to RACE_COLOUR
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSGT   SENSOR0,W,a
+	    CPFSEQ   SENSOR0,W,a
+	    bra	    $+6
 	    MOVFF   s0_value, error0
 	    
-	    MOVF    SENSOR1,W,a
-	    CPFSLT   'e'
+	    ;SENSOR1 check
+	    movlw   'e'
+	    ;MOVF    SENSOR1,W,a
+	    CPFSLT   SENSOR1,a
 	    MOVFF   s1_value_e, error1
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSLT  SENSOR1,W,a
+	    CPFSEQ  SENSOR1,W,a
+	    bra	    $+6
 	    MOVFF   s1_value, error1
 	    
-	    MOVF    SENSOR3,W,a
-	    CPFSLT   'e'
+	    ;SENSOR3 check
+	    movlw   'e'
+	    ;MOVF    SENSOR3,W,a
+	    CPFSLT   SENSOR3,a
 	    MOVFF   s3_value_e, error3
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSLT   SENSOR3,W,a
+	    CPFSEQ   SENSOR3,W,a
 	    MOVWF   s3_value, error3
 	    
-	    MOVF    SENSOR4,W,a
-	    CPFSLT   'e'
+	    ;SENSOR4 check
+	    movlw   'e'
+	    ;MOVF    SENSOR4,W,a
+	    CPFSLT   SENSOR4,a
 	    MOVFF   s3_value, error4
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSLT   SENSOR4,W,a
+	    CPFSEQ   SENSOR4,W,a
+	    bra	    $+6
 	    MOVFF   s4_value, error4
 	    
-	    MOVF    SENSOR2,W,a
-	    CPFSLT   'e'
+	    ;SENSOR2 check
+	    movlw   'e'
+	    ;MOVF    SENSOR2,W,a
+	    CPFSLT   SENSOR2,a
 	    MOVFF   s3_value, error2
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ   SENSOR2,W,a
+	    bra	    $+6
 	    MOVFF   s2_value, error2
+	    
+	    ; PID calcs
 	    
 	    CALL    ERROR_CALC
 	    CALL    PID1
