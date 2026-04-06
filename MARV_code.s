@@ -872,29 +872,47 @@ MOVWF		s4_value
 	    GOTO    STRAIGHT
 	    
 	ERROR_CALC:
-            CLRF    acc_error, a
-	    NEGF    s0_value
-            MOVF    s0_value,W,a
-            MULWF   error0,a
-	    MOVF    PRODH, W, a
-	    ADDWF   acc_error,a
-	    NEGF    s1_value
-	    MOVF    s1_value,W,a
-            MULWF   error1,a
-	    MOVF    PRODH, W, a
-	    ADDWF   acc_error,a
-	    MOVF    s2_value,W,a
-            MULWF   error2,a
-	    MOVF    PRODH, W, a
-	    ADDWF   acc_error,a
-	    MOVF    s3_value,W,a
-            MULWF   error3,a
-	    MOVF    PRODH, W, a
-	    ADDWF   acc_error,a
-	    MOVF    s4_value, W,a
-            MULWF   error4,a
-	    MOVF    PRODH, W, a
-	    ADDWF   acc_error,a
+	    ; small bit of setup for this
+            CLRF    acc_error, b
+	    
+	    ; SENSOR 0
+	    ;NEGF    s0_value	    ; why do this? 
+            ;MOVF    s0_value,W,a    ; why do this?
+            ;MULWF   error0,a	    ; ?????
+	    ;MOVF    PRODH, W, a	    ; !?!?!?
+	    movf    error0,w,b
+	    ADDWF   acc_error,b	    ; this I somewhat get
+	    
+	    ; SENSOR 1
+	    ;NEGF    s1_value
+	    ;MOVF    s1_value,W,a
+            ;MULWF   error1,a
+	    ;MOVF    PRODH, W, a
+	    movf    error1,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 2
+	    ; MOVF    s2_value,W,a
+        ;     MULWF   error2,a
+	    ; MOVF    PRODH, W, a
+	    movf    error2,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 3
+	    ; MOVF    s3_value,W,a
+        ;     MULWF   error3,a
+	    ; MOVF    PRODH, W, a
+	    movf    error3,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 4
+	    ; MOVF    s4_value, W,a
+        ;     MULWF   error4,a
+	    ; MOVF    PRODH, W, a
+	    movf    error4,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; which wheel to turn
 	    MOVFF   STATUS, PD_SIGN
 	    
 	    RETURN
@@ -905,11 +923,11 @@ MOVWF		s4_value
 	    MOVWF   Kd,a
 	    Proportional:
 	    MOVF    Kp,a  ; loading Kp into W
-	    MULWF   acc_error,a
+	    MULWF   acc_error,b
 	    MOVF    PRODH, W, a
 	    MOVWF   prop_error,a
 	    Derivative:
-            MOVF    acc_error,W,a
+            MOVF    acc_error,W,b
 	    SUBWF   prev_error,W,a; error = error - prev_error
 	    MOVWF   deriv_error, a
 	    MOVF    deriv_error, a
