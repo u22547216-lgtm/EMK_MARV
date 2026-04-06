@@ -1039,24 +1039,19 @@ MOVWF		s4_value
 			
 	    ; left is connected to CPP1
 	    
+	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
 	    subwf   default_duty_cycle,w,b
 	    bnn	    $+8
+	    ; a wheel needs to reverse
 	    tstfsz  PD_SIGN
 	    bra	    right_reverse
 	    bra	    left_reverse
+	    ; both wheels forward
 	    tstfsz  PD_SIGN
 	    bra	    slow_right
 	    bra	    slow_left
 	    
-	    PWM_adjustments:
-    
-	    BTFSC   PD_SIGN, 4, a  ; NEGATIVE = 0; POSITIVE = 1 SIGN-WISE
-	    CALL    RIGHT_ADJUST
-	    BTFSS   PD_SIGN, 4, a
-	    CALL    LEFT_ADJUST
-	 
-	    RETURN
 	   
 	    right_reverse:
 		; never set one of these first, extra safety for the H-Bridge
