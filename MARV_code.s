@@ -790,12 +790,7 @@ MOVWF		s4_value
 	    MOVLW   'W'
 	    MOVWF   SENSOR4
 	    
-		    ; Slap on fix for now
-		    BCF	    P1C
-		    BCF	    P2C
-	    
-		    BSF	    P1B
-		    BSF	    P2B
+		    
 		    
 		; the PWM shouldnt be changed untill after the PID is done
 	    ;CALL    Set_Both_Speed_75
@@ -972,9 +967,72 @@ MOVWF		s4_value
 	    ADDWF   deriv_error,w,b
 	    MOVWF   PD_OUTPUT,b
 	    
+	    ; checks to determine what the output should be
+		; i know if prop is pos or neg
+		; i know if deriv is pos or neg
+		    ; just need to compare both in terms of size if they have sign differences
+		    
+	    clrf    WREG,a
+	    tstfsz  extra,a
+	    bcf	    WREG,0,a
+	    tstfsz  PD_SIGN,b
+	    bcf	    WREG,1,a
+	    
+	    tstfsz  WREG,a
+	    return
+	    
+	    SUBLW   3
+	    BNZ	    $+6
+	    negf    PD_OUTPUT,b
+	    return
+	    
+	    tstfsz  extra,a
+	    negf    deriv_error,b
+	    tstfsz  PD_SIGN,b
+	    negf    prop_error,b
+	    
+	    movf    deriv_error,b
+	    subwf   prop_error,w,b
+	    
+	    ; if this is negative, it means prop is bigger
+		; if prop is negative
+		    ; negate PD_OUTPUT
+		; return
+			    
+	    BNN	    $+8
+	    tstfsz  PD_SIGN,b ; check if prop is negative
+	    negf    PD_OUTPUT,b
+	    return
+	    
+	    ; if deriv is bigger
+		; if deriv is negative
+		    ; negate PD_OUTPUT
+		    ; make PD_SIGN 255
+		; if deriv is positive
+		    ; make PD_SIGN 0
+		; return
+	    
+	    tstfsz  extra,a ; check if prop is negative
+	    bra	    $+4
+	    bra	    $+8
+	    negf    PD_OUTPUT,b
+	    setf    PD_SIGN,b
+	    return
+	    
+	    clrf    PD_SIGN,b
+	    
 	    RETURN
 	    
 	CHANGE_OF_OUTPUTS:
+	    ; stop all PWM outputs
+		; stop gap measure, will remove if I think it is not needed
+		BCF	    P1C
+		BCF	    P2C
+		BCF	    P1B
+		BCF	    P2B
+		
+	    
+    
            BTFSC   PD_SIGN, 4, a  ; NEGATIVE = 0; POSITIVE = 1 SIGN-WISE
 	   CALL    RIGHT_ADJUST
 	   BTFSS   PD_SIGN, 4, a
