@@ -1131,7 +1131,9 @@ MOVWF		s4_value
 	    RETURN
          
 	BRAKES:
-	    CALL Set_Both_Stop
+	    clrf    CCPR1L,a
+	    clrf    CCPR2L,a
+	    
 	    RETURN   
 	    
 	CHECK_BLACK:
