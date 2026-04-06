@@ -112,6 +112,7 @@ extra		equ 0x19
 ;#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
 ;#define right_dir_pin   PORTD,6
 ;PID variables
+default_duty_cycle  equ	0x73
 error0          equ   0x74
 prev_error	equ   0x75
 prop_error      equ   0x76
@@ -397,6 +398,9 @@ PID_SETUP:
     clrf    SENSOR3,a
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
+    
+    movlw   duty_100
+    movwf   default_duty_cycle,b
 ; testing setup		
     bcf	    test_en, a
     btfsc   test_en, a
@@ -771,6 +775,7 @@ MOVWF		s4_value
     ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
+	
 	    CLRF error0,a
 	    CLRF error1,a
 	    CLRF error2,a
@@ -864,8 +869,12 @@ MOVWF		s4_value
 	    CALL    PID1
 	    
 	    CALL    CHANGE_OF_OUTPUTS
+	    ;this only needs to be called if the PID output is 0
+	    tstfsz  PD_OUTPUT,b
+	    bra	    $+6
 	    CALL    CHECK_BLACK
 	    
+	    ; again looping over itself, needs to be changed before it is in the actual code
 	    GOTO    STRAIGHT
 	    
 	ERROR_CALC:
@@ -1024,6 +1033,8 @@ MOVWF		s4_value
 	    RETURN
 	    
 	CHANGE_OF_OUTPUTS:
+    
+	    
 	    
 	    ; now i dont know what it means when the PID output is positive or negative.
 		; positive maps to right on the sensors
@@ -1063,6 +1074,8 @@ MOVWF		s4_value
 		
 		negf	WREG,a
 		movwf   CCPR2L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR1L,a
 		
 		return
 		
@@ -1075,6 +1088,8 @@ MOVWF		s4_value
 		
 		negf	WREG,a
 		movwf   CCPR1L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR2L,a
 		
 		return
 		
@@ -1085,6 +1100,8 @@ MOVWF		s4_value
 		BSF	    P2B
 		
 		movwf   CCPR2L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR1L,a
 		
 		return
 		
@@ -1095,6 +1112,8 @@ MOVWF		s4_value
 		BSF	    P2B
 		
 		movwf   CCPR1L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR2L,a
 		
 		return 
 	    
@@ -1103,10 +1122,10 @@ MOVWF		s4_value
 	  LOST:
 	    LOST_STOP:
 		CALL BRAKES
-		bcf	wait_for_timer333,a
-		bsf	delay_333_call,a
-		CALL    delay_333
-		bcf	delay_333_call,a
+		;bcf	wait_for_timer333,a
+		;bsf	delay_333_call,a
+		;CALL    delay_333
+		;bcf	delay_333_call,a
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
 		    ; need to change from the forward pins to the reverse pins
@@ -1116,14 +1135,11 @@ MOVWF		s4_value
 		    BSF	    P1C
 		    BSF	    P2C
     
-		  MOVLW   11111111B
-		  MOVWF    GOING_RIGHT,a
-		  MOVLW   11111111B
-		  MOVWF    GOING_LEFT,a
-		  movlw   DUTY_75
-		  movwf   motor_left_speed,0
-		  movwf   motor_right_speed,0
-		  call    Update_Speeds
+		    movf    default_duty_cycle,w,b
+		    movwf   CCPR1L,a
+		    movwf   CCPR2L,a
+		 
+		    
 		  return
 	  ;TURN UNTIL MIDDLE SENSOR IS ON THE LINE:THE PID TAKES CARE OF THE SECOND PART
 	  
