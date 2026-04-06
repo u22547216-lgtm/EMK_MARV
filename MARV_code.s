@@ -1096,36 +1096,7 @@ MOVWF		s4_value
 		
 		movwf   CCPR1L,a
 		
-		return
-		
-	   
-        RIGHT_ADJUST:
-	   MOVLW   00000000B
-           MOVWF   GOING_RIGHT,a
-	   MOVLW   11111111B
-           MOVWF   GOING_LEFT,a
-	   movlw   DUTY_75
-	   SUBWF   PD_OUTPUT, W, a
-	   movwf   motor_right_speed,0
-	   movlw   DUTY_25
-	   SUBWF   PD_OUTPUT, W, a
-	   movwf   motor_left_speed,0
-	   call    Update_Speeds
-	   return
-	   
-	LEFT_ADJUST:
-	   MOVLW   00000000B
-           MOVWF   GOING_LEFT,a
-	   MOVLW   11111111B
-           MOVWF   GOING_RIGHT,a
-	   movlw   DUTY_75
-	   SUBWF   PD_OUTPUT, W, a
-	   movwf   motor_left_speed,0
-	   movlw   DUTY_25
-	   SUBWF   PD_OUTPUT, W, a
-	   movwf   motor_right_speed,0
-	   call    Update_Speeds
-	   return     
+		return 
 	    
 	    
 	;need to figure out lost algorithm now    
