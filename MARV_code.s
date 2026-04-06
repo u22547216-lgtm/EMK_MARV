@@ -867,6 +867,7 @@ MOVWF		s4_value
 	    CALL    ERROR_CALC
 	    
 	    CALL    PID1
+	    
 	    CALL    CHANGE_OF_OUTPUTS
 	    CALL    CHECK_BLACK
 	    
@@ -913,33 +914,63 @@ MOVWF		s4_value
 	    movf    error4,w,b
 	    ADDWF   acc_error,b
 	    
+	    ; All this adding together of 5 registers might confuse the status register
+	    ; might need to add in our own check for negativety, would just need to check if acc_error  is greater than 128
+	    
+	    
 	    ; which way to turn
-		; check bit 4
-	    MOVFF   STATUS, PD_SIGN
+	    CLRF    PD_SIGN,b
+	    movlw   128
+	    CPFSGT  acc_error,b
+	    BRA	    $+4
+	    SETF    PD_SIGN,b
 	    
 	    RETURN
+	    
 	PID1:   
-	    MOVLW   16
+	    ; should be possible to trick the multiplication into working with decimal values without actually using decimal values
+		; we can just shift the decimal point to the space between PRODH and PRODL
+		; need to consider when the multiplication moves over the decimal point
+	    ; easier option, just keep the values small enough that it stays in PRODL
+		derivative_const equ 15
+		proportional_const equ 6
+		
+	    MOVLW   proportional_const
 	    MOVWF   Kp,a
-	    MOVLW   100
+	    MOVLW   derivative_const
 	    MOVWF   Kd,a
 	    Proportional:
 	    MOVF    Kp,a  ; loading Kp into W
+	    
+	    tstfsz  PD_SIGN,b
+	    negf    acc_error,b
+	    
 	    MULWF   acc_error,b
-	    MOVF    PRODH, W, a
-	    MOVWF   prop_error,a
+	    MOVF    PRODL, W, a
+	    
+	    tstfsz  PD_SIGN,b
+	    negf    WREG,a
+	    
+	    MOVWF   prop_error,b
 	    Derivative:
+	    CLRF    extra,a
             MOVF    acc_error,W,b
-	    SUBWF   prev_error,W,a; error = error - prev_error
-	    MOVWF   deriv_error, a
-	    MOVF    deriv_error, a
+	    SUBWF   prev_error,W,a; error = prev_error - error
+	    BNN	    $+6
+	    setf    extra,a
+	    negf    WREG,a
+	    MOVWF   deriv_error, b
+	    ; MOVF    deriv_error, b
 	    MULWF   Kd, 0
-	    MOVWF   deriv_error,a
+	    movf    PRODL,w,a
+	    tstfsz  extra,a
+	    negf    WREG,aS
+	    MOVWF   deriv_error,b
 	    MOVFF   acc_error, prev_error
 	    Output:
-            MOVF    prop_error,a
-	    ADDWF   deriv_error,a
-	    MOVWF   PD_OUTPUT,a
+            MOVF    prop_error,w,b
+	    ADDWF   deriv_error,w,b
+	    MOVWF   PD_OUTPUT,b
 	    
 	    RETURN
 	    
