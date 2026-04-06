@@ -865,6 +865,7 @@ MOVWF		s4_value
 	    ; PID calcs
 	    
 	    CALL    ERROR_CALC
+	    
 	    CALL    PID1
 	    CALL    CHANGE_OF_OUTPUTS
 	    CALL    CHECK_BLACK
@@ -912,7 +913,8 @@ MOVWF		s4_value
 	    movf    error4,w,b
 	    ADDWF   acc_error,b
 	    
-	    ; which wheel to turn
+	    ; which way to turn
+		; check bit 4
 	    MOVFF   STATUS, PD_SIGN
 	    
 	    RETURN
