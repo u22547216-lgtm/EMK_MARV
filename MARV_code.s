@@ -920,11 +920,11 @@ MOVWF		s4_value,b
 		proportional_const equ 6
 		
 	    MOVLW   proportional_const
-	    MOVWF   Kp,a
+	    MOVWF   Kp,b
 	    MOVLW   derivative_const
-	    MOVWF   Kd,a
+	    MOVWF   Kd,b
 	    Proportional:
-	    MOVF    Kp,a  ; loading Kp into W
+	    MOVF    Kp,b  ; loading Kp into W
 	    
 	    tstfsz  PD_SIGN,b
 	    negf    acc_error,b
@@ -945,7 +945,7 @@ MOVWF		s4_value,b
 	    negf    WREG,a
 	    MOVWF   deriv_error, b
 	    ; MOVF    deriv_error, b
-	    MULWF   Kd, 0
+	    MULWF   Kd, b
 	    movf    PRODL,w,a
 	    tstfsz  extra,a
 	    negf    WREG,a
