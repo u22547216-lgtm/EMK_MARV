@@ -704,9 +704,7 @@ STATE1:
 LLI:	
 BTFSS   follow_line
 GOTO    STATE2
-
     
-	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
     ;go straight --> M detects line
@@ -718,7 +716,7 @@ GOTO    STATE2
 				    ;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
     ; if all sensor detect black, STOP (End of maze)
 
-	STRAIGHT:
+	;STRAIGHT:
 	    ; setup
 	    CLRF error0,a
 	    CLRF error1,a
@@ -727,8 +725,9 @@ GOTO    STATE2
 	    CLRF error4,a
 	    clrf    line_seen,b
 	    
-	    
-	    ;call detect_colour
+	    BSF	    check_colour
+	    call detect_colour
+	    BCF	    check_colour
 	    
 	    
 	    ;SENSOR0 check
