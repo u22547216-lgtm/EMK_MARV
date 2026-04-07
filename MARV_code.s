@@ -328,13 +328,6 @@ init:
     clrf    T1CON,a
     clrf    T1GCON,a
     
-
-    
-   
-
-
-
-PID_SETUP:
     
     ; set up interrupts
     ; bcf	    RCON,7,b	; disable priority in interrupts.
@@ -408,7 +401,7 @@ STATE_MACHINE_SETUP:
 	;BSF skip_delay_RGB,a
     
 STATE_MACHINE_START:
-		
+;<editor-fold defaultstate="collapsed" desc="calibration">		
 STATE0:
 calibration:
     BTFSS   calibrate,a
@@ -713,6 +706,8 @@ calibration:
 TRANSITION0:
     BCF	    calibrate,a
     BSF	    follow_line,a
+    
+;</editor-fold>
     
     	
 STATE1:
