@@ -419,14 +419,14 @@ STATE_MACHINE_SETUP:
     BSF follow_line,a
     
 	; tests
-     BSF code_tests,a
+     ;BSF code_tests,a
 ;    BSF hardware_tests,a
     
     ; Subroutine activation bits
     ;BSF delay_333_call,a
     ;BSF RGB_delay_call,a
-    BSF read_sensors_call,a
-    BSF check_colour,a
+    ;BSF read_sensors_call,a
+    ;BSF check_colour,a
     ;BSF show_the_colours,a
     ;BSF flash_port_d,a
     ;BSF button_press_check,a
@@ -781,7 +781,7 @@ MOVWF		s4_value
 	    CLRF error2,a
 	    CLRF error3,a
 	    CLRF error4,a
-	    call detect_colour
+	    ;call detect_colour
 	    MOVLW   'R'
 	    MOVWF   RACE_COLOUR
 	    MOVLW   'R'
@@ -2450,88 +2450,5 @@ test_read_sensor:
     
     return
     
-    
-;--------------------------------------------------------
-; Update both speeds
-;--------------------------------------------------------
-Update_Speeds:
-    movf    motor_left_speed,0,0
-    call    Set_Left_Speed
-
-    movf    motor_right_speed,0,0
-    call    Set_Right_Speed
-
-    return
-
-;--------------------------------------------------------
-; Set left speed
-; W = duty value
-;--------------------------------------------------------
-Set_Left_Speed:
-	movwf   CCPR1L,1
-	bcf     CCP1CON,4,1
-	bcf     CCP1CON,5,1
-	btfss   GOING_LEFT,0,0
-	bcf     left_dir_pin,a      ; forward
-	btfsc   GOING_LEFT,0,0
-	bsf     left_dir_pin,a      ; reverse
-	return
-
-;--------------------------------------------------------
-; Set right speed
-; W = duty value
-;--------------------------------------------------------
-Set_Right_Speed:
-	movwf   CCPR2L,1
-	bcf     CCP2CON,4,1
-	bcf     CCP2CON,5,1
-	btfss   GOING_RIGHT,0,0
-	bcf     right_dir_pin,a      ; forward
-	btfsc   GOING_RIGHT,0,0
-	bsf     right_dir_pin,a      ; reverse
-	return
-
-
-;--------------------------------------------------------
-; Both motors helpers
-;--------------------------------------------------------
-Set_Both_Speed_25:
-        MOVLW   00000000B
-        MOVWF    GOING_RIGHT,a
-	MOVLW   00000000B
-        MOVWF    GOING_LEFT,a
-	movlw   DUTY_25
-	movwf   motor_left_speed,0
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Set_Both_Speed_50:
-	MOVLW   00000000B
-        MOVWF    GOING_RIGHT,a
-	MOVLW   00000000B
-        MOVWF    GOING_LEFT,a
-	movlw   DUTY_50
-	movwf   motor_left_speed,0
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Set_Both_Speed_75:
-	MOVLW   00000000B
-        MOVWF    GOING_RIGHT,a
-	MOVLW   00000000B
-        MOVWF    GOING_LEFT,a
-	movlw   DUTY_75
-	movwf   motor_left_speed,0
-	movwf   motor_right_speed,0
-	call    Update_Speeds
-	return
-
-Set_Both_Stop:
-	clrf    motor_left_speed,0
-	clrf    motor_right_speed,0
-	call    Update_Speeds
-	return
     
     end			
