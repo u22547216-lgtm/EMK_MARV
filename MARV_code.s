@@ -173,6 +173,12 @@ error3          equ   0x83
 error4          equ   0x84
 
 PD_SIGN         EQU   0x85
+	 
+	 
+; PD constants
+Kd  equ 15
+Kp  equ 6
+ 
 
 ; sensor value mapping
 s0_value        equ   -4
@@ -856,12 +862,7 @@ GOTO    STATE2
 	    
 	    
 	    PID1:   
-	    ; PD constants
-	    Kd equ 15
-	    Kp equ 6
-		
-	    MOVLW   derivative_const
-	    MOVWF   Kd,b
+
 	    Proportional:
 	    MOVLW    Kp		; loading Kp into W
 	    
