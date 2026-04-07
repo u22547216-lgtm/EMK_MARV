@@ -323,14 +323,6 @@ init:
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
     movlw   00000111B
     movwf   T2CON,1
-
-    
-; Default both motors to 50%
-    movlw   DUTY_50
-    movwf   motor_left_speed,0
-    movlw   DUTY_50
-    movwf   motor_right_speed,0
-    call    Update_Speeds
     
     ; Port D
     clrf    PORTD, a
