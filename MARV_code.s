@@ -1035,11 +1035,11 @@ MOVWF		s4_value,b
 	   
 	    right_reverse:
 		; never set one of these first, extra safety for the H-Bridge
-		BCF	    P1C
-		BSF	    P1B
+		BCF	    STR1C
+		BSF	    STR1B
 		
-		BCF	    P2B
-		BSF	    P2C
+		BCF	    STR2B
+		BSF	    STR2C
 		
 		negf	WREG,a
 		movwf   CCPR2L,a
@@ -1049,11 +1049,11 @@ MOVWF		s4_value,b
 		return
 		
 	    left_reverse:
-		BCF	    P2C
-		BSF	    P2B
+		BCF	    STR2C
+		BSF	    STR2B
 		
-		BCF	    P1B
-		BSF	    P1C
+		BCF	    STR1B
+		BSF	    STR1C
 		
 		negf	WREG,a
 		movwf   CCPR1L,a
@@ -1063,10 +1063,10 @@ MOVWF		s4_value,b
 		return
 		
 	    slow_right:
-		BCF	    P1C
-		BCF	    P2C
-		BSF	    P1B
-		BSF	    P2B
+		BCF	    STR1C
+		BCF	    STR2C
+		BSF	    STR1B
+		BSF	    STR2B
 		
 		movwf   CCPR2L,a
 		movf    default_duty_cycle,w,b
@@ -1075,10 +1075,10 @@ MOVWF		s4_value,b
 		return
 		
 	    slow_left:
-		BCF	    P1C
-		BCF	    P2C
-		BSF	    P1B
-		BSF	    P2B
+		BCF	    STR1C
+		BCF	    STR2C
+		BSF	    STR1B
+		BSF	    STR2B
 		
 		movwf   CCPR1L,a
 		movf    default_duty_cycle,w,b
@@ -1098,11 +1098,11 @@ MOVWF		s4_value,b
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
 		    ; need to change from the forward pins to the reverse pins
-		    BCF	    P1B
-		    BCF	    P2B
+		    BCF	    STR1B
+		    BCF	    STR2B
 		    
-		    BSF	    P1C
-		    BSF	    P2C
+		    BSF	    STR1C
+		    BSF	    STR2C
     
 		    movf    default_duty_cycle,w,b
 		    movwf   CCPR1L,a
