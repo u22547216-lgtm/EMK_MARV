@@ -938,8 +938,8 @@ MOVWF		s4_value,b
 	    MOVWF   prop_error,b
 	    Derivative:
 	    CLRF    extra,a
-            MOVF    acc_error,W,b
-	    SUBWF   prev_error,W,a; error = prev_error - error
+            MOVF    acc_error,w,b
+	    SUBWF   prev_error,w,b; error = prev_error - error
 	    BNN	    $+6
 	    setf    extra,a
 	    negf    WREG,a
