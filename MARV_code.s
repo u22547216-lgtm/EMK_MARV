@@ -78,31 +78,31 @@ number_of_readings	    equ 0x05
 	    
 ; state machine bits
 state_0		equ 0x06
-#define calibrate	state_0,0
-#define follow_line	state_0,1
-#define code_tests	state_0,2
-#define hardware_tests	state_0,3
+#define calibrate	state_0,0,a
+#define follow_line	state_0,1,a
+#define code_tests	state_0,2,a
+#define hardware_tests	state_0,3,a
 
 ; sub-routine bits
 subroutine_0	equ 0x07
-#define delay_333_call	    subroutine_0,0  ;166ms
-#define RGB_delay_call	    subroutine_0,1  ;1.2ms
+#define delay_333_call	    subroutine_0,0,a  ;166ms
+#define RGB_delay_call	    subroutine_0,1,a  ;1.2ms
 	
-#define read_sensors_call   subroutine_0,2
-#define check_colour	    subroutine_0,3
+#define read_sensors_call   subroutine_0,2,a
+#define check_colour	    subroutine_0,3,a
 	
-#define show_the_colours    subroutine_0,4
-#define	flash_port_d	    subroutine_0,5
-#define button_press_check  subroutine_0,6
+#define show_the_colours    subroutine_0,4,a
+#define	flash_port_d	    subroutine_0,5,a
+#define button_press_check  subroutine_0,6,a
 
 ; delay skip bits
 DELAY_SKIP		equ	0x08
-#define skip_delay_333		DELAY_SKIP,0
-#define skip_delay_RGB		DELAY_SKIP,1
+#define skip_delay_333		DELAY_SKIP,0,a
+#define skip_delay_RGB		DELAY_SKIP,1,a
 	    
 timer_waits		equ	0x09
-#define	wait_for_timer333   timer_waits,0
-#define	wait_for_timerRBG   timer_waits,1
+#define	wait_for_timer333   timer_waits,0,a
+#define	wait_for_timerRBG   timer_waits,1,a
 	    
 calibrated_color    equ 0x0E	
 offset_stuff	equ 0x0F
@@ -168,9 +168,9 @@ RACE_COLOUR    EQU 0x5E
 BLACK_FLAG     EQU 0x5F
 
 ; RGB pins
-#define red_pin     PORTA,4
-#define green_pin   PORTA,6
-#define blue_pin    PORTA,7
+#define red_pin     PORTA,4,a
+#define green_pin   PORTA,6,a
+#define blue_pin    PORTA,7,a
 ; colour indicator pins
 #define red_indicator       PORTD,0
 #define green_indicator     PORTD,1
@@ -382,31 +382,31 @@ STATE_MACHINE_SETUP:
     CLRF	timer_waits,a
     
     ; State activation bits
-    ;BSF calibrate,a
-    BSF follow_line,a
+    ;BSF calibrate
+    BSF follow_line
     
 	; tests
-     ;BSF code_tests,a
-;    BSF hardware_tests,a
+     ;BSF code_tests
+;    BSF hardware_tests
     
     ; Subroutine activation bits
-    ;BSF delay_333_call,a
-    ;BSF RGB_delay_call,a
-    ;BSF read_sensors_call,a
-    ;BSF check_colour,a
-    ;BSF show_the_colours,a
-    ;BSF flash_port_d,a
-    ;BSF button_press_check,a
+    ;BSF delay_333_call
+    ;BSF RGB_delay_call
+    ;BSF read_sensors_call
+    ;BSF check_colour
+    ;BSF show_the_colours
+    ;BSF flash_port_d
+    ;BSF button_press_check
 
 	; Delay skips
-	;BSF skip_delay_333,a
-	;BSF skip_delay_RGB,a
+	;BSF skip_delay_333
+	;BSF skip_delay_RGB
     
 STATE_MACHINE_START:
 ;<editor-fold defaultstate="collapsed" desc="calibration">		
 STATE0:
 calibration:
-    BTFSS   calibrate,a
+    BTFSS   calibrate
     GOTO    STATE1
     
 	; red
@@ -706,15 +706,15 @@ calibration:
     
     
 TRANSITION0:
-    BCF	    calibrate,a
-    BSF	    follow_line,a
+    BCF	    calibrate
+    BSF	    follow_line
     
 ;</editor-fold>
     
     	
 STATE1:
 LLI:	
-BTFSS   follow_line,a
+BTFSS   follow_line
 GOTO    STATE2
 
 MOVLW           -4   
@@ -1148,12 +1148,12 @@ MOVWF		s4_value,b
 	    BRA	    BRAKES
     
 TRANSITION1:
-    BSF	    follow_line,a   ;LOOP OVER LLI
+    BSF	    follow_line  ;LOOP OVER LLI
 
 		
 STATE2:
 software_tests:
-    BTFSS   code_tests,a
+    BTFSS   code_tests
     GOTO    STATE3
     
     TODO_code_tests: ; to-do todo to do
@@ -1163,26 +1163,26 @@ software_tests:
 ;    BRA	    $-2
     
 TRANSITION2:
-    BCF	    code_tests,a
+    BCF	    code_tests
     
     		
 STATE3:
 test_hardware:
-    BTFSS   hardware_tests,a
+    BTFSS   hardware_tests
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
     
     lfsr    0,100h
-    bsf	    read_sensors_call,a
+    bsf	    read_sensors_call
     call read_sensors
-    bcf	    read_sensors_call,a
+    bcf	    read_sensors_call
     goto TODO_hardware_tests
 ;   state 2 code
     ; to be added later
     
 TRANSITION3:
-    BCF	    hardware_tests,a 
+    BCF	    hardware_tests
     
 ;==========SUBROUTINES=======================
     
@@ -1191,9 +1191,9 @@ TRY_ALL_SUBROUTINES:
 SUBROUTINE0:
 TODO_DELAY_333_REPLACE_WITH_TIMER:
 delay_333:
-    BTFSS   delay_333_call,a
+    BTFSS   delay_333_call
     GOTO    SUBROUTINE1
-    BTFSC   skip_delay_333,A
+    BTFSC   skip_delay_333
     return
     
 	; save context
@@ -1219,7 +1219,7 @@ delay_333:
 	movwf	T0CON,a
 	
 	; option to wait for the timer
-	btfsc	wait_for_timer333,a
+	btfsc	wait_for_timer333
 	bra	$-2
 	
 	; restore context
@@ -1227,14 +1227,14 @@ delay_333:
 	return
     
 SUB_TRANSITIONS0:
-    BCF	    delay_333_call,a
+    BCF	    delay_333_call
     
         
 SUBROUTINE1:
 delay_RGB:
-    BTFSS   RGB_delay_call,a
+    BTFSS   RGB_delay_call
     GOTO    SUBROUTINE2
-	BTFSC	skip_delay_RGB,A
+	BTFSC	skip_delay_RGB
 	return
 	
 	; save context
@@ -1264,12 +1264,12 @@ delay_RGB:
 	return
     
 SUB_TRANSITIONS1:
-    BCF	    RGB_delay_call,a
+    BCF	    RGB_delay_call
     
         
 SUBROUTINE2:
 read_sensors:
-    BTFSS   read_sensors_call,a
+    BTFSS   read_sensors_call
     GOTO    SUBROUTINE3
     
     TODO_make_states_with_this: ; to-do todo to do
@@ -1282,10 +1282,10 @@ read_sensors:
     ;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
 
     ; shine red
-	bsf	    red_pin,a
-	bsf	RGB_delay_call,a
+	bsf	    red_pin
+	bsf	RGB_delay_call
 	call delay_RGB
-	bcf	RGB_delay_call,a
+	bcf	RGB_delay_call
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -1295,13 +1295,13 @@ read_sensors:
 	    ; end of testing code
 
 	call    read_all_sensors
-	bcf	    red_pin,a
+	bcf	    red_pin
 
     ; shine green
-	bsf	    green_pin,a
-	bsf	RGB_delay_call,a
+	bsf	    green_pin
+	bsf	RGB_delay_call
 	call delay_RGB
-	bcf	RGB_delay_call,a
+	bcf	RGB_delay_call
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -1311,13 +1311,13 @@ read_sensors:
 	    ; end of testing code
 
 	call    read_all_sensors
-	bcf	    green_pin,a
+	bcf	    green_pin
 
     ; shine blue
-	bsf	    blue_pin,a
-	bsf	RGB_delay_call,a
+	bsf	    blue_pin
+	bsf	RGB_delay_call
 	call delay_RGB
-	bcf	RGB_delay_call,a
+	bcf	RGB_delay_call
 
 	    ; testing code, should do nothing if test_en = 0
 		btfss   test_en,a
@@ -1327,7 +1327,7 @@ read_sensors:
 	    ; end of testing code
 
 	call    read_all_sensors
-	bcf	    blue_pin,a
+	bcf	    blue_pin
 
 	return
 	GOTO	SUB_TRANSITIONS2
@@ -1424,12 +1424,12 @@ read_sensors:
 		return
     
 SUB_TRANSITIONS2:
-    BCF	    read_sensors_call,a
+    BCF	    read_sensors_call
     
         
 SUBROUTINE3:
 detect_colour:
-    BTFSS   check_colour,a
+    BTFSS   check_colour
     GOTO    SUBROUTINE4
     
     TODO_make_this_work_with_states_1:  ; to-do todo to do
@@ -1443,7 +1443,9 @@ detect_colour:
 	
 	; read sensors to bank 2 for now
 	LFSR    0, 200h	
-	call read_sensors
+	BSF	read_sensors_call
+	call	read_sensors
+	BCF	read_sensors_call
 	; back to bank 2
 	LFSR    0, 200h	
 
@@ -1915,14 +1917,14 @@ detect_colour:
 
     
 SUB_TRANSITIONS3:
-    BCF	    check_colour,a
+    BCF	    check_colour
         
     
 SUBROUTINE4:
     TODO_this_should_be_changed_for_serial_bridge_comms:
     nop
 show_colour:
-    BTFSS   show_the_colours,a
+    BTFSS   show_the_colours
     GOTO    SUBROUTINE5
     
     ; check solid colour
@@ -1963,12 +1965,12 @@ show_colour:
 
     
 SUB_TRANSITIONS4:
-    BCF	    show_the_colours,a
+    BCF	    show_the_colours
         
     
 SUBROUTINE5:
 flash:
-    BTFSS   flash_port_d,a
+    BTFSS   flash_port_d
     GOTO    SUBROUTINE6
     
 	; number of flashes
@@ -1981,17 +1983,17 @@ flash:
 	    ; turn off
 	clrf    PORTD,a
 	    ;wait 0.166 seconds
-	bsf	wait_for_timer333,a
-	bsf	delay_333_call,a
+	bsf	wait_for_timer333
+	bsf	delay_333_call
 	call    delay_333
-	bcf	delay_333_call,a
+	bcf	delay_333_call
 	    ; turn on
 	movwf   PORTD,a
 	    ;wait 0.166 seconds
-	bsf	wait_for_timer333,a
-	bsf	delay_333_call,a
+	bsf	wait_for_timer333
+	bsf	delay_333_call
 	call    delay_333
-	bcf	delay_333_call,a
+	bcf	delay_333_call
 	; did we flash enough?
 	decfsz  count,a
 	bra	BEGIN_FLASH	; no
@@ -1999,28 +2001,28 @@ flash:
 	return
     
 SUB_TRANSITIONS5:
-    BCF	    flash_port_d,a
+    BCF	    flash_port_d
         
     
 SUBROUTINE6:
 wait_for_button_press:
-    BTFSS   button_press_check,a
+    BTFSS   button_press_check
     GOTO    STATE_MACHINE_END
     
 	btfss   INT0IF	    ;wait for button press
 	bra	    $-2
 	; delay so that we dont have to debounce
-	bsf	wait_for_timer333,a
-	bsf	delay_333_call,a
+	bsf	wait_for_timer333
+	bsf	delay_333_call
 	call    delay_333
-	bcf	delay_333_call,a
+	bcf	delay_333_call
 	; reset button wait
 	bcf	    INT0IF
 	; go back
 	return
     
 SUB_TRANSITIONS6:
-    BCF	    button_press_check,a
+    BCF	    button_press_check
     
     
 STATE_MACHINE_END:
@@ -2046,10 +2048,10 @@ register_dump:
 
 timer0_interrupt:
     ; check if the wait bit for timmer333 was set
-    btfsc   wait_for_timer333,a
+    btfsc   wait_for_timer333
     bra	    $+10
     ; if it was, just clear the wait and return
-    bcf	    wait_for_timer333,a
+    bcf	    wait_for_timer333
     clrf    T0CON,a
     bcf	    TMR0IF
     retfie
