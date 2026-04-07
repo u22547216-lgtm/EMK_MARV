@@ -268,16 +268,6 @@ init:
     clrf    LATC, a
     clrf    ANSELC, b
     clrf    TRISC, a
-    
-    ; All PORTC digital
-    clrf    ANSELC,1
-
-    ; Clear outputs
-    clrf    LATC,1
-
-  
-    
-    
 
 
     PWM_Init:
