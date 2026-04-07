@@ -298,11 +298,6 @@ init:
     MOVWF   PSTR1CON
     MOVWF   PSTR2CON
     
-    FORWARD_STEERING	    equ 00010010B
-    STEERING_MIDDLE_STEP    equ 00010000B
-    REVERSE_STEERING	    equ 00010100B
-    
-
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
     movlw   00000111B
     movwf   T2CON,1
