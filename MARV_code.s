@@ -828,6 +828,7 @@ MOVWF		s4_value,b
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ   SENSOR3,a
+	    bra	    $+6
 	    MOVFF   s3_value, error3
 	    
 	    ;SENSOR4 check
