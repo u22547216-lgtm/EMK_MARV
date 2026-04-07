@@ -295,8 +295,8 @@ init:
 	; only keep one port for each PWM active at a time. 
 	; might break the H-Bridge if you try to output from the reverse pin and the forward pin at the same time.
     MOVLW   00010010B
-    MOVWF   PSTR1CON
-    MOVWF   PSTR2CON
+    MOVWF   PSTR1CON,a
+    MOVWF   PSTR2CON,a
     
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
     movlw   00000111B
@@ -722,7 +722,7 @@ MOVWF		s1_value,b
 MOVLW           -1   
 MOVWF		s1_value_e,b
 MOVLW           0
-MOVWF		s2_value
+MOVWF		s2_value,b
 MOVLW           1
 MOVWF		s3_value_e,b
 MOVLW           2
@@ -750,17 +750,17 @@ MOVWF		s4_value,b
 	    CLRF error4,a
 	    ;call detect_colour
 	    MOVLW   'R'
-	    MOVWF   RACE_COLOUR
+	    MOVWF   RACE_COLOUR,a
 	    MOVLW   'R'
-	    MOVWF   SENSOR2
+	    MOVWF   SENSOR2,a
 	    MOVLW   'W'
-	    MOVWF   SENSOR0
+	    MOVWF   SENSOR0,a
 	    MOVLW   'W'
-	    MOVWF   SENSOR1
+	    MOVWF   SENSOR1,a
 	    MOVLW   'W'
-	    MOVWF   SENSOR3
+	    MOVWF   SENSOR3,a
 	    MOVLW   'W'
-	    MOVWF   SENSOR4
+	    MOVWF   SENSOR4,a
 	    
 		    
 		    
@@ -781,8 +781,8 @@ MOVWF		s4_value,b
 	    ; This means that if, for example, the race colour is red 'R' and the SENSOR sees green 'G' or error 'E', this would still trigger
 	    ; because 'G' and 'E' are smaller than 'R', and the MOVFF would only be skipped if SENSOR has 'W' or 'e'
 		; I have changed it so that it only works if SENSORx is equal to RACE_COLOUR
-	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR0,W,a
+	    MOVF    RACE_COLOUR,w,a
+	    CPFSEQ  SENSOR0,a
 	    bra	    $+6
 	    MOVFF   s0_value, error0
 	    
@@ -792,8 +792,8 @@ MOVWF		s4_value,b
 	    CPFSLT   SENSOR1,a
 	    MOVFF   s1_value_e, error1
 	    
-	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ  SENSOR1,W,a
+	    MOVF    RACE_COLOUR,w,a
+	    CPFSEQ  SENSOR1,a
 	    bra	    $+6
 	    MOVFF   s1_value, error1
 	    
@@ -804,8 +804,8 @@ MOVWF		s4_value,b
 	    MOVFF   s3_value_e, error3
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR3,W,a
-	    MOVWF   s3_value, error3
+	    CPFSEQ   SENSOR3,a
+	    MOVFF   s3_value, error3
 	    
 	    ;SENSOR4 check
 	    movlw   'e'
@@ -814,7 +814,7 @@ MOVWF		s4_value,b
 	    MOVFF   s3_value, error4
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR4,W,a
+	    CPFSEQ   SENSOR4,a
 	    bra	    $+6
 	    MOVFF   s4_value, error4
 	    
@@ -825,7 +825,7 @@ MOVWF		s4_value,b
 	    MOVFF   s3_value, error2
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR2,W,a
+	    cpfseq  SENSOR2,a
 	    bra	    $+6
 	    MOVFF   s2_value, error2
 	    
@@ -935,7 +935,7 @@ MOVWF		s4_value,b
 	    MULWF   Kd, 0
 	    movf    PRODL,w,a
 	    tstfsz  extra,a
-	    negf    WREG,aS
+	    negf    WREG,a
 	    MOVWF   deriv_error,b
 	    MOVFF   acc_error, prev_error
 	    Output:
@@ -1022,11 +1022,11 @@ MOVWF		s4_value,b
 	    subwf   default_duty_cycle,w,b
 	    bnn	    $+8
 	    ; a wheel needs to reverse
-	    tstfsz  PD_SIGN
+	    tstfsz  PD_SIGN,b
 	    bra	    right_reverse
 	    bra	    left_reverse
 	    ; both wheels forward
-	    tstfsz  PD_SIGN
+	    tstfsz  PD_SIGN,b
 	    bra	    slow_right
 	    bra	    slow_left
 	    
