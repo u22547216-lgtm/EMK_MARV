@@ -139,10 +139,6 @@ s3_value_e	equ	0x87
 		
 ; MOTOR variables
 ;--------------------------------------------------------
-motor_left_speed   equ 0x70
-motor_right_speed  equ 0x71
-GOING_LEFT   equ 0x72    ; 0 = forward, 1 = reverse
-GOING_RIGHT  equ 0x73
 
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -283,9 +279,6 @@ init:
     
     
 
-    ; Clear software variables
-    clrf    motor_left_speed,0
-    clrf    motor_right_speed,0
 
     PWM_Init:
     ; Use Timer2 for CCP1 and CCP2 PWM
