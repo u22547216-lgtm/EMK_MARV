@@ -716,19 +716,19 @@ BTFSS   follow_line,a
 GOTO    STATE2
 
 MOVLW           -4   
-MOVWF		s0_value
+MOVWF		s0_value,b
 MOVLW           -2   
-MOVWF		s1_value
+MOVWF		s1_value,b
 MOVLW           -1   
-MOVWF		s1_value_e
+MOVWF		s1_value_e,b
 MOVLW           0
 MOVWF		s2_value
 MOVLW           1
-MOVWF		s3_value_e
+MOVWF		s3_value_e,b
 MOVLW           2
-MOVWF		s3_value
+MOVWF		s3_value,b
 MOVLW           4
-MOVWF		s4_value
+MOVWF		s4_value,b
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
