@@ -306,13 +306,13 @@ init:
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
-    clrf    TRISD, a
+    ; clrf    TRISD, a
     
-    ; RD2 = CCP2 PWM output, RD3 = CCP2 STEERING, RD5 = CCP1 PWM OUTPUT, RD6 = CCP1 OUTPUT
-    bcf     TRISD,2,1
-    bcf     TRISD,3,1
-    bcf     TRISD,5,1
-    bcf     TRISD,6,1
+    ; RD2 = CCP2 PWM output P2B, RD3 = CCP2 PWM output P2C, RD5 = CCP1 PWM OUTPUT P1B, RD6 = CCP1 OUTPUT P1C
+    bcf     TRISD,2,a
+    bcf     TRISD,3,a
+    bcf     TRISD,5,a
+    bcf     TRISD,6,a
     
     ; Set up PORTB
     clrf    PORTB, a
