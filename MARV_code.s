@@ -393,11 +393,11 @@ STATE_MACHINE_SETUP:
     
     ; State activation bits
     ;BSF calibrate
-    BSF follow_line
+    ;BSF follow_line
     
 	; tests
      ;BSF code_tests
-;    BSF hardware_tests
+     BSF hardware_tests
     
     ; Subroutine activation bits
     ;BSF delay_333_call
@@ -741,6 +741,22 @@ MOVLW           2
 MOVWF		s3_value,b
 MOVLW           4
 MOVWF		s4_value,b
+    
+    
+	    MOVLW   'R'
+	    MOVWF   RACE_COLOUR,a
+	    movff   RACE_COLOUR,ADRESH
+	    
+	    MOVLW   'W'
+	    MOVWF   SENSOR0,a
+	    MOVLW   'B'
+	    MOVWF   SENSOR1,a
+	    MOVLW   'R'
+	    MOVWF   SENSOR2,a
+	    MOVLW   'G'
+	    MOVWF   SENSOR3,a
+	    MOVLW   'W'
+	    MOVWF   SENSOR4,a
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
@@ -761,19 +777,8 @@ MOVWF		s4_value,b
 	    CLRF error3,a
 	    CLRF error4,a
 	    ;call detect_colour
-	    MOVLW   'R'
-	    MOVWF   RACE_COLOUR,a
 	    
-	    MOVLW   'W'
-	    MOVWF   SENSOR0,a
-	    MOVLW   'W'
-	    MOVWF   SENSOR1,a
-	    MOVLW   'R'
-	    MOVWF   SENSOR2,a
-	    MOVLW   'W'
-	    MOVWF   SENSOR3,a
-	    MOVLW   'W'
-	    MOVWF   SENSOR4,a
+	    MOVFF   ADRESH,RACE_COLOUR
 	    
 	    clrf    line_seen,b
 	    
@@ -1211,12 +1216,9 @@ test_hardware:
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
-    
-    lfsr    0,100h
-    bsf	    read_sensors_call
-    call read_sensors
-    bcf	    read_sensors_call
-    goto TODO_hardware_tests
+    movlw   DUTY_50
+    movwf   CPPR1L,a
+    movwf   CPPR2L,a
 ;   state 2 code
     ; to be added later
     
@@ -2081,6 +2083,7 @@ ISR:
 
 
 register_dump:
+    incf    count,a
     movff   line_reg, PORTC     ; put line_reg into PORTC
     bcf	    INT1IF		; clear interrupt flag
     retfie			            ;return from interrupt
