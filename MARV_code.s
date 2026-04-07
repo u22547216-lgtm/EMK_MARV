@@ -967,19 +967,24 @@ MOVWF		s4_value,b
 	    tstfsz  PD_SIGN,b
 	    bcf	    WREG,1,a
 	    
+	    ; are both positive?
 	    tstfsz  WREG,a
+	    bra	    $+4
 	    return
 	    
+	    ; are both negative?
 	    SUBLW   3
 	    BNZ	    $+6
 	    negf    PD_OUTPUT,b
 	    return
 	    
+	    ; make both positive
 	    tstfsz  extra,a
 	    negf    deriv_error,b
 	    tstfsz  PD_SIGN,b
 	    negf    prop_error,b
 	    
+	    ; find difference
 	    movf    deriv_error,b
 	    subwf   prop_error,w,b
 	    
@@ -988,6 +993,7 @@ MOVWF		s4_value,b
 		    ; negate PD_OUTPUT
 		; return
 			    
+	    ; is proportional bigger?
 	    BNN	    $+8
 	    tstfsz  PD_SIGN,b ; check if prop is negative
 	    negf    PD_OUTPUT,b
@@ -1001,7 +1007,8 @@ MOVWF		s4_value,b
 		    ; make PD_SIGN 0
 		; return
 	    
-	    tstfsz  extra,a ; check if prop is negative
+	    ; derivative is bigger
+	    tstfsz  extra,a ; check if deriv is negative
 	    bra	    $+4
 	    bra	    $+8
 	    negf    PD_OUTPUT,b
