@@ -762,12 +762,13 @@ MOVWF		s4_value,b
 	    ;call detect_colour
 	    MOVLW   'R'
 	    MOVWF   RACE_COLOUR,a
-	    MOVLW   'R'
-	    MOVWF   SENSOR2,a
+	    
 	    MOVLW   'W'
 	    MOVWF   SENSOR0,a
 	    MOVLW   'W'
 	    MOVWF   SENSOR1,a
+	    MOVLW   'R'
+	    MOVWF   SENSOR2,a
 	    MOVLW   'W'
 	    MOVWF   SENSOR3,a
 	    MOVLW   'W'
@@ -808,6 +809,17 @@ MOVWF		s4_value,b
 	    bra	    $+6
 	    MOVFF   s1_value, error1
 	    
+	    ;SENSOR2 check
+	    movlw   'e'
+	    ;MOVF    SENSOR2,W,a
+	    CPFSLT   SENSOR2,a
+	    MOVFF   s2_value, error2
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    cpfseq  SENSOR2,a
+	    bra	    $+6
+	    MOVFF   s2_value, error2
+	    
 	    ;SENSOR3 check
 	    movlw   'e'
 	    ;MOVF    SENSOR3,W,a
@@ -828,17 +840,6 @@ MOVWF		s4_value,b
 	    CPFSEQ   SENSOR4,a
 	    bra	    $+6
 	    MOVFF   s4_value, error4
-	    
-	    ;SENSOR2 check
-	    movlw   'e'
-	    ;MOVF    SENSOR2,W,a
-	    CPFSLT   SENSOR2,a
-	    MOVFF   s2_value, error2
-	    
-	    MOVF    RACE_COLOUR,W,a
-	    cpfseq  SENSOR2,a
-	    bra	    $+6
-	    MOVFF   s2_value, error2
 	    
 	    ; PID calcs
 	    
