@@ -287,42 +287,7 @@ init:
     clrf    motor_left_speed,0
     clrf    motor_right_speed,0
 
-    call    PWM_Init
-    
-; Default both motors to 50%
-    movlw   DUTY_50
-    movwf   motor_left_speed,0
-    movlw   DUTY_50
-    movwf   motor_right_speed,0
-    call    Update_Speeds
-    
-    ; Port D
-    clrf    PORTD, a
-    clrf    LATD, a
-    clrf    ANSELD, b
-    clrf    TRISD, a
-    
-    ; RD2 = CCP2 PWM output, RD3 = CCP2 STEERING, RD5 = CCP1 PWM OUTPUT, RD6 = CCP1 OUTPUT
-    bcf     TRISD,2,1
-    bcf     TRISD,3,1
-    bcf     TRISD,5,1
-    bcf     TRISD,6,1
-    
-    ; Set up PORTB
-    clrf    PORTB, a
-    clrf    LATB, a
-    clrf    ANSELB, b
-    clrf    TRISB, a
-    bsf	    TRISB,1,a	; RB1 is input(INT1I)
-    bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
-    ; clrf    WPUB,a      ; no more weak pull up for PORTB
-    
-    ; Timer setup
-    clrf    T0CON,a
-    clrf    T1CON,a
-    clrf    T1GCON,a
-    
-PWM_Init:
+    PWM_Init:
     ; Use Timer2 for CCP1 and CCP2 PWM
     clrf    CCPTMRS0,1
     clrf    CCPTMRS1,1
@@ -358,6 +323,41 @@ PWM_Init:
     ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
     movlw   00000111B
     movwf   T2CON,1
+
+    
+; Default both motors to 50%
+    movlw   DUTY_50
+    movwf   motor_left_speed,0
+    movlw   DUTY_50
+    movwf   motor_right_speed,0
+    call    Update_Speeds
+    
+    ; Port D
+    clrf    PORTD, a
+    clrf    LATD, a
+    clrf    ANSELD, b
+    clrf    TRISD, a
+    
+    ; RD2 = CCP2 PWM output, RD3 = CCP2 STEERING, RD5 = CCP1 PWM OUTPUT, RD6 = CCP1 OUTPUT
+    bcf     TRISD,2,1
+    bcf     TRISD,3,1
+    bcf     TRISD,5,1
+    bcf     TRISD,6,1
+    
+    ; Set up PORTB
+    clrf    PORTB, a
+    clrf    LATB, a
+    clrf    ANSELB, b
+    clrf    TRISB, a
+    bsf	    TRISB,1,a	; RB1 is input(INT1I)
+    bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
+    ; clrf    WPUB,a      ; no more weak pull up for PORTB
+    
+    ; Timer setup
+    clrf    T0CON,a
+    clrf    T1CON,a
+    clrf    T1GCON,a
+    
 
     
    
