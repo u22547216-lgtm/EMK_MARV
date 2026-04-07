@@ -131,6 +131,8 @@ error2          equ   0x82
 error3          equ   0x83
 error4          equ   0x84
 PD_SIGN         EQU   0x85
+s1_value_e	equ	0x86
+s3_value_e	equ	0x87
 
 
 		
@@ -399,7 +401,7 @@ PID_SETUP:
     clrf    SENSOR4,a
     clrf    RACE_COLOUR,a
     
-    movlw   duty_100
+    movlw   DUTY_100
     movwf   default_duty_cycle,b
 ; testing setup		
     bcf	    test_en, a
