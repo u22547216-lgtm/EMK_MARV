@@ -114,6 +114,7 @@ extra		equ 0x19
 ;#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
 ;#define right_dir_pin   PORTD,6
 ;PID variables
+line_seen	    equ 0x72
 default_duty_cycle  equ	0x73
 
 s0_value        equ   0x74
@@ -774,6 +775,8 @@ MOVWF		s4_value,b
 	    MOVLW   'W'
 	    MOVWF   SENSOR4,a
 	    
+	    clrf    line_seen,b
+	    
 		    
 		    
 		; the PWM shouldnt be changed untill after the PID is done
@@ -786,8 +789,10 @@ MOVWF		s4_value,b
 		; i also went through and fixed some of the logic
 	    movlw   'e'
 	    ;MOVF    SENSOR0,W,a
-	    CPFSLT   SENSOR0,a
+	    CPFSEQ  SENSOR0,a
+	    bra	    $+8
 	    MOVFF   s1_value, error0
+	    setf    line_seen,b
 	    
 	    ; This is a check that is needed, but you kindof did it wrong because you arent specifically checking for the race colour.
 	    ; This means that if, for example, the race colour is red 'R' and the SENSOR sees green 'G' or error 'E', this would still trigger
@@ -795,52 +800,65 @@ MOVWF		s4_value,b
 		; I have changed it so that it only works if SENSORx is equal to RACE_COLOUR
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR0,a
-	    bra	    $+6
+	    bra	    $+8
 	    MOVFF   s0_value, error0
+	    setf    line_seen,b
 	    
 	    ;SENSOR1 check
 	    movlw   'e'
 	    ;MOVF    SENSOR1,W,a
-	    CPFSLT   SENSOR1,a
+	    CPFSEQ  SENSOR1,a
+	    bra	    $+8
 	    MOVFF   s1_value_e, error1
+	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR1,a
-	    bra	    $+6
+	    bra	    $+8
 	    MOVFF   s1_value, error1
+	    setf    line_seen,b
 	    
 	    ;SENSOR2 check
 	    movlw   'e'
 	    ;MOVF    SENSOR2,W,a
-	    CPFSLT   SENSOR2,a
+	    CPFSEQ  SENSOR2,a
+	    bra	    $+8
 	    MOVFF   s2_value, error2
+	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    cpfseq  SENSOR2,a
-	    bra	    $+6
+	    bra	    $+8
 	    MOVFF   s2_value, error2
+	    setf    line_seen,b
 	    
 	    ;SENSOR3 check
 	    movlw   'e'
 	    ;MOVF    SENSOR3,W,a
-	    CPFSLT   SENSOR3,a
+	    CPFSEQ  SENSOR3,a
+	    bra	    $+8
 	    MOVFF   s3_value_e, error3
+	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR3,a
-	    bra	    $+6
+	    CPFSEQ  SENSOR3,a
+	    bra	    $+8
 	    MOVFF   s3_value, error3
+	    setf    line_seen,b
 	    
 	    ;SENSOR4 check
 	    movlw   'e'
 	    ;MOVF    SENSOR4,W,a
-	    CPFSLT   SENSOR4,a
+	    CPFSEQ  SENSOR4,a
+	    bra	    $+8
 	    MOVFF   s3_value, error4
+	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
-	    CPFSEQ   SENSOR4,a
-	    bra	    $+6
+	    CPFSEQ  SENSOR4,a
+	    bra	    $+8
 	    MOVFF   s4_value, error4
+	    setf    line_seen,b
 	    
 	    ; PID calcs
 	    
@@ -850,6 +868,9 @@ MOVWF		s4_value,b
 	    
 	    CALL    CHANGE_OF_OUTPUTS
 	    ;this only needs to be called if the PID output is 0
+	    ; also need to check if the race colour or race error was seen.
+	    tstfsz  line_seen,b
+	    bra	    $+10
 	    tstfsz  PD_OUTPUT,b
 	    bra	    $+6
 	    CALL    CHECK_BLACK
