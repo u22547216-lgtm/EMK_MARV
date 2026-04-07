@@ -54,6 +54,8 @@
     
     CONFIG  BOREN = SBORDIS
     CONFIG  BORV = 190 
+    
+    CONFIG  P2BMX = 1
   
     
     #include    <xc.inc>
