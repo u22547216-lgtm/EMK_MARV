@@ -110,47 +110,7 @@ reading_count	equ 0x10
 count		equ 0x11
 ;   dont use address 0x13, strange things afoot
 extra		equ 0x19
-;OTHER MOTOR DEFINTIONS
-;#define left_dir_pin    PORTD,3 ;DIRECTION OUTPUT PINS
-;#define right_dir_pin   PORTD,6
-;PID variables
-line_seen	    equ 0x72
-default_duty_cycle  equ	0x73
 
-s0_value        equ   0x74
-s1_value        equ   0x75
-s2_value        equ   0x76
-s3_value        equ   0x77
-s4_value        equ   0x78
-
-PD_OUTPUT       EQU   0x79
-
-Kp				equ   0x7A
-Kd              equ   0x7B
-
-prop_error      equ   0x7C
-
-deriv_error     equ   0x7D
-prev_error		equ   0x7E
-
-acc_error       equ   0x7F
-
-error0          equ   0x80
-error1          equ   0x81
-error2          equ   0x82
-error3          equ   0x83
-error4          equ   0x84
-
-PD_SIGN         EQU   0x85
-
-s1_value_e	equ	0x86
-s3_value_e	equ	0x87
-
-
-		
-		
-; MOTOR variables
-;--------------------------------------------------------
 
 ; colour detection registers
 red_thresh	    equ	0x40
@@ -188,32 +148,50 @@ BLACK_FLAG     EQU 0x5F
 #define black_indicator     PORTD,3
 #define white_indicator     PORTD,4
 
-; Sensor storage variables, the adresses here can be used with indirect addressing
-     ; name format is [colour flash]_[sensor number]
-; red_0		equ 0x00
-; red_1		equ 0x01
-; red_2		equ 0x02
-; red_3		equ 0x03
-; red_4		equ 0x04
 
-; green_0		equ 0x06
-; green_1		equ 0x07
-; green_2		equ 0x08
-; green_3		equ 0x09
-; green_4		equ 0x0A
+; MOTOR DEFINTIONS
+; PID variables
+line_seen	    equ 0x72
+default_duty_cycle  equ	0x73
 
-; blue_0		equ 0x0B
-; blue_1		equ 0x0C
-; blue_2		equ 0x0D
-; blue_3		equ 0x0E
-; blue_4		equ 0x0F
-     
+PD_OUTPUT       EQU   0x79
+
+Kp		equ   0x7A
+Kd              equ   0x7B
+
+prop_error      equ   0x7C
+
+deriv_error     equ   0x7D
+prev_error	equ   0x7E
+
+acc_error       equ   0x7F
+
+error0          equ   0x80
+error1          equ   0x81
+error2          equ   0x82
+error3          equ   0x83
+error4          equ   0x84
+
+PD_SIGN         EQU   0x85
+
+; sensor value mapping
+s0_value        equ   -4
+s1_value        equ   -2
+s1_value_e	equ	-1
+s2_value        equ   0
+s3_value_e	equ	1
+s3_value        equ   2
+s4_value        equ   4
+
+
 ;DUTY CYCLE DEFINITIONS
 DUTY_25     equ 31
 DUTY_50     equ 62
 DUTY_75     equ 93
 DUTY_100    equ 125
 DUTY_STOP   equ 0
+		
+     
 
 ; variables to reduce magic numbers
 ADC_AN0		equ 0b00000011 ; 0 00000 1 1
@@ -727,36 +705,7 @@ LLI:
 BTFSS   follow_line
 GOTO    STATE2
 
-MOVLW           -4   
-MOVWF		s0_value,b
-MOVLW           -2   
-MOVWF		s1_value,b
-MOVLW           -1   
-MOVWF		s1_value_e,b
-MOVLW           0
-MOVWF		s2_value,b
-MOVLW           1
-MOVWF		s3_value_e,b
-MOVLW           2
-MOVWF		s3_value,b
-MOVLW           4
-MOVWF		s4_value,b
     
-    
-	    MOVLW   'R'
-	    MOVWF   RACE_COLOUR,a
-	    movff   RACE_COLOUR,ADRESH
-	    
-	    MOVLW   'W'
-	    MOVWF   SENSOR0,a
-	    MOVLW   'B'
-	    MOVWF   SENSOR1,a
-	    MOVLW   'R'
-	    MOVWF   SENSOR2,a
-	    MOVLW   'G'
-	    MOVWF   SENSOR3,a
-	    MOVLW   'W'
-	    MOVWF   SENSOR4,a
 	
     ; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
 
@@ -770,85 +719,82 @@ MOVWF		s4_value,b
     ; if all sensor detect black, STOP (End of maze)
 
 	STRAIGHT:
-	
+	    ; setup
 	    CLRF error0,a
 	    CLRF error1,a
 	    CLRF error2,a
 	    CLRF error3,a
 	    CLRF error4,a
-	    ;call detect_colour
-	    
-	    MOVFF   ADRESH,RACE_COLOUR
-	    
 	    clrf    line_seen,b
 	    
-		    
-		    
-		; the PWM shouldnt be changed untill after the PID is done
-	    ;CALL    Set_Both_Speed_75
+	    
+	    ;call detect_colour
+	    
 	    
 	    ;SENSOR0 check
-	    
-	    ; this check for race_error makes some sense because the value of 'e' is bigger than the other letters we use.
-	    ; only issue is (or was), you cant put letters into the CPFS functions because it will take the value of the letter and use that as an address
-		; i also went through and fixed some of the logic
 	    movlw   'e'
-	    ;MOVF    SENSOR0,W,a
 	    CPFSEQ  SENSOR0,a
 	    bra	    $+8
-	    MOVFF   s1_value, error0
+	    movlw   s1_value
+	    MOVWF   error0,b
 	    setf    line_seen,b
 	    
-	    ; This is a check that is needed, but you kindof did it wrong because you arent specifically checking for the race colour.
-	    ; This means that if, for example, the race colour is red 'R' and the SENSOR sees green 'G' or error 'E', this would still trigger
-	    ; because 'G' and 'E' are smaller than 'R', and the MOVFF would only be skipped if SENSOR has 'W' or 'e'
-		; I have changed it so that it only works if SENSORx is equal to RACE_COLOUR
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR0,a
 	    bra	    $+8
-	    MOVFF   s0_value, error0
+	    movlw   s0_value
+	    MOVWF   error0,b
 	    setf    line_seen,b
+	    
 	    
 	    ;SENSOR1 check
 	    movlw   'e'
 	    ;MOVF    SENSOR1,W,a
 	    CPFSEQ  SENSOR1,a
 	    bra	    $+8
-	    MOVFF   s1_value_e, error1
+	    movlw   s1_value_e
+	    MOVWF   error1,b
 	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR1,a
 	    bra	    $+8
-	    MOVFF   s1_value, error1
+	    movlw   s1_value
+	    MOVWF   error1,b
 	    setf    line_seen,b
+	    
 	    
 	    ;SENSOR2 check
 	    movlw   'e'
 	    ;MOVF    SENSOR2,W,a
 	    CPFSEQ  SENSOR2,a
 	    bra	    $+8
-	    MOVFF   s2_value, error2
+	    movlw   s2_value
+	    MOVWF   error2,b
 	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    cpfseq  SENSOR2,a
 	    bra	    $+8
-	    MOVFF   s2_value, error2
+	    movlw   s2_value
+	    MOVWF   error2,b
 	    setf    line_seen,b
+	    
 	    
 	    ;SENSOR3 check
 	    movlw   'e'
 	    ;MOVF    SENSOR3,W,a
 	    CPFSEQ  SENSOR3,a
 	    bra	    $+8
-	    MOVFF   s3_value_e, error3
+	    movlw   s3_value_e
+	    MOVWF   error3,b
 	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ  SENSOR3,a
 	    bra	    $+8
-	    MOVFF   s3_value, error3
+	    movlw   s3_value
+	    MOVWF   error3,b
 	    setf    line_seen,b
 	    
 	    ;SENSOR4 check
@@ -856,137 +802,115 @@ MOVWF		s4_value,b
 	    ;MOVF    SENSOR4,W,a
 	    CPFSEQ  SENSOR4,a
 	    bra	    $+8
-	    MOVFF   s3_value, error4
+	    movlw   s3_value
+	    MOVWF   error4,b
 	    setf    line_seen,b
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ  SENSOR4,a
 	    bra	    $+8
-	    MOVFF   s4_value, error4
+	    movlw   s4_value
+	    MOVWF   error4,b
 	    setf    line_seen,b
 	    
-	    ; PID calcs
 	    
-	    CALL    ERROR_CALC
-	    
-	    CALL    PID1
-	    
-	    CALL    CHANGE_OF_OUTPUTS
-	    ;this only needs to be called if the PID output is 0
-	    ; also need to check if the race colour or race error was seen.
+	    ; check if the line was seen
 	    tstfsz  line_seen,b
 	    bra	    $+10
-	    tstfsz  PD_OUTPUT,b
-	    bra	    $+6
 	    CALL    CHECK_BLACK
+	    GOTO    TRANSITION1
 	    
-	    ; again looping over itself, needs to be changed before it is in the actual code
-	    GOTO    STRAIGHT
 	    
 	ERROR_CALC:
 	    ; small bit of setup for this
             CLRF    acc_error, b
 	    
 	    ; SENSOR 0
-	    ;NEGF    s0_value	    ; why do this? 
-            ;MOVF    s0_value,W,a    ; why do this?
-            ;MULWF   error0,a	    ; ?????
-	    ;MOVF    PRODH, W, a	    ; !?!?!?
 	    movf    error0,w,b
-	    ADDWF   acc_error,b	    ; this I somewhat get
+	    ADDWF   acc_error,b
 	    
 	    ; SENSOR 1
-	    ;NEGF    s1_value
-	    ;MOVF    s1_value,W,a
-            ;MULWF   error1,a
-	    ;MOVF    PRODH, W, a
 	    movf    error1,w,b
 	    ADDWF   acc_error,b
 	    
 	    ; SENSOR 2
-	    ; MOVF    s2_value,W,a
-        ;     MULWF   error2,a
-	    ; MOVF    PRODH, W, a
 	    movf    error2,w,b
 	    ADDWF   acc_error,b
 	    
 	    ; SENSOR 3
-	    ; MOVF    s3_value,W,a
-        ;     MULWF   error3,a
-	    ; MOVF    PRODH, W, a
 	    movf    error3,w,b
 	    ADDWF   acc_error,b
 	    
 	    ; SENSOR 4
-	    ; MOVF    s4_value, W,a
-        ;     MULWF   error4,a
-	    ; MOVF    PRODH, W, a
 	    movf    error4,w,b
 	    ADDWF   acc_error,b
 	    
 	    ; All this adding together of 5 registers might confuse the status register
-	    ; might need to add in our own check for negativety, would just need to check if acc_error  is greater than 128
-	    
-	    
-	    ; which way to turn
+	    ; so we add in our own check for negativety
+		; basically just checking if acc_error is greater than 128
+		; this helps determine which way to turn
 	    CLRF    PD_SIGN,b
 	    movlw   128
 	    CPFSGT  acc_error,b
 	    BRA	    $+4
 	    SETF    PD_SIGN,b
 	    
-	    RETURN
 	    
-	PID1:   
-	    ; should be possible to trick the multiplication into working with decimal values without actually using decimal values
-		; we can just shift the decimal point to the space between PRODH and PRODL
-		; need to consider when the multiplication moves over the decimal point
-	    ; easier option, just keep the values small enough that it stays in PRODL
-		derivative_const equ 15
-		proportional_const equ 6
+	    PID1:   
+	    ; PD constants
+	    Kd equ 15
+	    Kp equ 6
 		
-	    MOVLW   proportional_const
-	    MOVWF   Kp,b
 	    MOVLW   derivative_const
 	    MOVWF   Kd,b
 	    Proportional:
-	    MOVF    Kp,b  ; loading Kp into W
+	    MOVLW    Kp		; loading Kp into W
 	    
+	    ; checing negativity
 	    tstfsz  PD_SIGN,b
-	    negf    acc_error,b
+	    negf    acc_error,b	    ; make this positive because of MULWF
 	    
 	    MULWF   acc_error,b
 	    MOVF    PRODL, W, a
 	    
+	    ; preserving negativity after multiplication
 	    tstfsz  PD_SIGN,b
 	    negf    WREG,a
 	    
 	    MOVWF   prop_error,b
+	    
 	    Derivative:
+	    ; using this for storing the negativity of this part
 	    CLRF    extra,a
+	    
             MOVF    acc_error,w,b
-	    SUBWF   prev_error,w,b; error = prev_error - error
+	    SUBWF   prev_error,w,b  ; change = prev_error - error
 	    BNN	    $+6
-	    setf    extra,a
-	    negf    WREG,a
+	    setf    extra,a	    ; save negativity
+	    negf    WREG,a	    ; make positive for multiplication
+	    
+	    ; multiplication prep
 	    MOVWF   deriv_error, b
-	    ; MOVF    deriv_error, b
-	    MULWF   Kd, b
+	    movlw   Kd
+	    
+	    MULWF   deriv_error, b
 	    movf    PRODL,w,a
+	    ; preserving negativity again
 	    tstfsz  extra,a
 	    negf    WREG,a
+	    
 	    MOVWF   deriv_error,b
+	    ; saving the error for the next run of the PD
 	    MOVFF   acc_error, prev_error
+	    
 	    Output:
+	    ; the basic math
             MOVF    prop_error,w,b
 	    ADDWF   deriv_error,w,b
 	    MOVWF   PD_OUTPUT,b
 	    
-	    ; checks to determine what the output should be
-		; i know if prop is pos or neg
-		; i know if deriv is pos or neg
-		    ; just need to compare both in terms of size if they have sign differences
-		    
+	    ; checks to determine if the output is positive or negative
+
 	    clrf    WREG,a
 	    tstfsz  extra,a
 	    bcf	    WREG,0,a
@@ -996,13 +920,13 @@ MOVWF		s4_value,b
 	    ; are both positive?
 	    tstfsz  WREG,a
 	    bra	    $+4
-	    return
+	    bra	    CCHANGE_OF_OUTPUTS
 	    
 	    ; are both negative?
 	    SUBLW   3
 	    BNZ	    $+6
 	    negf    PD_OUTPUT,b
-	    return
+	    bra	    CCHANGE_OF_OUTPUTS
 	    
 	    ; make both positive
 	    tstfsz  extra,a
@@ -1014,24 +938,13 @@ MOVWF		s4_value,b
 	    movf    deriv_error,b
 	    subwf   prop_error,w,b
 	    
-	    ; if this is negative, it means prop is bigger
-		; if prop is negative
-		    ; negate PD_OUTPUT
-		; return
 			    
 	    ; is proportional bigger?
 	    BNN	    $+8
 	    tstfsz  PD_SIGN,b ; check if prop is negative
 	    negf    PD_OUTPUT,b
-	    return
+	    bra	    CCHANGE_OF_OUTPUTS
 	    
-	    ; if deriv is bigger
-		; if deriv is negative
-		    ; negate PD_OUTPUT
-		    ; make PD_SIGN 255
-		; if deriv is positive
-		    ; make PD_SIGN 0
-		; return
 	    
 	    ; derivative is bigger
 	    tstfsz  extra,a ; check if deriv is negative
@@ -1039,30 +952,13 @@ MOVWF		s4_value,b
 	    bra	    $+8
 	    negf    PD_OUTPUT,b
 	    setf    PD_SIGN,b
-	    return
+	    bra	    CCHANGE_OF_OUTPUTS
 	    
 	    clrf    PD_SIGN,b
 	    
-	    RETURN
 	    
-	CHANGE_OF_OUTPUTS:
+	    CCHANGE_OF_OUTPUTS:
     
-	    
-	    
-	    ; now i dont know what it means when the PID output is positive or negative.
-		; positive maps to right on the sensors
-		; negative maps to left on the sensors
-		
-		; it stands to reason that a negative output means to turn left
-		    ; which just means to adjust the left motor.
-		    
-	    ; now i just need to check if the PID output is higher than the default wheel speed duty cycle register.
-		; if it is, then i need to invert the direction of the wheel that needs to be adjusted
-		    ; need to subtract the default value from the PID output
-			; then put that result in the duty cycle register of the wheel that needs to be adjusted.
-			
-	    ; left is connected to CPP1
-	    
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
 	    subwf   default_duty_cycle,w,b
@@ -1090,8 +986,8 @@ MOVWF		s4_value,b
 		movf    default_duty_cycle,w,b
 		movwf   CCPR1L,a
 		
-		return
-		
+		bra	CHANGE_OUTPUTS_END	
+	
 	    left_reverse:
 		BCF	    STR2C
 		BSF	    STR2B
@@ -1104,7 +1000,7 @@ MOVWF		s4_value,b
 		movf    default_duty_cycle,w,b
 		movwf   CCPR2L,a
 		
-		return
+		bra	CHANGE_OUTPUTS_END
 		
 	    slow_right:
 		BCF	    STR1C
@@ -1116,7 +1012,7 @@ MOVWF		s4_value,b
 		movf    default_duty_cycle,w,b
 		movwf   CCPR1L,a
 		
-		return
+		bra	CHANGE_OUTPUTS_END
 		
 	    slow_left:
 		BCF	    STR1C
@@ -1128,20 +1024,20 @@ MOVWF		s4_value,b
 		movf    default_duty_cycle,w,b
 		movwf   CCPR2L,a
 		
-		return 
+		CHANGE_OUTPUTS_END: 
+		
+	    
+	    ; again looping over itself, needs to be changed before it is in the actual code
+	    GOTO    TRANSITION1
 	    
 	    
-	;need to figure out lost algorithm now    
+	  
 	  LOST:
 	    LOST_STOP:
 		CALL BRAKES
-		;bcf	wait_for_timer333,a
-		;bsf	delay_333_call,a
-		;CALL    delay_333
-		;bcf	delay_333_call,a
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
-		    ; need to change from the forward pins to the reverse pins
+		    ; change from the forward pins to the reverse pins
 		    BCF	    STR1B
 		    BCF	    STR2B
 		    
@@ -1151,13 +1047,8 @@ MOVWF		s4_value,b
 		    movf    default_duty_cycle,w,b
 		    movwf   CCPR1L,a
 		    movwf   CCPR2L,a
-		 
 		    
 		  return
-	  ;TURN UNTIL MIDDLE SENSOR IS ON THE LINE:THE PID TAKES CARE OF THE SECOND PART
-	  
-		;call    wait_for_button_press	; this is here for the purposes of the dem0
-	    RETURN
          
 	BRAKES:
 	    clrf    CCPR1L,a
@@ -1217,8 +1108,8 @@ test_hardware:
     
     TODO_hardware_tests: ; to-do todo to do
     movlw   DUTY_50
-    movwf   CPPR1L,a
-    movwf   CPPR2L,a
+    movwf   CCPR1L,a
+    movwf   CCPR2L,a
 ;   state 2 code
     ; to be added later
     
