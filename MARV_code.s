@@ -156,9 +156,6 @@ default_duty_cycle  equ	0x73
 
 PD_OUTPUT       EQU   0x79
 
-Kp		equ   0x7A
-Kd              equ   0x7B
-
 prop_error      equ   0x7C
 
 deriv_error     equ   0x7D
