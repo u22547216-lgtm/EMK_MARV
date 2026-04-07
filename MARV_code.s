@@ -115,24 +115,33 @@ extra		equ 0x19
 ;#define right_dir_pin   PORTD,6
 ;PID variables
 default_duty_cycle  equ	0x73
-error0          equ   0x74
-prev_error	equ   0x75
-prop_error      equ   0x76
-s0_value        equ   0x77
-s1_value        equ   0x78
-s2_value        equ   0x79
-s3_value        equ   0x7A
-s4_value        equ   0x7B
-PD_OUTPUT       EQU   0x7C
-Kp		equ   0x7D
-Kd              equ   0x7E
-deriv_error     equ   0x7F
-acc_error       equ   0x80
+
+s0_value        equ   0x74
+s1_value        equ   0x75
+s2_value        equ   0x76
+s3_value        equ   0x77
+s4_value        equ   0x78
+
+PD_OUTPUT       EQU   0x79
+
+Kp				equ   0x7A
+Kd              equ   0x7B
+
+prop_error      equ   0x7C
+
+deriv_error     equ   0x7D
+prev_error		equ   0x7E
+
+acc_error       equ   0x7F
+
+error0          equ   0x80
 error1          equ   0x81
 error2          equ   0x82
 error3          equ   0x83
 error4          equ   0x84
+
 PD_SIGN         EQU   0x85
+
 s1_value_e	equ	0x86
 s3_value_e	equ	0x87
 
@@ -824,7 +833,7 @@ MOVWF		s4_value,b
 	    movlw   'e'
 	    ;MOVF    SENSOR2,W,a
 	    CPFSLT   SENSOR2,a
-	    MOVFF   s3_value, error2
+	    MOVFF   s2_value, error2
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    cpfseq  SENSOR2,a
