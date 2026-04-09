@@ -373,11 +373,11 @@ STATE_MACHINE_SETUP:
     CLRF	timer_waits,a
     
     ; State activation bits
-    ;BSF calibrate
+    BSF calibrate
     ;BSF follow_line
     
 	; tests
-     BSF code_tests
+     ;BSF code_tests
      ;BSF hardware_tests
     
     ; Subroutine activation bits
@@ -1086,7 +1086,7 @@ GOTO    STATE2
 	    BRA	    BRAKES
     
 TRANSITION1:
-    return
+    ;return
     BSF	    follow_line  ;LOOP OVER LLI
 
 		
