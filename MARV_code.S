@@ -205,61 +205,6 @@ ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 
 calib_address	equ 100h
 
-; Macros
-	
-	
-Delay_loop macro   D1,	D2
-    MOVLW	D2		
-    MOVWF	Delay2	
-
-    MOVLW	D1
-    MOVWF	Delay1
-    
-    DECFSZ	Delay1,f
-    GOTO	$-0x2	; goto previous line, i.e. 2 program registers back to start of decfz Delay1,f instruction
-		        ; Refer to MPLAB X Help files: Location Counter
-	                ; PIC 18 program memory is byte addressable (2 bytes per word), i.e. offset by 2 (or 4) per instruction
-		        ; Smaller devices are word addressable, i.e. ofset counter by 1 (or 2) per instruction
-			; You cannot use a label here - why not?
-    DECFSZ	Delay2,f
-    GOTO	$-0x0C	; goto line movlw D1, i.e. 12 program registers back.
-
-    endm
-	
-SET_SENSORS macro RC, S0, S1, S2, S3, S4
- 
-	MOVLW	RC
-	MOVWF	RACE_COLOUR,A
-	MOVLW	S0
-	MOVWF	SENSOR0,A
-	MOVLW	S1
-	MOVWF	SENSOR1,A
-	MOVLW	S2
-	MOVWF	SENSOR2,A
-	MOVLW	S3
-	MOVWF	SENSOR3,A
-	MOVLW	S4
-	MOVWF	SENSOR4,A
-	
-	endm
-	
-CHECK_LLI_OUTPUTS   macro PWM_REG1, PWM_REG2, PSTR1, PSTR2, TEST_CHECK
-	
-	SETF	TEST_CHECK,A
-	MOVLW	PWM_REG1
-	CPFSEQ	CCPR1L,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PWM_REG2
-	CPFSEQ	CCPR2L,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PSTR1
-	CPFSEQ	PSTR1CON,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PSTR2
-	CPFSEQ	PSTR2CON,A
-	CLRF	TEST_CHECK,A
-	
-	endm
 	
 ;
 ; -------------	
