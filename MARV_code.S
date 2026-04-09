@@ -205,62 +205,7 @@ ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 
 calib_address	equ 100h
 
-; Macros
-	
-	
-Delay_loop macro   D1,	D2
-    MOVLW	D2		
-    MOVWF	Delay2	
 
-    MOVLW	D1
-    MOVWF	Delay1
-    
-    DECFSZ	Delay1,f
-    GOTO	$-0x2	; goto previous line, i.e. 2 program registers back to start of decfz Delay1,f instruction
-		        ; Refer to MPLAB X Help files: Location Counter
-	                ; PIC 18 program memory is byte addressable (2 bytes per word), i.e. offset by 2 (or 4) per instruction
-		        ; Smaller devices are word addressable, i.e. ofset counter by 1 (or 2) per instruction
-			; You cannot use a label here - why not?
-    DECFSZ	Delay2,f
-    GOTO	$-0x0C	; goto line movlw D1, i.e. 12 program registers back.
-
-    endm
-	
-SET_SENSORS macro RC, S0, S1, S2, S3, S4
- 
-	MOVLW	RC
-	MOVWF	RACE_COLOUR,A
-	MOVLW	S0
-	MOVWF	SENSOR0,A
-	MOVLW	S1
-	MOVWF	SENSOR1,A
-	MOVLW	S2
-	MOVWF	SENSOR2,A
-	MOVLW	S3
-	MOVWF	SENSOR3,A
-	MOVLW	S4
-	MOVWF	SENSOR4,A
-	
-	endm
-	
-CHECK_LLI_OUTPUTS   macro PWM_REG1, PWM_REG2, PSTR1, PSTR2, TEST_CHECK
-	
-	SETF	TEST_CHECK,A
-	MOVLW	PWM_REG1
-	CPFSEQ	CCPR1L,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PWM_REG2
-	CPFSEQ	CCPR2L,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PSTR1
-	CPFSEQ	PSTR1CON,A
-	CLRF	TEST_CHECK,A
-	MOVLW	PSTR2
-	CPFSEQ	PSTR2CON,A
-	CLRF	TEST_CHECK,A
-	
-	endm
-	
 ;
 ; -------------	
 ; PROGRAM START	
@@ -1157,67 +1102,376 @@ software_tests:
     GOTO    STATE3
     
 	bsf follow_line
+	
+	; R equ 'R'
+	; W equ 'W'
+	; e equ 'e'
+	; B equ 'B'
+	; G equ 'G'
+	; K equ 'K'
+	; E equ 'E'
 
-	SET_SENSORS 'R', 'W', 'W', 'R', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '81', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'R', 'W', 'W', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '9', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'R'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '21', '123', '00010100B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'R', 'R', 'W', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '63', '00010010B', '00010100B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'e', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '12', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'R', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '108', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'e', 'e', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '102', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'R', 'W', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '96', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '51', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'e'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '111', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'R'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '69', '123', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'e', 'W', 'W', 'W', 'R'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '105', '00010010B', '00010010B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'R', 'R', 'W', 'W', 'W'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '123', '33', '00010010B', '00010100B', test_0
-	MOVFF test_0, PORTC
-	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'R'
-	CALL LLI
-	CHECK_LLI_OUTPUTS '93', '123', '00010100B', '00010010B', test_0
-	MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'R'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'R'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 81
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'R'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 9
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'R'
+movwf SENSOR4,a
+movlw 21
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010100B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'R'
+movwf SENSOR0,a
+movlw 'R'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 63
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010100B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'e'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 12
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'R'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 108
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'e'
+movwf SENSOR1,a
+movlw 'e'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 102
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'R'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 96
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'R'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 51
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'e'
+movwf SENSOR4,a
+movlw 111
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'R'
+movwf SENSOR4,a
+movlw 69
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'e'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'R'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 105
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'R'
+movwf SENSOR0,a
+movlw 'R'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'W'
+movwf SENSOR3,a
+movlw 'W'
+movwf SENSOR4,a
+movlw 123
+cpfseq CPPR1L,a
+goto wrong
+movlw 33
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010100B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+	movlw 'R'
+movwf RACE_COLOUR,a
+movlw 'W'
+movwf SENSOR0,a
+movlw 'W'
+movwf SENSOR1,a
+movlw 'W'
+movwf SENSOR2,a
+movlw 'R'
+movwf SENSOR3,a
+movlw 'R'
+movwf SENSOR4,a
+movlw 93
+cpfseq CPPR1L,a
+goto wrong
+movlw 123
+cpfseq CPPR2L,a
+goto wrong
+movlw 00010100B
+cpfseq PSTR1CON,a
+goto wrong
+movlw 00010010B
+cpfseq PSTR2CON,a
+MOVFF test_0, PORTC
+
 
 	
     
