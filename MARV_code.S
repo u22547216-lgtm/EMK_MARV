@@ -1124,10 +1124,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1148,10 +1148,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 81 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1172,10 +1172,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 9 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1196,10 +1196,10 @@ software_tests:
 	movlw 'R' 
 	movwf SENSOR4,a 
 	movlw 21 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010100B 
 	cpfseq PSTR1CON,a 
@@ -1220,10 +1220,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 63 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1244,10 +1244,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 12 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1268,10 +1268,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 108 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1292,10 +1292,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 102 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1316,10 +1316,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 96 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1340,10 +1340,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 51 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1364,10 +1364,10 @@ software_tests:
 	movlw 'e' 
 	movwf SENSOR4,a 
 	movlw 111 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1388,10 +1388,10 @@ software_tests:
 	movlw 'R' 
 	movwf SENSOR4,a 
 	movlw 69 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1412,10 +1412,10 @@ software_tests:
 	movlw 'R' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 105 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1436,10 +1436,10 @@ software_tests:
 	movlw 'W' 
 	movwf SENSOR4,a 
 	movlw 123 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 33 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010010B 
 	cpfseq PSTR1CON,a 
@@ -1460,10 +1460,10 @@ software_tests:
 	movlw 'R' 
 	movwf SENSOR4,a 
 	movlw 93 
-	cpfseq CPPR1L,a 
+	cpfseq CCPR1L,a 
 	ClRF test_0 
 	movlw 123 
-	cpfseq CPPR2L,a 
+	cpfseq CCPR2L,a 
 	ClRF test_0 
 	movlw 00010100B 
 	cpfseq PSTR1CON,a 
