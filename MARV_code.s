@@ -204,6 +204,43 @@ ADC_AN3 	equ 0b00001111 ; 0 00011 1 1
 ADC_AN4 	equ 0b00010011 ; 0 00100 1 1
 
 calib_address	equ 100h
+
+; Macros
+	
+SET_SENSORS macro	RC, S0, S1, S2, S3, S4
+ 
+	MOVLW	RC
+	MOVWF	RACE_COLOUR,A
+	MOVLW	S0
+	MOVWF	SENSOR0,A
+	MOVLW	S1
+	MOVWF	SENSOR1,A
+	MOVLW	S2
+	MOVWF	SENSOR2,A
+	MOVLW	S3
+	MOVWF	SENSOR3,A
+	MOVLW	S4
+	MOVWF	SENSOR4,A
+	
+	endm
+	
+CHECK_LLI_OUTPUTS macro	CCPR1, CCPR2, PSTR1, PSTR2, TEST_CHECK
+	
+	SETF	TEST_CHECK,A
+	MOVLW	CCPR1
+	CPFSEQ	CCPR1L,A
+	CLRF	TEST_CHECK,A
+	MOVLW	CCPR2
+	CPFSEQ	CCPR2L,A
+	CLRF	TEST_CHECK,A
+	MOVLW	PSTR1
+	CPFSEQ	PSTR1CON,A
+	CLRF	TEST_CHECK,A
+	MOVLW	PSTR2
+	CPFSEQ	PSTR2CON,A
+	CLRF	TEST_CHECK,A
+	
+	endm
 	
 ;
 ; -------------	
@@ -374,10 +411,10 @@ STATE_MACHINE_SETUP:
     
     ; State activation bits
     ;BSF calibrate
-    BSF follow_line
+    ;BSF follow_line
     
 	; tests
-     ;BSF code_tests
+     BSF code_tests
      ;BSF hardware_tests
     
     ; Subroutine activation bits
@@ -1099,14 +1136,11 @@ software_tests:
     BTFSS   code_tests
     GOTO    STATE3
     
-    TODO_code_tests: ; to-do todo to do
-	nop
-;   state 2 code
-    ; to be added later
-;    BRA	    $-2
+	tests:
+	
     
 TRANSITION2:
-    BCF	    code_tests
+    BSF	    code_tests
     
     		
 STATE3:
