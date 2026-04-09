@@ -122,9 +122,9 @@ extra		equ 0x19
 	; RGB control stuff
 	race_error_colour_magic	    EQU	0X3E
 	; RGB pins
-	#define red_pin     PORTA,4
-	#define green_pin   PORTA,6
-	#define blue_pin    PORTA,7
+	#define red_pin     PORTA,4,a
+	#define green_pin   PORTA,6,a
+	#define blue_pin    PORTA,7,a
 	; colour indicator offsets in code
 	DISPLAYED_COLOUR	equ 0x3F
 	    no_indicator	    EQU 0
@@ -452,20 +452,20 @@ init:
     
 	;Setup for touch pad
 	;CTMU modules
-	CLRF    CTMUCONH
+	CLRF    CTMUCONH,b
 	movlw   0b00000010
-	movwf   CTMUICON
+	movwf   CTMUICON,b
 	movlw   0b10010000 
-	movwf   CTMUCONL
+	movwf   CTMUCONL,b
 	movlw   0b10001000
-	movwf   CTMUCONH
+	movwf   CTMUCONH,b
 
 	;Timer4 init for touch pad
 
 	movlw   0b00000000
-	movwf   T4CON
+	movwf   T4CON,b
 	movlw   125
-	movwf   PR4
+	movwf   PR4,b
     
     ;</editor-fold>
     
@@ -960,15 +960,15 @@ STATE_MACHINE_START:
 	CAP_TOUCH:
 
 	    movlw   20
-	    movwf   OpenSW	;unpressed switch value
+	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
-	    movwf   Trip	;difference between pressed and unpressed switch
+	    movwf   Trip,b	;difference between pressed and unpressed switch
 	    movlw   1
-	    movwf   Hyst	;amount to change from pressed to unpressed
+	    movwf   Hyst,b	;amount to change from pressed to unpressed
 	CHECK_TOUCH:
-	    MOVF    Trip,W
-	    SUBWF   OpenSW,0
-	    MOVWF   DIFF	;DIFF is OpenSW - Trip. This is the base comparison
+	    MOVF    Trip,W,b
+	    SUBWF   OpenSW,w,b
+	    MOVWF   DIFF,b	;DIFF is OpenSW - Trip. This is the base comparison
 
 	    ;Discharge touch pad
 	    BSF	    CTMUEN
@@ -987,65 +987,65 @@ STATE_MACHINE_START:
 	    BSF	    GO
 	    BTFSC	    GO
 	    BRA	    $-2
-	    MOVF	    ADRESH,W
-	    MOVWF	    Vread
+	    MOVF	    ADRESH,W,a
+	    MOVWF	    Vread,b
 
 	    ;test if Vread = 0
 	    MOVLW   0
-	    CPFSEQ  Vread
+	    CPFSEQ  Vread,b
 	    GOTO    CHK_P_OR_UP
-	    BSF	PORTA,7
+	    BSF	PORTA,7,a
 	    GOTO    CHECK_TOUCH
 
 	;Check if pressed or unpressed
 	CHK_P_OR_UP:
 	    ;Check for pressed
-	    MOVF    DIFF,W
-	    CPFSLT  Vread  
+	    MOVF    DIFF,W,b
+	    CPFSLT  Vread  ,b
 	    GOTO    PAD_PRESS
 	    ;Check for unpressed
-	    MOVF    Hyst,W
-	    ADDWF   DIFF
-	    MOVF    DIFF,W
-	    CPFSGT  Vread
+	    MOVF    Hyst,W,b
+	    ADDWF   DIFF,b
+	    MOVF    DIFF,W,b
+	    CPFSGT  Vread,b
 	    GOTO    PAD_UNPRESS
 	    GOTO    CAP_TOUCH	;Loop touch start sequence until pad is pressed
 
 	PAD_PRESS:
-	    BCF	    PORTA,7
-	    BSF	    PORTA,4
+	    BCF	    PORTA,7,a
+	    BSF	    PORTA,4,a
 	    GOTO	    TOUCH_TRANSITION
 	PAD_UNPRESS:
-	    BCF	    PORTA,4
-	    BSF	    PORTA,7
+	    BCF	    PORTA,4,a
+	    BSF	    PORTA,7,a
 	    GOTO	    CHECK_TOUCH
 	TOUCH_TRANSITION:
 	    ; BCF	    touch_start
-	    BCF	    PORTA,4
-	    BCF	    PORTA,7
+	    BCF	    PORTA,4,a
+	    BCF	    PORTA,7,a
 	    GOTO	    TRANSITION1
 	CAP_DELAY: 
 	    MOVLB	    0xF
-	    CLRF	    TMR4
+	    CLRF	    TMR4,b
 	    BSF	    TMR4ON
 	    MOVLB	    0x0
 	WAIT1:
-	    BTFSS	    touch_flag,0
+	    BTFSS	    touch_flag,0,b
 	    BRA	    WAIT1
-	    BCF	    touch_flag,0
+	    BCF	    touch_flag,0,b
 	    BCF	    TMR4ON
 
 	    RETURN
 	TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
 	;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
-	    BSF	    touch_flag,0
+	    BSF	    touch_flag,0,b
 
 	    BCF	    TMR4IF
 
 	    RETFIE
     TRANSITION1:
-	BCF	    touch_start,a
-	BSF	    follow_line,a
+	BCF	    touch_start
+	BSF	    follow_line
     
 ;</editor-fold>
     
@@ -1434,7 +1434,7 @@ STATE_MACHINE_START:
 	    RETURN
 	    BRA	    BRAKES
     
-TRANSITION1:
+TRANSITION2:
     ;return
     BSF	    follow_line  ;LOOP OVER LLI
 
@@ -1468,7 +1468,7 @@ test_hardware:
 ;   state 2 code
     ; to be added later
     
-TRANSITION3:
+TRANSITION4:
     BCF	    hardware_tests
     
 ;</editor-fold>
