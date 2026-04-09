@@ -191,7 +191,7 @@ s4_value        equ   4
 DUTY_25     equ 31
 DUTY_50     equ 62
 DUTY_75     equ 93
-DUTY_100    equ 125
+DUTY_100    equ 124
 DUTY_STOP   equ 0
 		
      
