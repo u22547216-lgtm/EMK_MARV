@@ -22,11 +22,14 @@
 ;   external interrupts:
 ;	Pins:	RB0,1
 ;	Enabled interrupts: RB1
-;	Button press to wait for: RB2
-;   Register dump:
-;	Port C
-;   Colour display:
-;	Port D
+;	Button press to wait for: RB0
+;   PWM:
+;	Pins:	RD1 so far
+;	Timers: TMR2 so far
+;   Register dump:	{N/A}
+;	Port C		{N/A}
+;   Colour display:	{N/A}
+;	Port D		{N/A}
 ;SENSOR STORAGES TO BE USED IN LLI
 ;
 ;	SENSOR0        EQU 0x55
@@ -44,12 +47,15 @@
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
 				  ; There is a how-to tutorial on the configuration bits
     CONFIG WDTEN = OFF      ; Turn off the watchdog timer
+    CONFIG  CCP2MX = PORTC1
     
     CONFIG  MCLRE = EXTMCLR
     CONFIG  LVP	= ON
     
     CONFIG  BOREN = SBORDIS
     CONFIG  BORV = 190 
+    
+    CONFIG  P2BMX = 1
   
     
     #include    <xc.inc>
@@ -74,42 +80,42 @@
 
 	; state machine bits
 	state_0		equ 0x06
-	#define calibrate	state_0,0
-	#define follow_line	state_0,1
-	#define code_tests	state_0,2
-	#define hardware_tests	state_0,3
-	#define	touch_start	state_0,4
+	#define calibrate	state_0,0,a
+	#define follow_line	state_0,1,a
+	#define code_tests	state_0,2,a
+	#define hardware_tests	state_0,3,a
+	#define	touch_start	state_0,4,a
 
 	; sub-routine bits
 	subroutine_0	equ 0x07
-	#define delay_333_call	    subroutine_0,0  ;166ms
-	#define RGB_delay_call	    subroutine_0,1  ;1.2ms
+	#define delay_333_call	    subroutine_0,0,a  ;166ms
+	#define RGB_delay_call	    subroutine_0,1,a  ;1.2ms
 
-	#define read_sensors_call   subroutine_0,2
-	#define check_colour	    subroutine_0,3
+	#define read_sensors_call   subroutine_0,2,a
+	#define check_colour	    subroutine_0,3,a
 
-	#define show_the_colours    subroutine_0,4
-	#define	flash_colour_display	    subroutine_0,5
-	#define button_press_check  subroutine_0,6
-	#define colour_display	    subroutine_0,7
+	#define show_the_colours    subroutine_0,4,a
+	#define	flash_colour_display	    subroutine_0,5,a
+	#define button_press_check  subroutine_0,6,a
+	#define colour_display	    subroutine_0,7,a
 
-	; delay skip bits
-	DELAY_SKIP		equ	0x08
-	#define skip_delay_333		DELAY_SKIP,0
-	#define skip_delay_RGB		DELAY_SKIP,1
+; delay skip bits
+DELAY_SKIP		equ	0x08
+#define skip_delay_333		DELAY_SKIP,0,a
+#define skip_delay_RGB		DELAY_SKIP,1,a
 
     ;</editor-fold>
 
-    timer_waits		equ	0x09
-    #define	wait_for_timer333   timer_waits,0
-    #define	wait_for_timerRBG   timer_waits,1
-
-    calibrated_color    equ 0x0E	
-    offset_stuff	equ 0x0F
-    reading_count	equ 0x10
-    count		equ 0x11
-    ;   dont use address 0x13, strange things afoot
-    extra		equ 0x19
+timer_waits		equ	0x09
+#define	wait_for_timer333   timer_waits,0,a
+#define	wait_for_timerRBG   timer_waits,1,a
+	    
+calibrated_color    equ 0x0E	
+offset_stuff	equ 0x0F
+reading_count	equ 0x10
+count		equ 0x11
+;   dont use address 0x13, strange things afoot
+extra		equ 0x19
 
     ;<editor-fold defaultstate="collapsed" desc="Colour Related Variables">
 
@@ -147,6 +153,7 @@
 	red_check_bits	    equ	0x49
 	green_check_bits    equ	0x4A
 	blue_check_bits	    equ	0x4B
+	
 	check		    equ 0x4C
 
 	; colour detection tolerances
@@ -204,6 +211,54 @@
 	; blue_3		equ 0x0E
 	; blue_4		equ 0x0F
 
+
+; MOTOR DEFINTIONS
+; PID variables
+line_seen	    equ 0x72
+default_duty_cycle  equ	0x73
+
+PD_OUTPUT       EQU   0x79
+
+prop_error      equ   0x7C
+
+deriv_error     equ   0x7D
+prev_error	equ   0x7E
+
+acc_error       equ   0x7F
+
+error0          equ   0x80
+error1          equ   0x81
+error2          equ   0x82
+error3          equ   0x83
+error4          equ   0x84
+
+PD_SIGN         EQU   0x85
+	 
+	 
+; PD constants
+Kd  equ 15
+Kp  equ 6
+ 
+
+; sensor value mapping
+s0_value        equ   -4
+s1_value        equ   -2
+s1_value_e	equ	-1
+s2_value        equ   0
+s3_value_e	equ	1
+s3_value        equ   2
+s4_value        equ   4
+
+
+;DUTY CYCLE DEFINITIONS
+DUTY_25     equ 31
+DUTY_50     equ 62
+DUTY_75     equ 93
+DUTY_100    equ 123
+DUTY_STOP   equ 0
+		
+     
+
 	; variables to reduce magic numbers
 	ADC_AN0		equ 0b00000011 ; 0 00000 1 1
 	ADC_AN1 	equ 0b00000111 ; 0 00001 1 1
@@ -213,12 +268,12 @@
 
 	ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
-	calib_address	equ 100h
-
+calib_address	equ 100h
+	
     ;</editor-fold>
 	
 ;</editor-fold>
-	
+
 ;
 ; -------------	
 ; PROGRAM START	
@@ -293,11 +348,17 @@ init:
     
     ;<editor-fold defaultstate="collapsed" desc="Port D Setup">
     
-	; colour show port
-	clrf    PORTD, a
-	clrf    LATD, a
-	clrf    ANSELD, b
-	clrf    TRISD, a
+    ; Port D
+    clrf    PORTD, a
+    clrf    LATD, a
+    clrf    ANSELD, b
+    ; clrf    TRISD, a
+    
+    ; RD2 = CCP2 PWM output P2B, RD3 = CCP2 PWM output P2C, RD5 = CCP1 PWM OUTPUT P1B, RD6 = CCP1 OUTPUT P1C
+    bcf     TRISD,2,a
+    bcf     TRISD,3,a
+    bcf     TRISD,5,a
+    bcf     TRISD,6,a
     
     ;</editor-fold>
     
@@ -311,6 +372,41 @@ init:
 	bsf	    TRISB,1,a	; RB1 is input(INT1I)
 	bsf	    TRISB,6,a	; just in case programmer for debugging is complaining
 	; clrf    WPUB,a      ; no more weak pull up for PORTB
+    
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="PWM Init">
+
+    ; Use Timer2 for CCP1 and CCP2 PWM
+    clrf    CCPTMRS0,1
+    clrf    CCPTMRS1,1
+
+    ; PWM period:
+    ; Fpwm = Fosc / (4 * (PR2 + 1) * prescale)
+    ; 4MHz / (4 * 125 * 16) = 0.5kHz
+    movlw   124
+    movwf   PR2,1
+
+    ; Clear CCP registers
+    clrf    CCPR1L,1
+    clrf    CCPR2L,1
+
+    ; PWM mode on CCP1 and CCP2
+    movlw   00001100B
+    movwf   CCP1CON,1
+    movwf   CCP2CON,1
+    
+    ;ALLOWS POLARITY SWITCHING
+	; use PxB as forward and PxC as reverse for now
+	; only keep one port for each PWM active at a time. 
+	; might break the H-Bridge if you try to output from the reverse pin and the forward pin at the same time.
+    MOVLW   00010010B
+    MOVWF   PSTR1CON,a
+    MOVWF   PSTR2CON,a
+    
+    ; Timer2 prescaler = 1:16, postscaler = 1:1, Timer2 ON
+    movlw   00000111B
+    movwf   T2CON,1
     
     ;</editor-fold>
     
@@ -407,6 +503,9 @@ init:
 	clrf    SENSOR3,a
 	clrf    SENSOR4,a
 	clrf    RACE_COLOUR,a
+    
+    movlw   DUTY_100
+    movwf   default_duty_cycle,b
 	;initializing touch pad variables
 	clrf    touch_flag,a	
 	clrf    Vread,a		
@@ -458,51 +557,51 @@ init:
     
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
-	BSF calibrate,a
-	;BSF	touch_start,a
-	;BSF follow_line,a
+	BSF calibrate
+	;BSF	touch_start
+	;BSF follow_line
     
     ;</editor-fold>
     
     ;<editor-fold defaultstate="collapsed" desc="Test States">
     
 	; tests
-	; BSF code_tests,a
-	; BSF hardware_tests,a
+	 ;BSF code_tests
+	;  ;BSF hardware_tests
     
     ;</editor-fold>
     
     ;<editor-fold defaultstate="collapsed" desc="Subroutine Control Bits">
     
 	; Subroutine activation bits
-	;BSF delay_333_call,a
-	;BSF RGB_delay_call,a
-	;BSF read_sensors_call,a
-	;BSF check_colour,a
-	;BSF show_the_colours,a
-	;BSF flash_colour_display,a
-	;BSF button_press_check,a
-	;BSF colour_display,a
+	;BSF delay_333_call
+	;BSF RGB_delay_call
+	;BSF read_sensors_call
+	;BSF check_colour
+	;BSF show_the_colours
+	;BSF flash_colour_display
+	;BSF button_press_check
+	;BSF colour_display
     
     ;</editor-fold>
     
     ;<editor-fold defaultstate="collapsed" desc="Delay Skip Bits">
 
 	; Delay skips
-	;BSF skip_delay_333,a
-	;BSF skip_delay_RGB,a
+	;BSF skip_delay_333
+	;BSF skip_delay_RGB
 	
     ;</editor-fold>
     
 ;</editor-fold>
     
 STATE_MACHINE_START:
-   
-	
+
+
 ;<editor-fold defaultstate="collapsed" desc="Calibration">
     STATE0:
     calibration:
-	BTFSS   calibrate,a
+	BTFSS   calibrate
 	GOTO    STATE1
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Red">
@@ -513,12 +612,12 @@ STATE_MACHINE_START:
 	    MOVLW	red_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    BSF read_sensors_call,a
+	    bcf		button_press_check
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 
 
 	    lfsr    0, 100h
@@ -550,12 +649,12 @@ STATE_MACHINE_START:
 	    MOVLW	green_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    BSF read_sensors_call,a
+	    bcf		button_press_check
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 
 
 	    lfsr    0, 105h
@@ -588,12 +687,12 @@ STATE_MACHINE_START:
 	    MOVLW	blue_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    BSF read_sensors_call,a
+	    bcf		button_press_check
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 
 
 	    lfsr    0, 10Ah
@@ -626,12 +725,12 @@ STATE_MACHINE_START:
 	    MOVLW	black_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    BSF read_sensors_call,a
+	    bcf		button_press_check
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 
 
 	    lfsr    0, 100h
@@ -707,12 +806,12 @@ STATE_MACHINE_START:
 	    MOVLW	white_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    BSF read_sensors_call,a
+	    bcf		button_press_check
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 
 
 	    lfsr    0, 100h
@@ -785,13 +884,13 @@ STATE_MACHINE_START:
 	    MOVLW	no_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
-	    bsf		button_press_check,a
+	    bsf		button_press_check
 	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
+	    bcf		button_press_check
 
-	    BSF	check_colour,a
+	    BSF	check_colour
 	    call    detect_colour
-	    BCF	check_colour,a
+	    BCF	check_colour
 
 	    ; Race colour
 	    movff   SENSOR2,RACE_COLOUR
@@ -832,22 +931,22 @@ STATE_MACHINE_START:
 
 	    display_race_colour:
 
-	    bsf		flash_colour_display,a
+	    bsf		flash_colour_display
 	    call 	flash
-	    bcf		flash_colour_display,a
+	    bcf		flash_colour_display
 
 	;</editor-fold>
 
     TRANSITION0:
-	BCF	    calibrate,a
-	BSF	    touch_start,a
+	BCF	    calibrate
+	BSF	    touch_start
 ;</editor-fold>
     
 ;<editor-fold defaultstate="collapsed" desc="Touch start">
     
     STATE1:
     touch_to_start:
-	BTFSS   touch_start,a
+	BTFSS   touch_start
 	GOTO    STATE2
 	;Load threshold values. Change according to the touch pad used
 
@@ -954,7 +1053,7 @@ STATE_MACHINE_START:
     	
     STATE2:
     LLI:	
-	BTFSS   follow_line,a
+	BTFSS   follow_line
 	GOTO    STATE3
 
 
@@ -969,101 +1068,375 @@ STATE_MACHINE_START:
 					;One of these two actions should detect the intended line and thus follow the original line-intepreter algorithm
 	; if all sensor detect black, STOP (End of maze)
 
-	    STRAIGHT:
-	    BSF	check_colour,a
-	    call    detect_colour
-	    BCF	check_colour,a
-	    GOTO	TRANSITION2
+	;STRAIGHT:
+	    ; setup
+	    CLRF error0,b
+	    CLRF error1,b
+	    CLRF error2,b
+	    CLRF error3,b
+	    CLRF error4,b
+	    clrf    line_seen,b
+	    
+	    
+	    BSF	    check_colour
+	    call detect_colour
+	    BCF	    check_colour
+	    
+	    
+	    ;SENSOR0 check
+	    movlw   'e'
+	    CPFSEQ  SENSOR0,a
+	    bra	    $+8
+	    movlw   s1_value
+	    MOVWF   error0,b
+	    setf    line_seen,b
+	    
+	    MOVF    RACE_COLOUR,w,a
+	    CPFSEQ  SENSOR0,a
+	    bra	    $+8
+	    movlw   s0_value
+	    MOVWF   error0,b
+	    setf    line_seen,b
+	    
+	    
+	    ;SENSOR1 check
+	    movlw   'e'
+	    ;MOVF    SENSOR1,W,a
+	    CPFSEQ  SENSOR1,a
+	    bra	    $+8
+	    movlw   s1_value_e
+	    MOVWF   error1,b
+	    setf    line_seen,b
+	    
+	    MOVF    RACE_COLOUR,w,a
+	    CPFSEQ  SENSOR1,a
+	    bra	    $+8
+	    movlw   s1_value
+	    MOVWF   error1,b
+	    setf    line_seen,b
+	    
+	    
+	    ;SENSOR2 check
+	    movlw   'e'
+	    ;MOVF    SENSOR2,W,a
+	    CPFSEQ  SENSOR2,a
+	    bra	    $+8
+	    movlw   s2_value
+	    MOVWF   error2,b
+	    setf    line_seen,b
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    cpfseq  SENSOR2,a
+	    bra	    $+8
+	    movlw   s2_value
+	    MOVWF   error2,b
+	    setf    line_seen,b
+	    
+	    
+	    ;SENSOR3 check
+	    movlw   'e'
+	    ;MOVF    SENSOR3,W,a
+	    CPFSEQ  SENSOR3,a
+	    bra	    $+8
+	    movlw   s3_value_e
+	    MOVWF   error3,b
+	    setf    line_seen,b
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    CPFSEQ  SENSOR3,a
+	    bra	    $+8
+	    movlw   s3_value
+	    MOVWF   error3,b
+	    setf    line_seen,b
+	    
+	    ;SENSOR4 check
+	    movlw   'e'
+	    ;MOVF    SENSOR4,W,a
+	    CPFSEQ  SENSOR4,a
+	    bra	    $+8
+	    movlw   s3_value
+	    MOVWF   error4,b
+	    setf    line_seen,b
+	    
+	    MOVF    RACE_COLOUR,W,a
+	    CPFSEQ  SENSOR4,a
+	    bra	    $+8
+	    movlw   s4_value
+	    MOVWF   error4,b
+	    setf    line_seen,b
+	    
+	    
+	    ; check if the line was seen
+	    tstfsz  line_seen,b
+	    bra	    $+10
+	    CALL    CHECK_BLACK
+	    GOTO    TRANSITION1
+	    
+	    
+	ERROR_CALC:
+	    ; small bit of setup for this
+            CLRF    acc_error, b
+	    
+	    ; SENSOR 0
+	    movf    error0,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 1
+	    movf    error1,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 2
+	    movf    error2,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 3
+	    movf    error3,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; SENSOR 4
+	    movf    error4,w,b
+	    ADDWF   acc_error,b
+	    
+	    ; All this adding together of 5 registers might confuse the status register
+	    ; so we add in our own check for negativety
+		; basically just checking if acc_error is greater than 128
+		; this helps determine which way to turn
+	    CLRF    PD_SIGN,b
+	    movlw   128
+	    CPFSGT  acc_error,b
+	    BRA	    $+4
+	    SETF    PD_SIGN,b
+	    
+	    
+	    PID1:   
 
-		MOVF    RACE_COLOUR,W,a
-		SUBWF   SENSOR0,W,a
-		BZ	    TURN_LEFT_ALOT
+	    Proportional:
+	    MOVLW    Kp		; loading Kp into W
+	    
+	    ; checing negativity
+	    tstfsz  PD_SIGN,b
+	    negf    acc_error,b	    ; make this positive because of MULWF
+	    
+	    MULWF   acc_error,b
+	    MOVF    PRODL, W, a
+	    
+	    ; preserving negativity after multiplication
+	    tstfsz  PD_SIGN,b
+	    negf    WREG,a
+	    
+	    MOVWF   prop_error,b
+	    
+	    tstfsz  PD_SIGN,b
+	    negf    acc_error,b	    ; restore sign
+	    
+	    Derivative:
+	    ; using this for storing the negativity of this part
+	    CLRF    extra,a
+	    
+            MOVF    prev_error,w,b
+	    SUBWF   acc_error,w,b  ; change = error - prev_error
+	    BNN	    $+6
+	    setf    extra,a	    ; save negativity
+	    negf    WREG,a	    ; make positive for multiplication
+	    
+	    ; multiplication prep
+	    MOVWF   deriv_error, b
+	    movlw   Kd
+	    
+	    MULWF   deriv_error, b
+	    movf    PRODL,w,a
+	    ; preserving negativity again
+	    tstfsz  extra,a
+	    negf    WREG,a
+	    
+	    MOVWF   deriv_error,b
+	    ; saving the error for the next run of the PD
+	    MOVFF   acc_error, prev_error
+	    
+	    Output:
+	    ; the basic math
+            MOVF    prop_error,w,b
+	    ADDWF   deriv_error,w,b
+	    MOVWF   PD_OUTPUT,b
+	    
+	    ; checks to determine if the output is positive or negative
 
-		MOVF    RACE_COLOUR,W,a
-		SUBWF   SENSOR1,W,a
-		BZ	    TURN_LEFT_ALITTLE
-
-		MOVF    RACE_COLOUR,W,a
-		SUBWF   SENSOR3,W,a
-		BZ	    TURN_RIGHT_ALITTLE
-
-		MOVF    RACE_COLOUR,W,a
-		SUBWF   SENSOR4,W,a
-		BZ	    TURN_RIGHT_ALOT
-
-		MOVF    RACE_COLOUR,W,a
-		SUBWF   SENSOR2,W,a
-		BNZ	    CHECK_BLACK
-
-		MOVLW   0b00100000
-		MOVWF   line_reg,a
-		GOTO    TRANSITION2
-	    TURN_LEFT_ALOT:
-		MOVLW 0b10000000
-		MOVWF line_reg,a
-		GOTO    TRANSITION2
-	    TURN_LEFT_ALITTLE:
-		MOVLW 0b01000000
-		MOVWF line_reg,a
-		GOTO    TRANSITION2
-	    TURN_RIGHT_ALOT:
-		MOVLW 0b00001000
-		MOVWF line_reg,a
-		GOTO    TRANSITION2
-	    TURN_RIGHT_ALITTLE:
-		MOVLW 0b00010000
-		MOVWF line_reg,a
-		GOTO    TRANSITION2
-	    LOST:
-		CALL LOST_STOP
-		CALL TURN_LEFT_ALOT
-		    ;call    wait_for_button_press	; this is here for the purposes of the demo
-		BRA STRAIGHT
-		GOTO    TRANSITION2
-
-		LOST_STOP:
-		    CALL BRAKES
-		    bsf	wait_for_timer333,a
-		    bsf	delay_333_call,a
-		    CALL delay_333
-		    bcf	delay_333_call,a
-			;call    wait_for_button_press	; this is here for the purposes of the demo
-		    CLRF line_reg,a
-		GOTO    TRANSITION2
-
-	    BRAKES:
-		MOVLW 0b11111000
-		MOVWF line_reg,a
-		GOTO    TRANSITION2
-
-	    CHECK_BLACK:
-		MOVLW   'K'
-		CPFSEQ   SENSOR0,a
-		BRA	    LOST
-		BSF	    BLACK_FLAG,0,a
-		MOVlW   'K'
-		CPFSEQ   SENSOR1,a
-		BRA	    LOST
-		BSF	    BLACK_FLAG,1,a
-		MOVLW   'K'
-		CPFSEQ   SENSOR3,a
-		BRA	    LOST
-		BSF	    BLACK_FLAG,2,a
-		MOVLW   'K'
-		CPFSEQ   SENSOR4,a
-		BRA	    LOST
-		BSF	    BLACK_FLAG,3,a
-		MOVLW   'K'
-		CPFSEQ   SENSOR2,a
-		BRA	    LOST
-		BSF	    BLACK_FLAG,4,a
-		MOVLW   0b00011111
-		CPFSEQ  BLACK_FLAG,a
-		GOTO    TRANSITION2
-		BRA	    BRAKES
-
-    TRANSITION2:
-	BSF	    follow_line,a   ;LOOP OVER LLI
+	    clrf    WREG,a
+	    tstfsz  extra,a
+	    movlw   2
+	    tstfsz  PD_SIGN,b
+	    incf    WREG,a
+	    
+	    ; are both positive?
+	    tstfsz  WREG,a
+	    bra	    $+4
+	    bra	    CCHANGE_OF_OUTPUTS
+	    
+	    ; are both negative?
+	    ADDLW   -3
+	    BNZ	    $+6
+	    negf    PD_OUTPUT,b
+	    bra	    CCHANGE_OF_OUTPUTS
+	    
+	    ; make both positive
+	    tstfsz  extra,a
+	    negf    deriv_error,b
+	    tstfsz  PD_SIGN,b
+	    negf    prop_error,b
+	    
+	    ; find difference
+	    movf    deriv_error,w,b
+	    subwf   prop_error,w,b
+	    
+			    
+	    ; is proportional bigger?
+	    BN	    $+8
+	    tstfsz  PD_SIGN,b ; check if prop is negative
+	    negf    PD_OUTPUT,b
+	    bra	    CCHANGE_OF_OUTPUTS
+	    
+	    
+	    ; derivative is bigger
+	    tstfsz  extra,a ; check if deriv is negative
+	    bra	    $+4
+	    bra	    $+8
+	    negf    PD_OUTPUT,b
+	    setf    PD_SIGN,b
+	    bra	    CCHANGE_OF_OUTPUTS
+	    
+	    clrf    PD_SIGN,b
+	    
+	    
+	    CCHANGE_OF_OUTPUTS:
+    
+	    ; check if a wheel needs to reverse
+	    movf    PD_OUTPUT,w,b
+	    subwf   default_duty_cycle,w,b
+	    bnn	    $+10
+	    
+	    ; a wheel needs to reverse
+	    negf    WREG,a		; we dont put negative values into the PWM registers
+	    ; which wheel needs to reverse
+	    tstfsz  PD_SIGN,b
+	    bra	    left_reverse
+	    bra	    right_reverse
+	    ; both wheels forward
+		; which weel needs to slow down
+	    tstfsz  PD_SIGN,b
+	    bra	    slow_left
+	    bra	    slow_right
+	    
+	   
+	    right_reverse:
+		; never set one of these first, extra safety for the H-Bridge
+		BCF	    STR1C
+		BSF	    STR1B
+		
+		BCF	    STR2B
+		BSF	    STR2C
+		
+		movwf   CCPR2L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR1L,a
+		
+		bra	CHANGE_OUTPUTS_END	
+	
+	    left_reverse:
+		BCF	    STR2C
+		BSF	    STR2B
+		
+		BCF	    STR1B
+		BSF	    STR1C
+		
+		movwf   CCPR1L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR2L,a
+		
+		bra	CHANGE_OUTPUTS_END
+		
+	    slow_right:
+		BCF	    STR1C
+		BCF	    STR2C
+		BSF	    STR1B
+		BSF	    STR2B
+		
+		movwf   CCPR2L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR1L,a
+		
+		bra	CHANGE_OUTPUTS_END
+		
+	    slow_left:
+		BCF	    STR1C
+		BCF	    STR2C
+		BSF	    STR1B
+		BSF	    STR2B
+		
+		movwf   CCPR1L,a
+		movf    default_duty_cycle,w,b
+		movwf   CCPR2L,a
+		
+		CHANGE_OUTPUTS_END: 
+		
+	    
+	    ; again looping over itself, needs to be changed before it is in the actual code
+	    GOTO    TRANSITION1
+	    
+	    
+	  
+	  LOST:
+	    LOST_STOP:
+		CALL BRAKES
+          ;REVERSE UNTIL WE SEE LINE
+		REVERSE:
+		    ; change from the forward pins to the reverse pins
+		    BCF	    STR1B
+		    BCF	    STR2B
+		    
+		    BSF	    STR1C
+		    BSF	    STR2C
+    
+		    movf    default_duty_cycle,w,b
+		    movwf   CCPR1L,a
+		    movwf   CCPR2L,a
+		    
+		  return
+         
+	BRAKES:
+	    clrf    CCPR1L,a
+	    clrf    CCPR2L,a
+	    
+	    RETURN   
+	    
+	CHECK_BLACK:
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR0,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,0,a
+	    MOVlW   'K'
+	    CPFSEQ   SENSOR1,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,1,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR3,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,2,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR4,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,3,a
+	    MOVLW   'K'
+	    CPFSEQ   SENSOR2,a
+	    BRA	    LOST
+	    BSF	    BLACK_FLAG,4,a
+	    MOVLW   0b00011111
+	    CPFSEQ  BLACK_FLAG,a
+	    RETURN
+	    BRA	    BRAKES
+    
+TRANSITION1:
+    ;return
+    BSF	    follow_line  ;LOOP OVER LLI
 
 ;</editor-fold>
     
@@ -1071,7 +1444,7 @@ STATE_MACHINE_START:
 		
     STATE3:
     software_tests:
-	BTFSS   code_tests,a
+	BTFSS   code_tests
 	GOTO    STATE4
 
 	TODO_code_tests: ; to-do todo to do
@@ -1080,122 +1453,23 @@ STATE_MACHINE_START:
 	; to be added later
 
     TRANSITION3:
-	BCF	    code_tests,a
+	BCF	    code_tests
     
-;</editor-fold>
-    
-;<editor-fold defaultstate="collapsed" desc="Hardware tests">
     		
-    STATE4:
-    test_hardware:
-	BTFSS   hardware_tests,a
-	GOTO    SUBROUTINE0
-
-	movlb   0x1
-	TODO_hardware_tests: ; to-do todo to do
-
-
-
-
-	    MOVLW	black_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-
-
-	    MOVLW	error_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-
-
-	    MOVLW	red_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-
-
-	    bsf	race_error_colour_magic,4,a
-	    MOVLW	race_error_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    clrf	race_error_colour_magic,a
-
-
-	    MOVLW	green_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-
-
-	    bsf	race_error_colour_magic,6,a
-	    MOVLW	race_error_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    clrf	race_error_colour_magic,a
-
-
-	    MOVLW	blue_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-
-
-	    bsf	race_error_colour_magic,7,a
-	    MOVLW	race_error_indicator    
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check,a
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check,a
-	    clrf	race_error_colour_magic,a
-
-
-	goto    TODO_hardware_tests
-
-
-    SENSOR0_RED	EQU 0X100
-    SENSOR1_RED	EQU 0X101
-    SENSOR2_RED	EQU 0X102
-    SENSOR3_RED	EQU 0X103
-    SENSOR4_RED	EQU 0X104
-    SENSOR0_GREEN	EQU 0X105
-    SENSOR1_GREEN	EQU 0X106
-    SENSOR2_GREEN	EQU 0X107
-    SENSOR3_GREEN	EQU 0X108
-    SENSOR4_GREEN	EQU 0X109
-    SENSOR0_BLUE	EQU 0X10A
-    SENSOR1_BLUE	EQU 0X10B
-    SENSOR2_BLUE	EQU 0X10C
-    SENSOR3_BLUE	EQU 0X10D
-    SENSOR4_BLUE	EQU 0X10E
-
-	lfsr    0,100h
-	bsf	    read_sensors_call,a
-	call read_sensors
-	bcf	    read_sensors_call,a
-	goto TODO_hardware_tests
-    ;   state 2 code
-	; to be added later
-
-    TRANSITION4:
-	BCF	    hardware_tests,a 
+STATE3:
+test_hardware:
+    BTFSS   hardware_tests
+    GOTO    SUBROUTINE0
+    
+    TODO_hardware_tests: ; to-do todo to do
+    movlw   DUTY_50
+    movwf   CCPR1L,a
+    movwf   CCPR2L,a
+;   state 2 code
+    ; to be added later
+    
+TRANSITION3:
+    BCF	    hardware_tests
     
 ;</editor-fold>
     
@@ -1205,86 +1479,86 @@ TRY_ALL_SUBROUTINES:
     
 ;<editor-fold defaultstate="collapsed" desc="333ms Delay">
     
-    SUBROUTINE0:
-    TODO_DELAY_333_REPLACE_WITH_TIMER:
-    delay_333:
-	BTFSS   delay_333_call,a
-	GOTO    SUBROUTINE1
-	BTFSC   skip_delay_333,A
+SUBROUTINE0:
+TODO_DELAY_333_REPLACE_WITH_TIMER:
+delay_333:
+    BTFSS   delay_333_call
+    GOTO    SUBROUTINE1
+    BTFSC   skip_delay_333
+    return
+    
+	; save context
+	movwf    extra,a
+	
+    ; decide timer 0 setup for this specific timer
+	; sets timer 0 to overflow in (2*256+139)*4 = 166656 instruction cycles
+	    ; is about 166656us, half the period of a 3Hz flash
+	; TMR0H = -2
+	movlw	-2
+	movwf	TMR0H,a
+	; TMR0L = -139
+	movlw	-139
+	movwf	TMR0L,a
+	; T0CON = 0b 1 0 0 0 0 111
+	; enable timer
+	; make 16-bit
+	; work on instruction cycle
+	; x
+	; use prescaler
+	; prescaler is set to 1:256
+	movlw	0b10000111
+	movwf	T0CON,a
+	
+	; option to wait for the timer
+	btfsc	wait_for_timer333
+	bra	$-2
+	
+	; restore context
+	movf    extra,w,a
 	return
-
-	    ; save context
-	    movwf    extra,a
-
-	; decide timer 0 setup for this specific timer
-	    ; sets timer 0 to overflow in (2*256+139)*4 = 166656 instruction cycles
-		; is about 166656us, half the period of a 3Hz flash
-	    ; TMR0H = -2
-	    movlw	-2
-	    movwf	TMR0H,a
-	    ; TMR0L = -139
-	    movlw	-139
-	    movwf	TMR0L,a
-	    ; T0CON = 0b 1 0 0 0 0 111
-	    ; enable timer
-	    ; make 16-bit
-	    ; work on instruction cycle
-	    ; x
-	    ; use prescaler
-	    ; prescaler is set to 1:256
-	    movlw	0b10000111
-	    movwf	T0CON,a
-
-	    ; option to wait for the timer
-	    btfsc	wait_for_timer333,a
-	    bra	$-2
-
-	    ; restore context
-	    movf    extra,w,a
-	    return
-
-    SUB_TRANSITIONS0:
-	BCF	    delay_333_call,a
+    
+SUB_TRANSITIONS0:
+    BCF	    delay_333_call
     
 ;</editor-fold>
     
 ;<editor-fold defaultstate="collapsed" desc="Delay for RGBs">
         
-    SUBROUTINE1:
-    delay_RGB:
-	BTFSS   RGB_delay_call,a
-	GOTO    SUBROUTINE2
-	    BTFSC	skip_delay_RGB,A
-	    return
-
-	    ; save context
-	    movwf    extra,a
-
-	    TODO_maybe_give_the_option_to_wait_for_it:
-	    ; set the timer to overflow in 40 instruction cycles
-	    ; about 40 us, which is the settling time 
-		; might change to 20us, because that is the rise time
-		; would have to change the calibration code a bit to account for the 
-		; range of values between 90% and 100% of the steady state
-		    ; this might distort the ADC reading tho, so nah
-	    movlw	-40
-	    movwf	TMR1L,a
-	    setf	TMR1H,a
-	    ; turn the timer on
-	    bsf	TMR1ON
-	    ; wait for the timer
-	    btfss	TMR1IF
-	    bra	$-2
-	    ; turn the timer off
-	    bcf	TMR1ON
-	    bcf	TMR1IF
-
-	    ; restore context
-	    movf    extra,w,a
-	    return
-
-    SUB_TRANSITIONS1:
-	BCF	    RGB_delay_call,a
+SUBROUTINE1:
+delay_RGB:
+    BTFSS   RGB_delay_call
+    GOTO    SUBROUTINE2
+	BTFSC	skip_delay_RGB
+	return
+	
+	; save context
+	movwf    extra,a
+	
+	TODO_maybe_give_the_option_to_wait_for_it:
+	; set the timer to overflow in 40 instruction cycles
+	; about 40 us, which is the settling time 
+	    ; might change to 20us, because that is the rise time
+	    ; would have to change the calibration code a bit to account for the 
+	    ; range of values between 90% and 100% of the steady state
+		; this might distort the ADC reading tho, so nah
+	movlw	-40
+	movwf	TMR1L,a
+	setf	TMR1H,a
+	; turn the timer on
+	bsf	TMR1ON
+	; wait for the timer
+	btfss	TMR1IF
+	bra	$-2
+	; turn the timer off
+	bcf	TMR1ON
+	bcf	TMR1IF
+	
+	; restore context
+	movf    extra,w,a
+	return
+    
+SUB_TRANSITIONS1:
+    BCF	    RGB_delay_call
     
 ;</editor-fold>
     
@@ -1292,7 +1566,7 @@ TRY_ALL_SUBROUTINES:
         
     SUBROUTINE2:
     read_sensors:
-	BTFSS   read_sensors_call,a
+	BTFSS   read_sensors_call
 	GOTO    SUBROUTINE3
 
 	TODO_make_states_with_this: ; to-do todo to do
@@ -1305,10 +1579,10 @@ TRY_ALL_SUBROUTINES:
 	;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
 
 	; shine red
-	    bsf	    red_pin,a
-	    bsf	RGB_delay_call,a
+	    bsf	    red_pin
+	    bsf	RGB_delay_call
 	    call delay_RGB
-	    bcf	RGB_delay_call,a
+	    bcf	RGB_delay_call
 
 		; testing code, should do nothing if test_en = 0
 		    btfss   test_en,a
@@ -1318,13 +1592,13 @@ TRY_ALL_SUBROUTINES:
 		; end of testing code
 
 	    call    read_all_sensors
-	    bcf	    red_pin,a
+	    bcf	    red_pin
 
 	; shine green
-	    bsf	    green_pin,a
-	    bsf	RGB_delay_call,a
+	    bsf	    green_pin
+	    bsf	RGB_delay_call
 	    call delay_RGB
-	    bcf	RGB_delay_call,a
+	    bcf	RGB_delay_call
 
 		; testing code, should do nothing if test_en = 0
 		    btfss   test_en,a
@@ -1334,13 +1608,13 @@ TRY_ALL_SUBROUTINES:
 		; end of testing code
 
 	    call    read_all_sensors
-	    bcf	    green_pin,a
+	    bcf	    green_pin
 
 	; shine blue
-	    bsf	    blue_pin,a
-	    bsf	RGB_delay_call,a
+	    bsf	    blue_pin
+	    bsf	RGB_delay_call
 	    call delay_RGB
-	    bcf	RGB_delay_call,a
+	    bcf	RGB_delay_call
 
 		; testing code, should do nothing if test_en = 0
 		    btfss   test_en,a
@@ -1350,7 +1624,7 @@ TRY_ALL_SUBROUTINES:
 		; end of testing code
 
 	    call    read_all_sensors
-	    bcf	    blue_pin,a
+	    bcf	    blue_pin
 
 	    return
 	    GOTO	SUB_TRANSITIONS2
@@ -1447,7 +1721,7 @@ TRY_ALL_SUBROUTINES:
 		    return
 
     SUB_TRANSITIONS2:
-	BCF	    read_sensors_call,a
+	BCF	    read_sensors_call
     
 ;</editor-fold>
     
@@ -1455,7 +1729,7 @@ TRY_ALL_SUBROUTINES:
         
     SUBROUTINE3:
     detect_colour:
-	BTFSS   check_colour,a
+	BTFSS   check_colour
 	GOTO    SUBROUTINE4
 
 	;TODO_make_this_work_with_states_1:  ; to-do todo to do
@@ -1469,9 +1743,9 @@ TRY_ALL_SUBROUTINES:
 
 	    ; read sensors to bank 2 for now
 	    LFSR    0, 200h	
-	    BSF read_sensors_call,a
+	    BSF read_sensors_call
 	    call    read_sensors
-	    BCF read_sensors_call,a
+	    BCF read_sensors_call
 	    ; back to bank 2
 	    LFSR    0, 200h	
 
@@ -2063,7 +2337,7 @@ TRY_ALL_SUBROUTINES:
 	;</editor-fold>
 
     SUB_TRANSITIONS3:
-	BCF	    check_colour,a
+	BCF	    check_colour
         
 ;</editor-fold>
 
@@ -2074,7 +2348,7 @@ TRY_ALL_SUBROUTINES:
 	nop
 	TODO_this_could_be_done_with_the_RGB_LEDs_if_we_connect_their_grounds_to_the_PIC:
     show_colour:
-	BTFSS   show_the_colours,a
+	BTFSS   show_the_colours
 	GOTO    SUBROUTINE5
 
 	; check solid colour
@@ -2120,7 +2394,7 @@ TRY_ALL_SUBROUTINES:
 
 
     SUB_TRANSITIONS4:
-	BCF	    show_the_colours,a
+	BCF	    show_the_colours
         
 ;</editor-fold>
     
@@ -2128,7 +2402,7 @@ TRY_ALL_SUBROUTINES:
     
     SUBROUTINE5:
      flash:
-	BTFSS   flash_colour_display,a
+	BTFSS   flash_colour_display
 	GOTO    SUBROUTINE6
 
 	    ; number of flashes
@@ -2138,27 +2412,27 @@ TRY_ALL_SUBROUTINES:
 	    BEGIN_FLASH:
 	    ; begin flashing
 		; turn off
-	    bcf	red_pin,a
-	    bcf	green_pin,a
-	    bcf	blue_pin,a
+	    bcf	red_pin
+	    bcf	green_pin
+	    bcf	blue_pin
 		;wait 0.166 seconds
-	    bsf	wait_for_timer333,a
-	    bsf	delay_333_call,a
+	    bsf	wait_for_timer333
+	    bsf	delay_333_call
 	    call    delay_333
-	    bcf	delay_333_call,a
+	    bcf	delay_333_call
 		;start 0.166 second timer
-	    bsf	delay_333_call,a
+	    bsf	delay_333_call
 	    call    delay_333
-	    bcf	delay_333_call,a
+	    bcf	delay_333_call
 	    ; do this because i will do things while waiting for the timer.
-	    bsf	wait_for_timer333,a
+	    bsf	wait_for_timer333
 		; turn on
 	    MOVF	DISPLAYED_COLOUR,w,a
-	    BSF	colour_display,a
+	    BSF	colour_display
 	    call	display_colour
-	    BCF	colour_display,a
+	    BCF	colour_display
 		;wait 0.166 seconds
-	    btfsc	wait_for_timer333,a
+	    btfsc	wait_for_timer333
 	    bra	$-10
 	    ; did we flash enough?
 	    decfsz  count,a
@@ -2167,7 +2441,7 @@ TRY_ALL_SUBROUTINES:
 	    return
 
     SUB_TRANSITIONS5:
-	BCF	    flash_colour_display,a
+	BCF	    flash_colour_display
     
 ;</editor-fold>
         
@@ -2175,28 +2449,28 @@ TRY_ALL_SUBROUTINES:
     
     SUBROUTINE6:
     wait_for_button_press_show_colour:
-	BTFSS   button_press_check,a
+	BTFSS   button_press_check
 	GOTO    display_colour
 
 	    ; show the colour to calibrate
-	    BSF	colour_display,a
+	    BSF	colour_display
 	    call	display_colour
-	    BCF	colour_display,a
+	    BCF	colour_display
 
 	    btfss   INT0IF	    ;wait for button press
 	    bra	    $-10
 	    ; delay so that we dont have to debounce
-	bsf	wait_for_timer333,a
-	    bsf	delay_333_call,a
+	bsf	wait_for_timer333
+	    bsf	delay_333_call
 	    call    delay_333
-	    bcf	delay_333_call,a
+	    bcf	delay_333_call
 	    ; reset button wait
 	    bcf	    INT0IF
 	    ; go back
 	    return
 
     SUB_TRANSITIONS6:
-	BCF	    button_press_check,a
+	BCF	    button_press_check
     
 ;</editor-fold>
     
@@ -2204,7 +2478,7 @@ TRY_ALL_SUBROUTINES:
     
     SUBROUTINE7:
     display_colour:
-	BTFSS   colour_display,a
+	BTFSS   colour_display
 	GOTO    STATE_MACHINE_END
 
 	    MOVF	PCL,w,a
@@ -2253,17 +2527,17 @@ TRY_ALL_SUBROUTINES:
 
 		display_black:
 		; orange = RGB(255,102,0), means 40% duty cycle on green
-		bsf	red_pin,a
-		bsf	green_pin,a
+		bsf	red_pin
+		bsf	green_pin
 		nop
 		nop
 		nop
-		bcf	green_pin,a
+		bcf	green_pin
 		nop
 		nop
 		nop
 		nop
-		bcf	red_pin,a
+		bcf	red_pin
 
 		return
 
@@ -2292,7 +2566,7 @@ TRY_ALL_SUBROUTINES:
 	    ;<editor-fold defaultstate="collapsed" desc="Red">
 
 		display_red:
-		bsf	red_pin,a
+		bsf	red_pin
 		nop
 		nop
 		nop
@@ -2302,7 +2576,7 @@ TRY_ALL_SUBROUTINES:
 		nop
 		nop
 		nop
-		bcf	red_pin,a
+		bcf	red_pin
 
 		return
 
@@ -2311,7 +2585,7 @@ TRY_ALL_SUBROUTINES:
 	    ;<editor-fold defaultstate="collapsed" desc="Green">
 
 		display_green:
-		bsf	green_pin,a
+		bsf	green_pin
 		nop
 		nop
 		nop
@@ -2321,7 +2595,7 @@ TRY_ALL_SUBROUTINES:
 		nop
 		nop
 		nop
-		bcf	green_pin,a
+		bcf	green_pin
 
 		return
 
@@ -2330,7 +2604,7 @@ TRY_ALL_SUBROUTINES:
 	    ;<editor-fold defaultstate="collapsed" desc="Blue">
 
 		display_blue:
-		bsf	blue_pin,a
+		bsf	blue_pin
 		nop
 		nop
 		nop
@@ -2340,7 +2614,7 @@ TRY_ALL_SUBROUTINES:
 		nop
 		nop
 		nop
-		bcf	blue_pin,a
+		bcf	blue_pin
 
 		return
 
@@ -2369,12 +2643,12 @@ TRY_ALL_SUBROUTINES:
 
 		display_error:
 		; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
-		bsf	red_pin,a
-		bsf	green_pin,a
-		bcf	green_pin,a
-		bcf	red_pin,a
-		bsf	blue_pin,a
-		bcf	blue_pin,a
+		bsf	red_pin
+		bsf	green_pin
+		bcf	green_pin
+		bcf	red_pin
+		bsf	blue_pin
+		bcf	blue_pin
 		nop
 		nop
 		nop
@@ -2386,7 +2660,7 @@ TRY_ALL_SUBROUTINES:
 	    ;</editor-fold>
 
     SUB_TRANSITIONS7:
-	BCF	    colour_display,a
+	BCF	    colour_display
     
 ;</editor-fold>
     
@@ -2418,10 +2692,10 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
     timer0_interrupt:
 	; check if the wait bit for timmer333 was set
-	btfsS   wait_for_timer333,a
+	btfsS   wait_for_timer333
 	bra	    $+10
 	; if it was, just clear the wait and return
-	bcf	    wait_for_timer333,a
+	bcf	    wait_for_timer333
 	clrf    T0CON,a
 	bcf	    TMR0IF
 	retfie
