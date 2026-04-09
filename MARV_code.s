@@ -1456,7 +1456,7 @@ TRANSITION1:
 	BCF	    code_tests
     
     		
-STATE3:
+STATE4:
 test_hardware:
     BTFSS   hardware_tests
     GOTO    SUBROUTINE0
@@ -1584,13 +1584,6 @@ SUB_TRANSITIONS1:
 	    call delay_RGB
 	    bcf	RGB_delay_call
 
-		; testing code, should do nothing if test_en = 0
-		    btfss   test_en,a
-		    bra	    $+8
-		    call    dummy_read_all_sensors
-		    bra	    $+6
-		; end of testing code
-
 	    call    read_all_sensors
 	    bcf	    red_pin
 
@@ -1600,13 +1593,6 @@ SUB_TRANSITIONS1:
 	    call delay_RGB
 	    bcf	RGB_delay_call
 
-		; testing code, should do nothing if test_en = 0
-		    btfss   test_en,a
-		    bra	    $+8
-		    call    dummy_read_all_sensors
-		    bra	    $+6
-		; end of testing code
-
 	    call    read_all_sensors
 	    bcf	    green_pin
 
@@ -1615,13 +1601,6 @@ SUB_TRANSITIONS1:
 	    bsf	RGB_delay_call
 	    call delay_RGB
 	    bcf	RGB_delay_call
-
-		; testing code, should do nothing if test_en = 0
-		    btfss   test_en,a
-		    bra	    $+8
-		    call    dummy_read_all_sensors
-		    bra	    $+6
-		; end of testing code
 
 	    call    read_all_sensors
 	    bcf	    blue_pin
@@ -1633,66 +1612,26 @@ SUB_TRANSITIONS1:
 	    ; read from AN0
 		; ADCON0 = x 00000 1 1
 		movlw   ADC_AN0	; select AN0
-
-		    ; testing code, does nothing if test_en = 0
-			btfss   test_en,a
-			bra	    $+8
-			call    dummy_read_sensor
-			bra	    $+6
-		    ; end of testing code
-
 		call    read_sensor
 
 	    ; read from AN1
 		; ADCON0 = x 00001 1 1
 		movlw   ADC_AN1	; select AN1
-
-		    ; testing code, does nothing if test_en = 0
-			btfss   test_en,a
-			bra	    $+8
-			call    dummy_read_sensor
-			bra	    $+6
-		    ; end of testing code
-
 		call    read_sensor
 
 	    ; read from AN2
 		; ADCON0 = x 00010 1 1
 		movlw   ADC_AN2	; select AN2
-
-		    ; testing code, does nothing if test_en = 0
-			btfss   test_en,a
-			bra	    $+8
-			call    dummy_read_sensor
-			bra	    $+6
-		    ; end of testing code
-
 		call    read_sensor
 
 	    ; read from AN3
 		; ADCON0 = x 00011 1 1
 		movlw   ADC_AN3	; select AN3
-
-		    ; testing code, does nothing if test_en = 0
-			btfss   test_en,a
-			bra	    $+8
-			call    dummy_read_sensor
-			bra	    $+6
-		    ; end of testing code
-
 		call    read_sensor
 
 	    ; read from AN4
 		; ADCON0 = x 00100 1 1
 		movlw   ADC_AN4	; select AN4
-
-		    ; testing code, does nothing if test_en = 0
-			btfss   test_en,a
-			bra	    $+8
-			call    dummy_read_sensor
-			bra	    $+6
-		    ; end of testing code
-
 		call    read_sensor
 
 		return
@@ -1704,11 +1643,6 @@ SUB_TRANSITIONS1:
 
 		    btfsc   ADCON0,1,a	; check if ADC is done (0)
 		    bra	    $-2		; no, check again
-										    ; adc delay is over by this point, Tacq starts 8TAD
-			; testing code, should do nothing if test_en = 0
-			    btfsc   test_en,a
-			    movff   test_1, ADRESH
-			; end of testing code
 										    ; 3TAD is done
 		    movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 						; Increment FSR0
@@ -2703,371 +2637,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
 	nop
 	retfie
-    
-;</editor-fold>
-    
-;<editor-fold defaultstate="collapsed" desc="old tests">
-    
-    TODO_move_test_code_into_states:  ; to-do todo to do
-	nop
-
-    living_test:
-    ; for tests that happen on the physical PIC
-	call    dummy_calibration_values
-
-	return
-
-    run_read_sensors:
-	LFSR    0, 100h
-	movlw   0x0F
-	movwf   count,a
-	call read_sensors
-	decfsz  count,a
-	bra	    $-6
-	btfsc   INT0IF
-	bcf	    INT0IF
-	goto    run_read_sensors
-
-
-
-    test:
-    ; this is just a software engineering practice
-    ; basically disecting the code you made, making the input fixed, and seeing if the output is what you expect
-    ; just comment or uncomment what needs to be tested
-
-	call    test_register_dump
-
-	call    test_read_sensors
-
-	call    test_read_all_sensors
-
-	call    test_read_sensor
-
-	goto end_test
-
-
-    test_colour_detection:
-	call    dummy_calibration_values
-	call    dummy_calibration
-	call    fake_read_sensors
-	call    detect_colour
-	return
-
-    dummy_calibration_values:
-	LFSR    1, 300h
-	; red
-	movlw   162
-	movwf   POSTINC1,a
-	movlw   151
-	movwf   POSTINC1,a
-	movlw   192
-	movwf   POSTINC1,a
-	movlw   159
-	movwf   POSTINC1,a
-	movlw   129
-	movwf   POSTINC1,a
-
-	movlw   116
-	movwf   POSTINC1,a
-	movlw   90
-	movwf   POSTINC1,a
-	movlw   115
-	movwf   POSTINC1,a
-	movlw   104
-	movwf   POSTINC1,a
-	movlw   97
-	movwf   POSTINC1,a
-
-	movlw   55
-	movwf   POSTINC1,a
-	movlw   70
-	movwf   POSTINC1,a
-	movlw   68
-	movwf   POSTINC1,a
-	movlw   68
-	movwf   POSTINC1,a
-	movlw   81
-	movwf   POSTINC1,a
-	; green
-	movlw   106
-	movwf   POSTINC1,a
-	movlw   102
-	movwf   POSTINC1,a
-	movlw   90
-	movwf   POSTINC1,a
-	movlw   76
-	movwf   POSTINC1,a
-	movlw   87
-	movwf   POSTINC1,a
-
-	movlw   247
-	movwf   POSTINC1,a
-	movlw   245
-	movwf   POSTINC1,a
-	movlw   234
-	movwf   POSTINC1,a
-	movlw   244
-	movwf   POSTINC1,a
-	movlw   246
-	movwf   POSTINC1,a
-
-	movlw   136
-	movwf   POSTINC1,a
-	movlw   152
-	movwf   POSTINC1,a
-	movlw   78
-	movwf   POSTINC1,a
-	movlw   127
-	movwf   POSTINC1,a
-	movlw   183
-	movwf   POSTINC1,a
-    ; blue
-	movlw   50
-	movwf   POSTINC1,a
-	movlw   56
-	movwf   POSTINC1,a
-	movlw   64
-	movwf   POSTINC1,a
-	movlw   63
-	movwf   POSTINC1,a
-	movlw   59
-	movwf   POSTINC1,a
-
-	movlw   149
-	movwf   POSTINC1,a
-	movlw   113
-	movwf   POSTINC1,a
-	movlw   136
-	movwf   POSTINC1,a
-	movlw   143
-	movwf   POSTINC1,a
-	movlw   127
-	movwf   POSTINC1,a
-
-	movlw   106
-	movwf   POSTINC1,a
-	movlw   161
-	movwf   POSTINC1,a
-	movlw   160
-	movwf   POSTINC1,a
-	movlw   211
-	movwf   POSTINC1,a
-	movlw   181
-	movwf   POSTINC1,a
-    ; black
-	movlw   60
-	movwf   POSTINC1,a
-	movlw   54
-	movwf   POSTINC1,a
-	movlw   52
-	movwf   POSTINC1,a
-	movlw   38
-	movwf   POSTINC1,a
-	movlw   35
-	movwf   POSTINC1,a
-
-	movlw   126
-	movwf   POSTINC1,a
-	movlw   76
-	movwf   POSTINC1,a
-	movlw   102
-	movwf   POSTINC1,a
-	movlw   112
-	movwf   POSTINC1,a
-	movlw   79
-	movwf   POSTINC1,a
-
-	movlw   54
-	movwf   POSTINC1,a
-	movlw   63
-	movwf   POSTINC1,a
-	movlw   56
-	movwf   POSTINC1,a
-	movlw   55
-	movwf   POSTINC1,a
-	movlw   62
-	movwf   POSTINC1,a
-    ; white
-	movlw   180
-	movwf   POSTINC1,a
-	movlw   175
-	movwf   POSTINC1,a
-	movlw   180
-	movwf   POSTINC1,a
-	movlw   142
-	movwf   POSTINC1,a
-	movlw   132
-	movwf   POSTINC1,a
-
-	movlw   248
-	movwf   POSTINC1,a
-	movlw   247
-	movwf   POSTINC1,a
-	movlw   247
-	movwf   POSTINC1,a
-	movlw   247
-	movwf   POSTINC1,a
-	movlw   246
-	movwf   POSTINC1,a
-
-	movlw   203
-	movwf   POSTINC1,a
-	movlw   246
-	movwf   POSTINC1,a
-	movlw   211
-	movwf   POSTINC1,a
-	movlw   214
-	movwf   POSTINC1,a
-	movlw   246
-	movwf   POSTINC1,a
-
-	return
-
-    dummy_calibration:
-	movlw   'R'
-	movwf   calibrated_color,a
-	return
-
-    fake_read_sensors:
-	; FLASH RED
-	movlw   180		; W
-	movwf   POSTINC1,a
-	movlw   151		; R
-	movwf   POSTINC1,a
-	movlw   52		; K
-	movwf   POSTINC1,a
-	movlw   76		; G
-	movwf   POSTINC1,a
-	movlw   59		; B
-	movwf   POSTINC1,a
-	; FLASH GREEN
-	movlw   248		; W
-	movwf   POSTINC1,a
-	movlw   90		; R
-	movwf   POSTINC1,a
-	movlw   102		; K
-	movwf   POSTINC1,a
-	movlw   244		; G
-	movwf   POSTINC1,a
-	movlw   127		; B
-	movwf   POSTINC1,a
-	; FLASH BLUE
-	movlw   203		; W
-	movwf   POSTINC1,a
-	movlw   70		; R
-	movwf   POSTINC1,a
-	movlw   56		; K
-	movwf   POSTINC1,a
-	movlw   127		; G
-	movwf   POSTINC1,a
-	movlw   181		; B
-	movwf   POSTINC1,a
-	return
-
-    test_register_dump:
-    ; setup
-	movlw   0b00000100
-	movwf   line_reg,a
-	bsf	    test_0,3,a
-    ; test
-	bsf	    INTCON3,0,a
-    ; verification 
-	cpfseq  PORTC,a
-	bcf	    test_0,3,a
-	return
-
-    test_read_sensors:
-    ; test values
-	LFSR    1, 200h
-	movlw   0x0F
-	movwf   test_1,a
-	movlw   0x00
-	addlw   0x11
-	movwf   POSTINC1,a
-	decfsz  test_1,f,a
-	bra	    $-6
-    ; setup
-	LFSR    1, 200h
-	LFSR    0, 100h
-    ; test
-	call read_sensors
-    ; verification
-	bsf	    test_0,0,a
-	movlw   1
-	subwf   FSR1L,f,a
-	subwf   FSR0L,f,a
-	movf    INDF1,w,a
-	cpfseq  INDF0,a
-	bcf	    test_0,0,a
-	btfss   test_0,0,a
-	return
-	movlw   0x00
-	cpfseq  FSR0L,a
-	bra	$-20
-	return
-
-    dummy_read_all_sensors:
-	movlw   0x05
-	movwf   test_1,a
-	movff   POSTINC1, POSTINC0
-	decfsz  test_1,f,a
-	bra	    $-6
-	return
-
-    test_read_all_sensors:
-    ; test values
-	LFSR    1, 200h
-	movlw   0xC0
-	movwf   POSTINC1,a
-	movlw   0x30
-	movwf   POSTINC1,a
-	movlw   0x0C
-	movwf   POSTINC1,a
-	movlw   0x03
-	movwf   POSTINC1,a
-	movlw   0xFF
-	movwf   POSTINC1,a
-    ; setup
-	LFSR    1, 200h
-	LFSR    0, 100h
-    ; test
-	call    read_all_sensors
-    ; verification
-	bsf	    test_0,1,a
-	movlw   1
-	subwf   FSR1L,f,a
-	subwf   FSR0L,f,a
-	movf    INDF1,w,a
-	cpfseq  INDF0,a
-	bcf	    test_0,0,a
-	btfss   test_0,0,a
-	return
-	movlw   0x00
-	cpfseq  FSR0L,a
-	bra	$-20
-	return
-
-    dummy_read_sensor:
-	movff   POSTINC1, POSTINC0
-	return
-
-    test_read_sensor:
-    ; test values
-	movlw   0b11010010
-	movwf   test_1,a
-    ; setup
-	LFSR    0, 100h
-	movlw   ADC_AN1
-    ; test
-	call    read_sensor
-    ;verification
-	movlw   -1
-	movf    PLUSW0,w,a
-	cpfseq  test_1,a
-	bra	    $+2
-	bsf	    test_0,2,a
-
-	return
     
 ;</editor-fold>
     
