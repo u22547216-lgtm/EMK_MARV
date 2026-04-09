@@ -877,6 +877,9 @@ GOTO    STATE2
 	    
 	    MOVWF   prop_error,b
 	    
+	    tstfsz  PD_SIGN,b
+	    negf    acc_error,b	    ; restore sign
+	    
 	    Derivative:
 	    ; using this for storing the negativity of this part
 	    CLRF    extra,a
