@@ -110,7 +110,6 @@ timer_waits		equ	0x09
 #define	wait_for_timer333   timer_waits,0,a
 #define	wait_for_timerRBG   timer_waits,1,a
 	    
-calibrated_color    equ 0x0E	
 offset_stuff	equ 0x0F
 reading_count	equ 0x10
 count		equ 0x11
@@ -175,6 +174,54 @@ extra		equ 0x19
 	SENSOR4        EQU 0x5D
 	RACE_COLOUR    EQU 0x5E
 	BLACK_FLAG     EQU 0x5F
+     
+     
+	; MOTOR DEFINTIONS
+	; PID variables
+	line_seen	    equ 0x72
+	default_duty_cycle  equ	0x73
+
+	PD_OUTPUT       EQU   0x79
+
+	prop_error      equ   0x7C
+
+	deriv_error     equ   0x7D
+	prev_error	equ   0x7E
+
+	acc_error       equ   0x7F
+
+	error0          equ   0x80
+	error1          equ   0x81
+	error2          equ   0x82
+	error3          equ   0x83
+	error4          equ   0x84
+
+	PD_SIGN         EQU   0x85
+    
+	 
+	; PD constants
+	Kd  equ 15
+	Kp  equ 6
+
+
+	; sensor value mapping
+	s0_value        equ   -4
+	s1_value        equ   -2
+	s1_value_e	equ	-1
+	s2_value        equ   0
+	s3_value_e	equ	1
+	s3_value        equ   2
+	s4_value        equ   4
+
+
+	;DUTY CYCLE DEFINITIONS
+	DUTY_25     equ 31
+	DUTY_50     equ 62
+	DUTY_75     equ 93
+	DUTY_100    equ 123
+	DUTY_STOP   equ 0
+		
+     
 
     ;</editor-fold>
 
@@ -191,74 +238,6 @@ extra		equ 0x19
 
     ;<editor-fold defaultstate="collapsed" desc="Magic Numbers">
     
-	; Sensor storage variables, the adresses here can be used with indirect addressing
-	     ; name format is [colour flash]_[sensor number]
-	; red_0		equ 0x00
-	; red_1		equ 0x01
-	; red_2		equ 0x02
-	; red_3		equ 0x03
-	; red_4		equ 0x04
-
-	; green_0		equ 0x06
-	; green_1		equ 0x07
-	; green_2		equ 0x08
-	; green_3		equ 0x09
-	; green_4		equ 0x0A
-
-	; blue_0		equ 0x0B
-	; blue_1		equ 0x0C
-	; blue_2		equ 0x0D
-	; blue_3		equ 0x0E
-	; blue_4		equ 0x0F
-
-
-; MOTOR DEFINTIONS
-; PID variables
-line_seen	    equ 0x72
-default_duty_cycle  equ	0x73
-
-PD_OUTPUT       EQU   0x79
-
-prop_error      equ   0x7C
-
-deriv_error     equ   0x7D
-prev_error	equ   0x7E
-
-acc_error       equ   0x7F
-
-error0          equ   0x80
-error1          equ   0x81
-error2          equ   0x82
-error3          equ   0x83
-error4          equ   0x84
-
-PD_SIGN         EQU   0x85
-	 
-	 
-; PD constants
-Kd  equ 15
-Kp  equ 6
- 
-
-; sensor value mapping
-s0_value        equ   -4
-s1_value        equ   -2
-s1_value_e	equ	-1
-s2_value        equ   0
-s3_value_e	equ	1
-s3_value        equ   2
-s4_value        equ   4
-
-
-;DUTY CYCLE DEFINITIONS
-DUTY_25     equ 31
-DUTY_50     equ 62
-DUTY_75     equ 93
-DUTY_100    equ 123
-DUTY_STOP   equ 0
-		
-     
-
 	; variables to reduce magic numbers
 	ADC_AN0		equ 0b00000011 ; 0 00000 1 1
 	ADC_AN1 	equ 0b00000111 ; 0 00001 1 1
@@ -268,7 +247,7 @@ DUTY_STOP   equ 0
 
 	ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
-calib_address	equ 100h
+	calib_address	equ 100h
 	
     ;</editor-fold>
 	
@@ -495,7 +474,6 @@ init:
     
 	movlw   1
 	movwf   number_of_readings,a
-	clrf    calibrated_color,a
 	clrf    test_0,a
 	clrf    SENSOR0,a
 	clrf    SENSOR1,a
