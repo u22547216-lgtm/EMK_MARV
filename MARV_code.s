@@ -728,14 +728,6 @@ GOTO    STATE2
 	    CLRF error4,a
 	    clrf    line_seen,b
 	    
-	    movlw   'W'
-	    movwf   SENSOR0,a
-	    movwf   SENSOR1,a
-	    movwf   SENSOR3,a
-	    movwf   SENSOR4,a
-	    movlw   'R'
-	    movwf   SENSOR2,a
-	    movwf   RACE_COLOUR,a
 	    
 	    ;BSF	    check_colour
 	    ;call detect_colour
@@ -1101,6 +1093,8 @@ software_tests:
     GOTO    STATE3
     
 	bsf follow_line
+	
+;<editor-fold defaultstate="collapsed" desc="so much LLI testing code">
 	
 	; R equ 'R'
 	; W equ 'W'
@@ -1516,6 +1510,7 @@ software_tests:
 	CLRF test_0
 	MOVFF test_0, PORTC
 
+;</editor-fold>
 	
     
 TRANSITION2:
