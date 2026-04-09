@@ -207,7 +207,26 @@ calib_address	equ 100h
 
 ; Macros
 	
-SET_SENSORS macro	RC, S0, S1, S2, S3, S4
+	
+Delay_loop macro   D1,	D2
+    MOVLW	D2		
+    MOVWF	Delay2	
+
+    MOVLW	D1
+    MOVWF	Delay1
+    
+    DECFSZ	Delay1,f
+    GOTO	$-0x2	; goto previous line, i.e. 2 program registers back to start of decfz Delay1,f instruction
+		        ; Refer to MPLAB X Help files: Location Counter
+	                ; PIC 18 program memory is byte addressable (2 bytes per word), i.e. offset by 2 (or 4) per instruction
+		        ; Smaller devices are word addressable, i.e. ofset counter by 1 (or 2) per instruction
+			; You cannot use a label here - why not?
+    DECFSZ	Delay2,f
+    GOTO	$-0x0C	; goto line movlw D1, i.e. 12 program registers back.
+
+    endm
+	
+SET_SENSORS macro RC, S0, S1, S2, S3, S4
  
 	MOVLW	RC
 	MOVWF	RACE_COLOUR,A
@@ -224,7 +243,7 @@ SET_SENSORS macro	RC, S0, S1, S2, S3, S4
 	
 	endm
 	
-CHECK_LLI_OUTPUTS macro	CCPR1, CCPR2, PSTR1, PSTR2, TEST_CHECK
+CHECK_LLI_OUTPUTS   macro CCPR1, CCPR2, PSTR1, PSTR2, TEST_CHECK
 	
 	SETF	TEST_CHECK,A
 	MOVLW	CCPR1
@@ -1128,6 +1147,7 @@ GOTO    STATE2
 	    BRA	    BRAKES
     
 TRANSITION1:
+    return
     BSF	    follow_line  ;LOOP OVER LLI
 
 		
@@ -1136,7 +1156,69 @@ software_tests:
     BTFSS   code_tests
     GOTO    STATE3
     
-	tests:
+	bsf follow_line
+
+	SET_SENSORS 'R', 'W', 'W', 'R', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '81', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'R', 'W', 'W', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '9', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'R'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '21', '123', '00010100B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'R', 'R', 'W', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '63', '00010010B', '00010100B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'e', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '12', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'R', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '108', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'e', 'e', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '102', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'R', 'W', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '96', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '51', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'e'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '111', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'W', 'R'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '69', '123', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'e', 'W', 'W', 'W', 'R'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '105', '00010010B', '00010010B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'R', 'R', 'W', 'W', 'W'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '123', '33', '00010010B', '00010100B', test_0
+	MOVFF test_0, PORTC
+	SET_SENSORS 'R', 'W', 'W', 'W', 'R', 'R'
+	CALL LLI
+	CHECK_LLI_OUTPUTS '93', '123', '00010100B', '00010010B', test_0
+	MOVFF test_0, PORTC
+
 	
     
 TRANSITION2:
