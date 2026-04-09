@@ -191,7 +191,7 @@ s4_value        equ   4
 DUTY_25     equ 31
 DUTY_50     equ 62
 DUTY_75     equ 93
-DUTY_100    equ 124
+DUTY_100    equ 123
 DUTY_STOP   equ 0
 		
      
@@ -374,11 +374,11 @@ STATE_MACHINE_SETUP:
     
     ; State activation bits
     ;BSF calibrate
-    ;BSF follow_line
+    BSF follow_line
     
 	; tests
      ;BSF code_tests
-     BSF hardware_tests
+     ;BSF hardware_tests
     
     ; Subroutine activation bits
     ;BSF delay_333_call
@@ -728,9 +728,18 @@ GOTO    STATE2
 	    CLRF error4,a
 	    clrf    line_seen,b
 	    
-	    BSF	    check_colour
-	    call detect_colour
-	    BCF	    check_colour
+	    movlw   'W'
+	    movwf   SENSOR0,a
+	    movwf   SENSOR1,a
+	    movwf   SENSOR3,a
+	    movwf   SENSOR4,a
+	    movlw   'R'
+	    movwf   SENSOR2,a
+	    movwf   RACE_COLOUR,a
+	    
+	    ;BSF	    check_colour
+	    ;call detect_colour
+	    ;BCF	    check_colour
 	    
 	    
 	    ;SENSOR0 check
@@ -959,12 +968,16 @@ GOTO    STATE2
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
 	    subwf   default_duty_cycle,w,b
-	    bnn	    $+8
+	    bnn	    $+10
+	    
 	    ; a wheel needs to reverse
+	    negf    WREG,a		; we dont put negative values into the PWM registers
+	    ; which wheel needs to reverse
 	    tstfsz  PD_SIGN,b
 	    bra	    right_reverse
 	    bra	    left_reverse
 	    ; both wheels forward
+		; which weel needs to slow down
 	    tstfsz  PD_SIGN,b
 	    bra	    slow_right
 	    bra	    slow_left
@@ -978,7 +991,6 @@ GOTO    STATE2
 		BCF	    STR2B
 		BSF	    STR2C
 		
-		negf	WREG,a
 		movwf   CCPR2L,a
 		movf    default_duty_cycle,w,b
 		movwf   CCPR1L,a
@@ -992,7 +1004,6 @@ GOTO    STATE2
 		BCF	    STR1B
 		BSF	    STR1C
 		
-		negf	WREG,a
 		movwf   CCPR1L,a
 		movf    default_duty_cycle,w,b
 		movwf   CCPR2L,a
