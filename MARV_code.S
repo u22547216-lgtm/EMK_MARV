@@ -373,11 +373,11 @@ STATE_MACHINE_SETUP:
     CLRF	timer_waits,a
     
     ; State activation bits
-    ;BSF calibrate
+    BSF calibrate
     ;BSF follow_line
     
 	; tests
-     BSF code_tests
+     ;BSF code_tests
      ;BSF hardware_tests
     
     ; Subroutine activation bits
@@ -721,21 +721,13 @@ GOTO    STATE2
 
 	;STRAIGHT:
 	    ; setup
-	    CLRF error0,a
-	    CLRF error1,a
-	    CLRF error2,a
-	    CLRF error3,a
-	    CLRF error4,a
+	    CLRF error0,b
+	    CLRF error1,b
+	    CLRF error2,b
+	    CLRF error3,b
+	    CLRF error4,b
 	    clrf    line_seen,b
 	    
-	    movlw   'W'
-	    movwf   SENSOR0,a
-	    movwf   SENSOR1,a
-	    movwf   SENSOR3,a
-	    movwf   SENSOR4,a
-	    movlw   'R'
-	    movwf   SENSOR2,a
-	    movwf   RACE_COLOUR,a
 	    
 	    ;BSF	    check_colour
 	    ;call detect_colour
@@ -885,12 +877,15 @@ GOTO    STATE2
 	    
 	    MOVWF   prop_error,b
 	    
+	    tstfsz  PD_SIGN,b
+	    negf    acc_error,b	    ; restore sign
+	    
 	    Derivative:
 	    ; using this for storing the negativity of this part
 	    CLRF    extra,a
 	    
-            MOVF    acc_error,w,b
-	    SUBWF   prev_error,w,b  ; change = prev_error - error
+            MOVF    prev_error,w,b
+	    SUBWF   acc_error,w,b  ; change = error - prev_error
 	    BNN	    $+6
 	    setf    extra,a	    ; save negativity
 	    negf    WREG,a	    ; make positive for multiplication
@@ -919,9 +914,9 @@ GOTO    STATE2
 
 	    clrf    WREG,a
 	    tstfsz  extra,a
-	    bcf	    WREG,0,a
+	    movlw   2
 	    tstfsz  PD_SIGN,b
-	    bcf	    WREG,1,a
+	    incf    WREG,a
 	    
 	    ; are both positive?
 	    tstfsz  WREG,a
@@ -929,7 +924,7 @@ GOTO    STATE2
 	    bra	    CCHANGE_OF_OUTPUTS
 	    
 	    ; are both negative?
-	    SUBLW   3
+	    ADDLW   -3
 	    BNZ	    $+6
 	    negf    PD_OUTPUT,b
 	    bra	    CCHANGE_OF_OUTPUTS
@@ -941,12 +936,12 @@ GOTO    STATE2
 	    negf    prop_error,b
 	    
 	    ; find difference
-	    movf    deriv_error,b
+	    movf    deriv_error,w,b
 	    subwf   prop_error,w,b
 	    
 			    
 	    ; is proportional bigger?
-	    BNN	    $+8
+	    BN	    $+8
 	    tstfsz  PD_SIGN,b ; check if prop is negative
 	    negf    PD_OUTPUT,b
 	    bra	    CCHANGE_OF_OUTPUTS
@@ -974,13 +969,13 @@ GOTO    STATE2
 	    negf    WREG,a		; we dont put negative values into the PWM registers
 	    ; which wheel needs to reverse
 	    tstfsz  PD_SIGN,b
-	    bra	    right_reverse
 	    bra	    left_reverse
+	    bra	    right_reverse
 	    ; both wheels forward
 		; which weel needs to slow down
 	    tstfsz  PD_SIGN,b
-	    bra	    slow_right
 	    bra	    slow_left
+	    bra	    slow_right
 	    
 	   
 	    right_reverse:
@@ -1091,7 +1086,7 @@ GOTO    STATE2
 	    BRA	    BRAKES
     
 TRANSITION1:
-    return
+    ;return
     BSF	    follow_line  ;LOOP OVER LLI
 
 		
@@ -1101,6 +1096,8 @@ software_tests:
     GOTO    STATE3
     
 	bsf follow_line
+	
+;<editor-fold defaultstate="collapsed" desc="so much LLI testing code">
 	
 	; R equ 'R'
 	; W equ 'W'
@@ -1122,6 +1119,7 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
 	MOVLW 123
@@ -1149,12 +1147,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
+	MOVLW 123
+	CPFSEQ CCPR1L,a
+	CLRF test_0
 	MOVLW 81
-	CPFSEQ CCPR1L,a
-	CLRF test_0
-	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1176,12 +1175,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 9
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1203,18 +1203,19 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'R'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
+	MOVLW 123
+	CPFSEQ CCPR1L,a
+	CLRF test_0
 	MOVLW 21
-	CPFSEQ CCPR1L,a
-	CLRF test_0
-	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
-	MOVLW 00010100B
+	MOVLW 00010010B
 	CPFSEQ PSTR1CON,a
 	CLRF test_0
-	MOVLW 00010010B
+	MOVLW 00010100B
 	CPFSEQ PSTR2CON,a
 	CLRF test_0
 	MOVFF test_0, PORTC
@@ -1230,18 +1231,19 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 63
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
-	MOVLW 00010010B
+	MOVLW 00010100B
 	CPFSEQ PSTR1CON,a
 	CLRF test_0
-	MOVLW 00010100B
+	MOVLW 00010010B
 	CPFSEQ PSTR2CON,a
 	CLRF test_0
 	MOVFF test_0, PORTC
@@ -1257,12 +1259,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
+	MOVLW 123
+	CPFSEQ CCPR1L,a
+	CLRF test_0
 	MOVLW 12
-	CPFSEQ CCPR1L,a
-	CLRF test_0
-	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1284,12 +1287,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 108
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1311,12 +1315,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 102
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1338,12 +1343,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 96
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1365,12 +1371,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
+	MOVLW 123
+	CPFSEQ CCPR1L,a
+	CLRF test_0
 	MOVLW 51
-	CPFSEQ CCPR1L,a
-	CLRF test_0
-	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1392,12 +1399,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'e'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
+	MOVLW 123
+	CPFSEQ CCPR1L,a
+	CLRF test_0
 	MOVLW 111
-	CPFSEQ CCPR1L,a
-	CLRF test_0
-	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1419,12 +1427,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'R'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 69
+	MOVLW 123
 	CPFSEQ CCPR1L,a
 	CLRF test_0
-	MOVLW 123
+	MOVLW 69
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1446,12 +1455,13 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'R'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 105
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
 	MOVLW 00010010B
@@ -1473,18 +1483,19 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'W'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 123
-	CPFSEQ CCPR1L,a
-	CLRF test_0
 	MOVLW 33
+	CPFSEQ CCPR1L,a
+	CLRF test_0
+	MOVLW 123
 	CPFSEQ CCPR2L,a
 	CLRF test_0
-	MOVLW 00010010B
+	MOVLW 00010100B
 	CPFSEQ PSTR1CON,a
 	CLRF test_0
-	MOVLW 00010100B
+	MOVLW 00010010B
 	CPFSEQ PSTR2CON,a
 	CLRF test_0
 	MOVFF test_0, PORTC
@@ -1500,22 +1511,26 @@ software_tests:
 	MOVWF SENSOR3,a
 	MOVLW 'R'
 	MOVWF SENSOR4,a
+	CLRF PORTC
 	CALL LLI
 	SETF test_0,a
-	MOVLW 93
+	MOVLW 123
 	CPFSEQ CCPR1L,a
 	CLRF test_0
-	MOVLW 123
+	MOVLW 93
 	CPFSEQ CCPR2L,a
 	CLRF test_0
-	MOVLW 00010100B
+	MOVLW 00010010B
 	CPFSEQ PSTR1CON,a
 	CLRF test_0
-	MOVLW 00010010B
+	MOVLW 00010100B
 	CPFSEQ PSTR2CON,a
 	CLRF test_0
 	MOVFF test_0, PORTC
 
+
+
+;</editor-fold>
 	
     
 TRANSITION2:
