@@ -109,6 +109,7 @@ DELAY_SKIP		equ	0x08
 timer_waits		equ	0x09
 #define	wait_for_timer333   timer_waits,0,a
 #define	wait_for_timerRBG   timer_waits,1,a
+#define wait_for_timer2	    timer_waits,2,a
 	    
 offset_stuff	equ 0x0F
 reading_count	equ 0x10
@@ -459,7 +460,7 @@ init:
 	bsf	    INT1IE	    ; INT1I is enabled
 	; INTCON = 0b 1 0 1 0 0 0 0 0
 	bsf	    TMR0IE	    ; enable timer 0 interrupts
-	;bsf	    TMR2IE	    ;enable timer 4 interrupts
+	bsf	    TMR2IP	    ; enable timer 4 interrupts
 
 	BSF	    PEIE
 	bsf	    GIEH	    ; enable high priority interupts
@@ -1002,6 +1003,9 @@ STATE_MACHINE_START:
 	    ; BCF	    touch_start
 	    BCF	    PORTA,4,a
 	    BCF	    PORTA,7,a
+	    
+	    BSF	    TMR2IE
+	    
 	    GOTO	    TRANSITION1
 	CAP_DELAY: 
 	    MOVLB	    0xF
@@ -1048,6 +1052,12 @@ STATE_MACHINE_START:
 	; if all sensor detect black, STOP (End of maze)
 
 	;STRAIGHT:
+	    
+	    ; force sampling rate to be equal to timer 2 rate
+	    BSF	    wait_for_timer2
+	    BTFSC   wait_for_timer2
+	    bra	    $-2
+	    
 	    ; setup
 	    CLRF error0,b
 	    CLRF error1,b
@@ -1055,7 +1065,6 @@ STATE_MACHINE_START:
 	    CLRF error3,b
 	    CLRF error4,b
 	    clrf    line_seen,b
-	    
 	    
 	    BSF	    check_colour
 	    call detect_colour
@@ -2599,15 +2608,18 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	goto    register_dump   
 	btfsc   TMR0IF	    ; was it timer 0?
 	goto    timer0_interrupt
-    ;    btfsc   TMR2IF	    ;was it timer 2?
-    ;    goto    TIMER2_ISR
+        btfsc   TMR2IF	    ;was it timer 2?
+        goto    TIMER2_ISR
+	
+
+        BCF	    wait_for_timer2
 
 	retfie
 
-    ;TIMER2_ISR:   
-    ;    BSF	    touch_flag,0
-    ;    BCF	    TMR2IF
-    ;    RETFIE
+    TIMER2_ISR:   
+        BCF	    wait_for_timer2
+        BCF	    TMR2IF
+        RETFIE
 
     register_dump:
 	movff   line_reg, PORTC     ; put line_reg into PORTC
