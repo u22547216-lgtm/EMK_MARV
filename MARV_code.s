@@ -1070,6 +1070,7 @@ STATE_MACHINE_START:
 	    call detect_colour
 	    BCF	    check_colour
 	    
+	;<editor-fold defaultstate="collapsed" desc="Colour interpreter">
 	    
 	    ;SENSOR0 check
 	    movlw   'e'
@@ -1160,6 +1161,9 @@ STATE_MACHINE_START:
 	    CALL    CHECK_BLACK
 	    GOTO    TRANSITION1
 	    
+	;</editor-fold>
+	    
+	;<editor-fold defaultstate="collapsed" desc="Error calc">
 	    
 	ERROR_CALC:
 	    ; small bit of setup for this
@@ -1195,6 +1199,9 @@ STATE_MACHINE_START:
 	    BRA	    $+4
 	    SETF    PD_SIGN,b
 	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="PID">
 	    
 	    PID1:   
 
@@ -1294,6 +1301,9 @@ STATE_MACHINE_START:
 	    
 	    clrf    PD_SIGN,b
 	    
+	;</editor-fold>
+	
+	;<editor-fold defaultstate="collapsed" desc="Steering">
 	    
 	    CCHANGE_OF_OUTPUTS:
     
@@ -1367,13 +1377,26 @@ STATE_MACHINE_START:
 		CHANGE_OUTPUTS_END: 
 		
 	    
-	    ; again looping over itself, needs to be changed before it is in the actual code
+	;</editor-fold>
+	
 	    GOTO    TRANSITION1
 	    
 	    
 	  
 	  LOST:
 	    LOST_STOP:
+		clrf	BLACK_FLAG,a
+		MOVLW	'W'
+		CPFSEQ	SENSOR0,a
+		return
+		CPFSEQ	SENSOR1,a
+		return
+		CPFSEQ	SENSOR2,a
+		return
+		CPFSEQ	SENSOR3,a
+		return
+		CPFSEQ	SENSOR4,a
+		return
 		CALL BRAKES
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
@@ -1393,6 +1416,9 @@ STATE_MACHINE_START:
 	BRAKES:
 	    clrf    CCPR1L,a
 	    clrf    CCPR2L,a
+	    
+	    ;TSTFSZ  BLACK_FLAG,a
+	    ;bra	    $-2
 	    
 	    RETURN   
 	    
@@ -2395,6 +2421,7 @@ SUB_TRANSITIONS1:
 	    ; reset button wait
 	    bcf	    INT0IF
 	    ; go back
+	    clrf LATA,a
 	    return
 
     SUB_TRANSITIONS6:
@@ -2605,7 +2632,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     
     ISR:
 	btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
-	goto    register_dump   
+	goto    brake_clear   
 	btfsc   TMR0IF	    ; was it timer 0?
 	goto    timer0_interrupt
         btfsc   TMR2IF	    ;was it timer 2?
@@ -2621,8 +2648,8 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
         BCF	    TMR2IF
         RETFIE
 
-    register_dump:
-	movff   line_reg, PORTC     ; put line_reg into PORTC
+    brake_clear:
+	clrf	    BLACK_FLAG,a
 	bcf	    INT1IF		; clear interrupt flag
 	retfie			            ;return from interrupt
 
