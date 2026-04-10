@@ -121,9 +121,9 @@ extra		equ 0x19
 	; RGB control stuff
 	race_error_colour_magic	    EQU	0X3E
 	; RGB pins
-	#define red_pin     PORTA,4,a
-	#define green_pin   PORTA,6,a
-	#define blue_pin    PORTA,7,a
+	#define red_pin     PORTA,4
+	#define green_pin   PORTA,6
+	#define blue_pin    PORTA,7
 	; colour indicator offsets in code
 	DISPLAYED_COLOUR	equ 0x3F
 	    no_indicator	    EQU 0
@@ -200,8 +200,8 @@ extra		equ 0x19
     
 	 
 	; PD constants
-	Kd  equ 15
-	Kp  equ 6
+	Kd  equ 5
+	Kp  equ 25
 
 
 	; sensor value mapping
@@ -459,7 +459,7 @@ init:
 	bsf	    INT1IE	    ; INT1I is enabled
 	; INTCON = 0b 1 0 1 0 0 0 0 0
 	bsf	    TMR0IE	    ; enable timer 0 interrupts
-	bsf	    TMR2IE	    ;enable timer 4 interrupts
+	;bsf	    TMR2IE	    ;enable timer 4 interrupts
 
 	BSF	    PEIE
 	bsf	    GIEH	    ; enable high priority interupts
@@ -482,17 +482,18 @@ init:
 	clrf    SENSOR4,a
 	clrf    RACE_COLOUR,a
     
-    movlw   DUTY_100
-    movwf   default_duty_cycle,b
 	;initializing touch pad variables
-	clrf    touch_flag,a	
-	clrf    Vread,a		
-	clrf    OpenSW,a		
-	clrf    Trip,a		
-	clrf    Hyst,a		
-	clrf    DIFF,a
+	clrf    touch_flag,b	
+	clrf    Vread,b		
+	clrf    OpenSW,b		
+	clrf    Trip,b		
+	clrf    Hyst,b		
+	clrf    DIFF,b
 
 	clrf    race_error_colour_magic,a
+	
+	movlw   DUTY_50
+	movwf   default_duty_cycle,b
     
     ;</editor-fold>
     
@@ -531,7 +532,7 @@ init:
     
     ;</editor-fold>
     
-    ;<editor-fold defaultstate="collapsed" desc="State Control Bits">
+    ;<editor-fold desc="State Control Bits">
     
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
@@ -545,7 +546,7 @@ init:
     
 	; tests
 	 ;BSF code_tests
-	;  ;BSF hardware_tests
+	;BSF hardware_tests
     
     ;</editor-fold>
     
@@ -1418,7 +1419,7 @@ TRANSITION2:
 
 ;</editor-fold>
     
-;<editor-fold defaultstate="collapsed" desc="Code Tests">
+;<editor-fold defaultstate="collapsed" desc="Tests">
 		
     STATE3:
     software_tests:
@@ -1440,9 +1441,11 @@ test_hardware:
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
-    movlw   DUTY_50
-    movwf   CCPR1L,a
-    movwf   CCPR2L,a
+	    lfsr    0, 100h
+	    BSF read_sensors_call
+	    call    read_sensors
+	    BCF read_sensors_call
+	    bra	TODO_hardware_tests
 ;   state 2 code
     ; to be added later
     
@@ -1513,13 +1516,13 @@ delay_RGB:
 	movwf    extra,a
 	
 	TODO_maybe_give_the_option_to_wait_for_it:
-	; set the timer to overflow in 40 instruction cycles
-	; about 40 us, which is the settling time 
+	; set the timer to overflow in 80 instruction cycles
+	; about 80 us, which is the settling time 
 	    ; might change to 20us, because that is the rise time
 	    ; would have to change the calibration code a bit to account for the 
 	    ; range of values between 90% and 100% of the steady state
 		; this might distort the ADC reading tho, so nah
-	movlw	-40
+	movlw	-80
 	movwf	TMR1L,a
 	setf	TMR1H,a
 	; turn the timer on
@@ -1557,31 +1560,31 @@ SUB_TRANSITIONS1:
 	;    LFSR 0, 100h ;need to remove, only here for initial creation purposes
 
 	; shine red
-	    bsf	    red_pin
+	    bsf	    red_pin,a
 	    bsf	RGB_delay_call
 	    call delay_RGB
 	    bcf	RGB_delay_call
 
 	    call    read_all_sensors
-	    bcf	    red_pin
+	    bcf	    red_pin,a
 
 	; shine green
-	    bsf	    green_pin
+	    bsf	    green_pin,a
 	    bsf	RGB_delay_call
 	    call delay_RGB
 	    bcf	RGB_delay_call
 
 	    call    read_all_sensors
-	    bcf	    green_pin
+	    bcf	    green_pin,a
 
 	; shine blue
-	    bsf	    blue_pin
+	    bsf	    blue_pin,a
 	    bsf	RGB_delay_call
 	    call delay_RGB
 	    bcf	RGB_delay_call
 
 	    call    read_all_sensors
-	    bcf	    blue_pin
+	    bcf	    blue_pin,a
 
 	    return
 	    GOTO	SUB_TRANSITIONS2
@@ -2324,9 +2327,9 @@ SUB_TRANSITIONS1:
 	    BEGIN_FLASH:
 	    ; begin flashing
 		; turn off
-	    bcf	red_pin
-	    bcf	green_pin
-	    bcf	blue_pin
+	    bcf	red_pin,a
+	    bcf	green_pin,a
+	    bcf	blue_pin,a
 		;wait 0.166 seconds
 	    bsf	wait_for_timer333
 	    bsf	delay_333_call
@@ -2376,6 +2379,10 @@ SUB_TRANSITIONS1:
 	    bsf	delay_333_call
 	    call    delay_333
 	    bcf	delay_333_call
+	bsf	wait_for_timer333
+	    bsf	delay_333_call
+	    call    delay_333
+	    bcf	delay_333_call
 	    ; reset button wait
 	    bcf	    INT0IF
 	    ; go back
@@ -2393,6 +2400,11 @@ SUB_TRANSITIONS1:
 	BTFSS   colour_display
 	GOTO    STATE_MACHINE_END
 
+	    nop
+	    nop
+	    nop
+	    nop
+	    nop
 	    MOVF	PCL,w,a
 	    MOVF	DISPLAYED_COLOUR,w,a
 	    ADDWF	PCL,f,a
@@ -2439,17 +2451,17 @@ SUB_TRANSITIONS1:
 
 		display_black:
 		; orange = RGB(255,102,0), means 40% duty cycle on green
-		bsf	red_pin
-		bsf	green_pin
+		bsf	red_pin,a
+		bsf	green_pin,a
 		nop
 		nop
 		nop
-		bcf	green_pin
+		bcf	green_pin,a
 		nop
 		nop
 		nop
 		nop
-		bcf	red_pin
+		bcf	red_pin,a
 
 		return
 
@@ -2478,7 +2490,7 @@ SUB_TRANSITIONS1:
 	    ;<editor-fold defaultstate="collapsed" desc="Red">
 
 		display_red:
-		bsf	red_pin
+		bsf	red_pin,a
 		nop
 		nop
 		nop
@@ -2488,7 +2500,7 @@ SUB_TRANSITIONS1:
 		nop
 		nop
 		nop
-		bcf	red_pin
+		bcf	red_pin,a
 
 		return
 
@@ -2497,7 +2509,7 @@ SUB_TRANSITIONS1:
 	    ;<editor-fold defaultstate="collapsed" desc="Green">
 
 		display_green:
-		bsf	green_pin
+		bsf	green_pin,a
 		nop
 		nop
 		nop
@@ -2507,7 +2519,7 @@ SUB_TRANSITIONS1:
 		nop
 		nop
 		nop
-		bcf	green_pin
+		bcf	green_pin,a
 
 		return
 
@@ -2516,7 +2528,7 @@ SUB_TRANSITIONS1:
 	    ;<editor-fold defaultstate="collapsed" desc="Blue">
 
 		display_blue:
-		bsf	blue_pin
+		bsf	blue_pin,a
 		nop
 		nop
 		nop
@@ -2526,7 +2538,7 @@ SUB_TRANSITIONS1:
 		nop
 		nop
 		nop
-		bcf	blue_pin
+		bcf	blue_pin,a
 
 		return
 
@@ -2555,12 +2567,12 @@ SUB_TRANSITIONS1:
 
 		display_error:
 		; brown = RGB(102,51,0); 40% duty cycle on red and 20% duty cycle on green
-		bsf	red_pin
-		bsf	green_pin
-		bcf	green_pin
-		bcf	red_pin
-		bsf	blue_pin
-		bcf	blue_pin
+		bsf	red_pin,a
+		bsf	green_pin,a
+		bcf	green_pin,a
+		bcf	red_pin,a
+		bsf	blue_pin,a
+		bcf	blue_pin,a
 		nop
 		nop
 		nop
