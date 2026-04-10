@@ -202,7 +202,7 @@ extra		equ 0x19
 	 
 	; PD constants
 	Kd  equ 5
-	Kp  equ 25
+	Kp  equ 30
 
 
 	; sensor value mapping
@@ -861,6 +861,8 @@ STATE_MACHINE_START:
 
 	;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
 
+	race_colour_selection:
+	
 	    MOVLW	no_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
@@ -2632,7 +2634,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     
     ISR:
 	btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
-	goto    brake_clear   
+	goto    race_colour_reset   
 	btfsc   TMR0IF	    ; was it timer 0?
 	goto    timer0_interrupt
         btfsc   TMR2IF	    ;was it timer 2?
@@ -2648,9 +2650,10 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
         BCF	    TMR2IF
         RETFIE
 
-    brake_clear:
-	clrf	    BLACK_FLAG,a
+    race_colour_reset:
 	bcf	    INT1IF		; clear interrupt flag
+	pop
+	goto	race_colour_selection
 	retfie			            ;return from interrupt
 
     timer0_interrupt:
