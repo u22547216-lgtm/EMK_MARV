@@ -67,13 +67,12 @@
     delay_outer     equ 0x01
 
 
-    test_0		equ 0x02
-    #define test_en	    test_0,7
-    #define live_test	    test_0,6
+    lost_count		equ 0x02
 
-    test_1		equ 0x03
+    misc_checks		equ 0x03
+    #define race_colour_seen	misc_checks,0,a
 
-    line_reg	equ 0x04
+    race_error_navigations	equ 0x04
     number_of_readings	    equ 0x05
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
@@ -106,16 +105,16 @@ DELAY_SKIP		equ	0x08
 
     ;</editor-fold>
 
-timer_waits		equ	0x09
-#define	wait_for_timer333   timer_waits,0,a
-#define	wait_for_timerRBG   timer_waits,1,a
-#define wait_for_timer2	    timer_waits,2,a
-	    
-offset_stuff	equ 0x0F
-reading_count	equ 0x10
-count		equ 0x11
-;   dont use address 0x13, strange things afoot
-extra		equ 0x19
+    timer_waits		equ	0x09
+    #define	wait_for_timer333   timer_waits,0,a
+    #define	wait_for_timerRBG   timer_waits,1,a
+    #define wait_for_timer2	    timer_waits,2,a
+
+    offset_stuff	equ 0x0F
+    reading_count	equ 0x10
+    count		equ 0x11
+    ;   dont use address 0x13, strange things afoot
+    extra		equ 0x19
 
     ;<editor-fold defaultstate="collapsed" desc="Colour Related Variables">
 
@@ -475,7 +474,6 @@ init:
     
 	movlw   1
 	movwf   number_of_readings,a
-	clrf    test_0,a
 	clrf    SENSOR0,a
 	clrf    SENSOR1,a
 	clrf    SENSOR2,a
@@ -495,6 +493,12 @@ init:
 	
 	movlw   DUTY_50
 	movwf   default_duty_cycle,b
+	
+	MOVLW	-3
+	MOVWF	lost_count,a
+	
+	MOVLW	-20
+	MOVWF	race_error_navigations,a
     
     ;</editor-fold>
     
@@ -863,7 +867,7 @@ STATE_MACHINE_START:
 
 	race_colour_selection:
 	
-	    MOVLW	no_indicator
+	    MOVLW	error_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
 	    bsf		button_press_check
@@ -1084,10 +1088,11 @@ STATE_MACHINE_START:
 	    
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR0,a
-	    bra	    $+8
+	    bra	    $+10
 	    movlw   s0_value
 	    MOVWF   error0,b
 	    setf    line_seen,b
+	    BSF	    race_colour_seen
 	    
 	    
 	    ;SENSOR1 check
@@ -1101,10 +1106,11 @@ STATE_MACHINE_START:
 	    
 	    MOVF    RACE_COLOUR,w,a
 	    CPFSEQ  SENSOR1,a
-	    bra	    $+8
+	    bra	    $+10
 	    movlw   s1_value
 	    MOVWF   error1,b
 	    setf    line_seen,b
+	    BSF	    race_colour_seen
 	    
 	    
 	    ;SENSOR2 check
@@ -1118,10 +1124,11 @@ STATE_MACHINE_START:
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    cpfseq  SENSOR2,a
-	    bra	    $+8
+	    bra	    $+10
 	    movlw   s2_value
 	    MOVWF   error2,b
 	    setf    line_seen,b
+	    BSF	    race_colour_seen
 	    
 	    
 	    ;SENSOR3 check
@@ -1135,10 +1142,12 @@ STATE_MACHINE_START:
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ  SENSOR3,a
-	    bra	    $+8
+	    bra	    $+10
 	    movlw   s3_value
 	    MOVWF   error3,b
 	    setf    line_seen,b
+	    BSF	    race_colour_seen
+	    
 	    
 	    ;SENSOR4 check
 	    movlw   'e'
@@ -1151,18 +1160,42 @@ STATE_MACHINE_START:
 	    
 	    MOVF    RACE_COLOUR,W,a
 	    CPFSEQ  SENSOR4,a
-	    bra	    $+8
+	    bra	    $+10
 	    movlw   s4_value
 	    MOVWF   error4,b
 	    setf    line_seen,b
+	    BSF	    race_colour_seen
 	    
+	;</editor-fold>
 	    
+	;<editor-fold defaultstate="collapsed" desc="Checking if Stop or Lost conditions need to be considered">
+	
+	Stop_or_Lost_Check:
 	    ; check if the line was seen
 	    tstfsz  line_seen,b
 	    bra	    $+10
 	    CALL    CHECK_BLACK
 	    GOTO    TRANSITION1
 	    
+	    BTFSC   race_colour_seen
+	    bra	    $+10
+	    INCFSZ  race_error_navigations,a
+	    bra	    $+14
+	    goto    LOST_STOP
+	    
+	    MOVLW	-3
+	    MOVWF	lost_count,a
+	    
+	    MOVLW	-20
+	    MOVWF	race_error_navigations,a
+	    
+	    ; i want to add something to this that gives the lost condition a bit of time to kick in
+	    ; something like a sample delay, it has to be lost for a number of samples before it is actually lost
+	    
+	    ; along with this, it would maybe be worth it to treat race_error as something functionally different from
+	    ; the race colour. It can still treat it as a value to consider in the PID, but if the race_colour isn't seen
+	    ; for a as long as the it takes to be lost, then it will be lost.
+	        
 	;</editor-fold>
 	    
 	;<editor-fold defaultstate="collapsed" desc="Error calc">
@@ -1388,17 +1421,10 @@ STATE_MACHINE_START:
 	  LOST:
 	    LOST_STOP:
 		clrf	BLACK_FLAG,a
-		MOVLW	'W'
-		CPFSEQ	SENSOR0,a
+		
+		INCFSZ	lost_count,a
 		return
-		CPFSEQ	SENSOR1,a
-		return
-		CPFSEQ	SENSOR2,a
-		return
-		CPFSEQ	SENSOR3,a
-		return
-		CPFSEQ	SENSOR4,a
-		return
+		
 		CALL BRAKES
           ;REVERSE UNTIL WE SEE LINE
 		REVERSE:
@@ -2652,7 +2678,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
     race_colour_reset:
 	bcf	    INT1IF		; clear interrupt flag
-	pop
+	;pop
 	goto	race_colour_selection
 	retfie			            ;return from interrupt
 
