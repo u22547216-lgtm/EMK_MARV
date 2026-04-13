@@ -945,7 +945,7 @@ STATE_MACHINE_START:
 
 	CAP_TOUCH:
 
-	    movlw   20
+	    movlw   15
 	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
 	    movwf   Trip,b	;difference between pressed and unpressed switch
@@ -1178,16 +1178,16 @@ STATE_MACHINE_START:
 	    GOTO    TRANSITION1
 	    
 	    BTFSC   race_colour_seen
-	    bra	    $+10
-	    INCFSZ  race_error_navigations,a
-	    bra	    $+14
+	    bra	    $+6
+	    ;INCFSZ  race_error_navigations,a
+	    ;bra	    $+14
 	    goto    LOST_STOP
 	    
 	    MOVLW	-3
 	    MOVWF	lost_count,a
 	    
-	    MOVLW	-20
-	    MOVWF	race_error_navigations,a
+	    ;MOVLW	-20
+	    ;MOVWF	race_error_navigations,a
 	    
 	    ; i want to add something to this that gives the lost condition a bit of time to kick in
 	    ; something like a sample delay, it has to be lost for a number of samples before it is actually lost
