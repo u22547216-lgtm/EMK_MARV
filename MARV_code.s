@@ -201,7 +201,7 @@ DELAY_SKIP		equ	0x08
 	 
 	; PD constants
 	Kd  equ 5
-	Kp  equ 30
+	Kp  equ 20
 
 
 	; sensor value mapping
@@ -215,6 +215,7 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
+	MIN_DUTY    equ 25
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
@@ -945,7 +946,7 @@ STATE_MACHINE_START:
 
 	CAP_TOUCH:
 
-	    movlw   5
+	    movlw   60
 	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
 	    movwf   Trip,b	;difference between pressed and unpressed switch
@@ -1345,23 +1346,23 @@ STATE_MACHINE_START:
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
 	    subwf   default_duty_cycle,w,b ; new ccp = default - output
-	    ; check if new ccp < than DUTY_25
+	    ; check if new ccp < than MIN_DUTY
 	    bnn	    $+10
 	    negf    WREG,a
-	    ADDLW   DUTY_25
-	    ADDLW   DUTY_25
+	    ADDLW   MIN_DUTY
+	    ADDLW   MIN_DUTY
 	    bra	    wheel_reversing
 	    
 	    ; need to check if the value is bigger or less than DUTY_25
-	    sublw   DUTY_25
+	    sublw   MIN_DUTY
 	    bn	    $+10
 	    ; no reversing
-	    ADDLW   DUTY_25
+	    ADDLW   MIN_DUTY
 	    BRA	    straight
 	    
 	    ; reversing
 	    negf    WREG,a
-	    ADDLW   DUTY_25
+	    ADDLW   MIN_DUTY
 	    bra	    wheel_reversing
 	    
 	    
