@@ -550,8 +550,8 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Test States">
     
 	; tests
-	BSF code_tests
-	;BSF hardware_tests
+	;BSF code_tests
+	BSF hardware_tests
     
     ;</editor-fold>
     
@@ -1341,14 +1341,38 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Steering">
 	    
 	    CCHANGE_OF_OUTPUTS:
-    
+	    
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
-	    subwf   default_duty_cycle,w,b
-	    bnn	    straight
+	    subwf   default_duty_cycle,w,b ; new ccp = default - output
+	    ; check if new ccp < than DUTY_25
+	    bnn	    $+10
+	    negf    WREG,a
+	    ADDLW   DUTY_25
+	    ADDLW   DUTY_25
+	    bra	    wheel_reversing
+	    
+	    ; need to check if the value is bigger or less than DUTY_25
+	    sublw   DUTY_25
+	    bn	    $+10
+	    ; no reversing
+	    ADDLW   DUTY_25
+	    BRA	    straight
+	    
+	    ; reversing
+	    negf    WREG,a
+	    ADDLW   DUTY_25
+	    bra	    wheel_reversing
+	    
 	    
 	    ; a wheel needs to reverse
-	    negf    WREG,a		; we dont put negative values into the PWM registers
+	    ;negf    WREG,a		; we dont put negative values into the PWM registers
+	    wheel_reversing:
+	    ; clamping because im not gonna tweak the PID vals now
+	    ; max value is in default_duty_cycle
+	    CPFSGT  default_duty_cycle,b
+	    movf    default_duty_cycle,w,b
+	    
 	    ; which wheel needs to reverse
 	    tstfsz  PD_SIGN,b
 	    bra	    left_reverse
@@ -1506,7 +1530,7 @@ test_hardware:
     
     TODO_hardware_tests: ; to-do todo to do
 	   ; getting the min value in ccprxl for the motors to turn
-	   movlw    31
+	   movlw    35
 	   movwf    CCPR1L,a
 	   movwf    CCPR2L,a
     
