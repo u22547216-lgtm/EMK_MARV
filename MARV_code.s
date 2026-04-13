@@ -541,7 +541,7 @@ init:
     
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
-	BSF calibrate
+	;BSF calibrate
 	;BSF	touch_start
 	;BSF follow_line
     
@@ -550,7 +550,7 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Test States">
     
 	; tests
-	 ;BSF code_tests
+	BSF code_tests
 	;BSF hardware_tests
     
     ;</editor-fold>
@@ -1345,7 +1345,7 @@ STATE_MACHINE_START:
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
 	    subwf   default_duty_cycle,w,b
-	    bnn	    $+10
+	    bnn	    straight
 	    
 	    ; a wheel needs to reverse
 	    negf    WREG,a		; we dont put negative values into the PWM registers
@@ -1355,6 +1355,7 @@ STATE_MACHINE_START:
 	    bra	    right_reverse
 	    ; both wheels forward
 		; which weel needs to slow down
+	    straight:
 	    tstfsz  PD_SIGN,b
 	    bra	    slow_left
 	    bra	    slow_right
@@ -1504,10 +1505,11 @@ test_hardware:
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
-	    lfsr    0, 100h
-	    BSF read_sensors_call
-	    call    read_sensors
-	    BCF read_sensors_call
+	   ; getting the min value in ccprxl for the motors to turn
+	   movlw    31
+	   movwf    CCPR1L,a
+	   movwf    CCPR2L,a
+    
 	    bra	TODO_hardware_tests
 ;   state 2 code
     ; to be added later
