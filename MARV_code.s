@@ -945,7 +945,7 @@ STATE_MACHINE_START:
 
 	CAP_TOUCH:
 
-	    movlw   15
+	    movlw   10
 	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
 	    movwf   Trip,b	;difference between pressed and unpressed switch
@@ -1183,7 +1183,7 @@ STATE_MACHINE_START:
 	    ;bra	    $+14
 	    goto    LOST_STOP
 	    
-	    MOVLW	-3
+	    MOVLW	-20
 	    MOVWF	lost_count,a
 	    
 	    ;MOVLW	-20
