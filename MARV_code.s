@@ -64,13 +64,14 @@
 ;<editor-fold defaultstate="collapsed" desc="Variables">
 
     ;sample_wait     equ 0x00
-    delay_outer     equ 0x01
+    black_seen_count     equ 0x01
 
 
     lost_count		equ 0x02
 
     misc_checks		equ 0x03
     #define race_colour_seen	misc_checks,0,a
+    #define black_flag		misc_checks,0,a
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
@@ -200,8 +201,8 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 1
-	Kp  equ 5
+	Kd  equ 5
+	Kp  equ 40
 
 
 	; sensor value mapping
@@ -215,14 +216,16 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
-	MIN_DUTY    equ 0
+	MIN_DUTY    equ 10
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
 	DUTY_100    equ 123
 	DUTY_STOP   equ 0
 		
-	lost_thresh equ -50
+	lost_thresh equ -30
+ 
+	black_seen_thresh   equ 10
      
 
     ;</editor-fold>
@@ -1360,15 +1363,14 @@ STATE_MACHINE_START:
 	    ADDLW   MIN_DUTY
 	    bra	    wheel_reversing
 	    
-	    ; need to check if the value is bigger or less than DUTY_25
+	    ; need to check if the value is bigger or less than MIN_DUTY
 	    sublw   MIN_DUTY
-	    bn	    $+10
+	    bnn	    $+10
 	    ; no reversing
-	    ADDLW   MIN_DUTY
+	    sublw   MIN_DUTY
 	    BRA	    straight
 	    
 	    ; reversing
-	    negf    WREG,a
 	    ADDLW   MIN_DUTY
 	    bra	    wheel_reversing
 	    
@@ -1395,11 +1397,11 @@ STATE_MACHINE_START:
 	   
 	    right_reverse:
 		; never set one of these first, extra safety for the H-Bridge
-		BCF	    STR2C
-		BSF	    STR2B
+		BCF	    STR1C
+		BSF	    STR1B
 		
-		BCF	    STR1B
-		BSF	    STR1C
+		BCF	    STR2B
+		BSF	    STR2C
 		
 		movwf   CCPR2L,a
 		movf    default_duty_cycle,w,b
@@ -1408,11 +1410,11 @@ STATE_MACHINE_START:
 		bra	CHANGE_OUTPUTS_END	
 	
 	    left_reverse:
-		BCF	    STR1C
-		BSF	    STR1B
+		BCF	    STR2C
+		BSF	    STR2B
 		
-		BCF	    STR2B
-		BSF	    STR2C
+		BCF	    STR1B
+		BSF	    STR1C
 		
 		movwf   CCPR1L,a
 		movf    default_duty_cycle,w,b
@@ -1478,8 +1480,15 @@ STATE_MACHINE_START:
 	    clrf    CCPR1L,a
 	    clrf    CCPR2L,a
 	    
-	    ;TSTFSZ  BLACK_FLAG,a
-	    ;bra	    $-2
+	    BTFSS   black_flag
+	    bra	    $+8
+	    decfsz  black_seen_count,a
+	    return
+	    bra	    $+0
+	    
+	    BCF	    black_flag
+	    movlw   black_seen_thresh
+	    movwf   black_seen_count,a
 	    
 	    RETURN   
 	    
@@ -1507,6 +1516,7 @@ STATE_MACHINE_START:
 	    MOVLW   0b00011111
 	    CPFSEQ  BLACK_FLAG,a
 	    RETURN
+	    BSF	    black_flag
 	    BRA	    BRAKES
     
 TRANSITION2:
@@ -1715,9 +1725,7 @@ SUB_TRANSITIONS1:
 		return
 
 		read_sensor:
-		    movwf   extra,a
-		    movff   number_of_readings, delay_outer
-		    movff   extra, ADCON0	; begin ADC
+		    movwf   ADCON0,a	; begin ADC
 
 		    btfsc   ADCON0,1,a	; check if ADC is done (0)
 		    bra	    $-2		; no, check again
@@ -1725,9 +1733,8 @@ SUB_TRANSITIONS1:
 		    movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 						; Increment FSR0
 										    ; 5TAD is done
-		    decfsz  delay_outer,a
 										    ; 6TAD is done
-		    bra	    $-20						    ;happens on 7TAD
+						    ;happens on 7TAD
 		    bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
 
 		    return
@@ -2323,7 +2330,8 @@ SUB_TRANSITIONS1:
 		    bra	    $+4
 		    ; it sees blue
 		    RETLW   'B'
-
+		    
+		    
 		    ; race error check
 		    movlw	'R'
 		    CPFSEQ	RACE_COLOUR,a
@@ -2340,7 +2348,7 @@ SUB_TRANSITIONS1:
 		    movlw	'B'
 		    CPFSEQ	RACE_COLOUR,a
 		    bra	$+6
-		    btfsc	check,0,a
+		    btfsc	check,2,a
 		    RETLW	'e'
 
 		    ; default to ERROR
