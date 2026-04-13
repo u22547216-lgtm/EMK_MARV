@@ -541,8 +541,8 @@ init:
     
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
-	;BSF calibrate
-	BSF	touch_start
+	BSF calibrate
+	;BSF	touch_start
 	;BSF follow_line
     
     ;</editor-fold>
@@ -945,7 +945,7 @@ STATE_MACHINE_START:
 
 	CAP_TOUCH:
 
-	    movlw   10
+	    movlw   5
 	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
 	    movwf   Trip,b	;difference between pressed and unpressed switch
