@@ -542,7 +542,7 @@ init:
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
 	;BSF calibrate
-	;BSF	touch_start
+	BSF	touch_start
 	;BSF follow_line
     
     ;</editor-fold>
@@ -551,7 +551,7 @@ init:
     
 	; tests
 	;BSF code_tests
-	BSF hardware_tests
+	;BSF hardware_tests
     
     ;</editor-fold>
     
