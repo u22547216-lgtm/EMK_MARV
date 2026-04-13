@@ -63,7 +63,7 @@
 
 ;<editor-fold defaultstate="collapsed" desc="Variables">
 
-    delay_inner     equ 0x00
+    ;sample_wait     equ 0x00
     delay_outer     equ 0x01
 
 
@@ -72,7 +72,7 @@
     misc_checks		equ 0x03
     #define race_colour_seen	misc_checks,0,a
 
-    race_error_navigations	equ 0x04
+    sample_wait	equ 0x04
     number_of_readings	    equ 0x05
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
@@ -200,8 +200,8 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 5
-	Kp  equ 20
+	Kd  equ 1
+	Kp  equ 5
 
 
 	; sensor value mapping
@@ -215,13 +215,14 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
-	MIN_DUTY    equ 25
+	MIN_DUTY    equ 0
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
 	DUTY_100    equ 123
 	DUTY_STOP   equ 0
 		
+	lost_thresh equ -50
      
 
     ;</editor-fold>
@@ -495,11 +496,11 @@ init:
 	movlw   DUTY_50
 	movwf   default_duty_cycle,b
 	
-	MOVLW	-3
+	MOVLW	lost_thresh
 	MOVWF	lost_count,a
 	
-	MOVLW	-20
-	MOVWF	race_error_navigations,a
+	;MOVLW	-20
+	;MOVWF	race_error_navigations,a
     
     ;</editor-fold>
     
@@ -1061,9 +1062,15 @@ STATE_MACHINE_START:
 	;STRAIGHT:
 	    
 	    ; force sampling rate to be equal to timer 2 rate
+	    
+	    ; wait for a certain amount of duty cycles
+	    movlw   4
+	    movwf   sample_wait,a
 	    BSF	    wait_for_timer2
 	    BTFSC   wait_for_timer2
 	    bra	    $-2
+	    decfsz  sample_wait,a
+	    bra	    $-8
 	    
 	    ; setup
 	    CLRF error0,b
@@ -1178,13 +1185,13 @@ STATE_MACHINE_START:
 	    CALL    CHECK_BLACK
 	    GOTO    TRANSITION1
 	    
-	    BTFSC   race_colour_seen
-	    bra	    $+6
+	    ;BTFSC   race_colour_seen
+	    ;bra	    $+6
 	    ;INCFSZ  race_error_navigations,a
 	    ;bra	    $+14
-	    goto    LOST_STOP
+	    ;goto    LOST_STOP
 	    
-	    MOVLW	-20
+	    MOVLW	lost_thresh
 	    MOVWF	lost_count,a
 	    
 	    ;MOVLW	-20
@@ -1388,11 +1395,11 @@ STATE_MACHINE_START:
 	   
 	    right_reverse:
 		; never set one of these first, extra safety for the H-Bridge
-		BCF	    STR1C
-		BSF	    STR1B
+		BCF	    STR2C
+		BSF	    STR2B
 		
-		BCF	    STR2B
-		BSF	    STR2C
+		BCF	    STR1B
+		BSF	    STR1C
 		
 		movwf   CCPR2L,a
 		movf    default_duty_cycle,w,b
@@ -1401,11 +1408,11 @@ STATE_MACHINE_START:
 		bra	CHANGE_OUTPUTS_END	
 	
 	    left_reverse:
-		BCF	    STR2C
-		BSF	    STR2B
+		BCF	    STR1C
+		BSF	    STR1B
 		
-		BCF	    STR1B
-		BSF	    STR1C
+		BCF	    STR2B
+		BSF	    STR2C
 		
 		movwf   CCPR1L,a
 		movf    default_duty_cycle,w,b
