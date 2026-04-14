@@ -201,8 +201,8 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 5
-	Kp  equ 40
+	Kd  equ 20
+	Kp  equ 60
 
 
 	; sensor value mapping
@@ -221,11 +221,14 @@ DELAY_SKIP		equ	0x08
 	DUTY_50     equ 62
 	DUTY_75     equ 93
 	DUTY_100    equ 123
+    
+	DUTY_MISC   equ	80
+   
 	DUTY_STOP   equ 0
 		
 	lost_thresh equ -30
  
-	black_seen_thresh   equ 10
+	black_seen_thresh   equ 3
      
 
     ;</editor-fold>
@@ -496,7 +499,7 @@ init:
 
 	clrf    race_error_colour_magic,a
 	
-	movlw   DUTY_50
+	movlw   DUTY_MISC
 	movwf   default_duty_cycle,b
 	
 	MOVLW	lost_thresh
@@ -1032,7 +1035,8 @@ STATE_MACHINE_START:
 	    RETURN
 	TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
 	;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
-	    BSF	    touch_flag,0,b
+
+	BSF	    touch_flag,0,b
 
 	    BCF	    TMR4IF
 
@@ -1067,7 +1071,7 @@ STATE_MACHINE_START:
 	    ; force sampling rate to be equal to timer 2 rate
 	    
 	    ; wait for a certain amount of duty cycles
-	    movlw   4
+	    movlw   2
 	    movwf   sample_wait,a
 	    BSF	    wait_for_timer2
 	    BTFSC   wait_for_timer2
