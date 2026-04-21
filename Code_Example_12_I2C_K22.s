@@ -84,22 +84,95 @@ INIT:
 
     MOVLB   0x00
 
-;--- Set up characters to be written (A, B, C) from address 0 in EEPROM
-    CLRF    EEPROM_ADDRESS
-    MOVLW   0x03
-    MOVWF   CHAR_COUNT
-    MOVLW   'A'
-    MOVWF   CHAR_WRITE
 
-;--- Clear file registers from 0x200 to 0x209
-    LFSR    0, 0x200
-    MOVLW   0x0A
+    ;<editor-fold defaultstate="collapsed" desc="Setup for writing 'Team 28 - our MARV is awesome' to EEPROM">	
+    ; ---Setup for writing 'Team 28 - our MARV is awesome' to EEPROM
+    CLRF    EEPROM_ADDRESS
+    MOVLW   29
+    MOVWF   CHAR_COUNT
+    
+    ;<editor-fold defaultstate="collapsed" desc="Team 28 - our MARV is awesome">
+    ;Team 28 - our MARV is awesome
+    LFSR    0,0x200
+    movlw 'T'
+    movwf POSTINC0,a
+    movlw 'e'
+    movwf POSTINC0,a
+    movlw 'a'
+    movwf POSTINC0,a
+    movlw 'm'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw 'x'
+    movwf POSTINC0,a
+    movlw 'x'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw '-'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw 'o'
+    movwf POSTINC0,a
+    movlw 'u'
+    movwf POSTINC0,a
+    movlw 'r'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw 'M'
+    movwf POSTINC0,a
+    movlw 'A'
+    movwf POSTINC0,a
+    movlw 'R'
+    movwf POSTINC0,a
+    movlw 'V'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw 'i'
+    movwf POSTINC0,a
+    movlw 's'
+    movwf POSTINC0,a
+    movlw ' '
+    movwf POSTINC0,a
+    movlw 'a'
+    movwf POSTINC0,a
+    movlw 'w'
+    movwf POSTINC0,a
+    movlw 'e'
+    movwf POSTINC0,a
+    movlw 's'
+    movwf POSTINC0,a
+    movlw 'o'
+    movwf POSTINC0,a
+    movlw 'm'
+    movwf POSTINC0,a
+    movlw 'e'
+    movwf POSTINC0,a
+    
+    ;</editor-fold>
+
+    ;MOVLW   'A'
+
+;--- Clear file registers from 0x200 to 0x220
+    LFSR    0, 0x100
+    MOVLW   0x20
     MOVWF   TABLE_COUNTER
 
 Clear_Data_Table:
     CLRF    POSTINC0
     DECFSZ  TABLE_COUNTER,f
     GOTO    Clear_Data_Table
+    
+start_char_of_write_data:
+    LFSR    0,0x200
+    movf    POSTINC0,w,a
+    MOVWF   CHAR_WRITE
+    ;</editor-fold>
+    
 ;</editor-fold>
 
 ;-------------------------------------------------------------------------------
@@ -142,8 +215,9 @@ Main_write:
     ;--- Increment the EEPORM address
     INCF    EEPROM_ADDRESS,F
     
-    ;--- Generate a new letter to send
-    INCF    CHAR_WRITE,F	; Incrementing CHAR_WRITE goes to the next letter.    
+    ;--- Fetch next letter to send
+    movf    POSTINC0,w,a
+    MOVWF   CHAR_WRITE   
     ;</editor-fold>
 
     ;<editor-fold defaultstate="collapsed" desc="5. Generate stop condition">    
@@ -164,11 +238,11 @@ Main_write:
 ;-------------------------------------------------------------------------------
 ;--- Reload parameters
     CLRF    EEPROM_ADDRESS
-    MOVLW   0x03
+    MOVLW   29
     MOVWF   CHAR_COUNT
 
-;--- Stream data to 0x200 in data memory
-    LFSR    0, 0x200
+;--- Stream data to 0x100 in data memory
+    LFSR    0, 0x100
 
 Main_read:
 
