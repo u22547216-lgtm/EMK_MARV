@@ -104,9 +104,9 @@ INIT:
     movwf POSTINC0,a
     movlw ' '
     movwf POSTINC0,a
-    movlw 'x'
+    movlw '2'
     movwf POSTINC0,a
-    movlw 'x'
+    movlw '8'
     movwf POSTINC0,a
     movlw ' '
     movwf POSTINC0,a
