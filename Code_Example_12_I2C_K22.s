@@ -38,7 +38,13 @@
 PSECT code,abs
     org     00h
     GOTO    INIT
+    
+    
+    org	    20h
+    chars equ 86
 
+    DB "Choose your MARV mode?", 0x0A, "(C)colour", 0x0A, "(R)eference", 0x0A, "(A)ttack", 0x0A, "(S)imulate race", 0x0A, "(H)otload EEPROM"
+    
 ;-------------------------------------------------------------------------------
 ; Initialisation
 ;-------------------------------------------------------------------------------
