@@ -113,8 +113,6 @@ INIT:
     movlw   0x20
     movwf   TBLPTRL,a
     
-    ; inc pointer after a read
-    TBLRD*+
     
     ; page write count (im hard codeing this cause the menu is constant)
     movlw   10
@@ -205,8 +203,9 @@ Clear_Data_Table:
     GOTO    Clear_Data_Table
     
 start_char_of_write_data:
-    LFSR    0,0x200
-    movf    POSTINC0,w,a
+    ; inc pointer after a read
+    TBLRD*+
+    movwf   TABLAT,a
     MOVWF   CHAR_WRITE
     ;</editor-fold>
     
@@ -246,7 +245,7 @@ Main_write:
     
 page_loop:
     
-    MOVF    TABLAT,W
+    MOVF    CHAR_WRITE,W
     MOVWF   TX_BYTE
     CALL    my_I2C_WRITE
 
@@ -258,7 +257,8 @@ page_loop:
     INCF    EEPROM_ADDRESS,F
     
     ;--- Fetch next letter to send
-    movf    POSTINC0,w,a
+    TBLRD*+
+    movwf   TABLAT,a
     MOVWF   CHAR_WRITE   
     
     decfsz  page_byte_count,a
@@ -312,7 +312,7 @@ page_loop:
     
 page_loop_left_over:
     
-    MOVF    TABLAT,W
+    MOVF    CHAR_WRITE,W
     MOVWF   TX_BYTE
     CALL    my_I2C_WRITE
 
@@ -324,7 +324,8 @@ page_loop_left_over:
     INCF    EEPROM_ADDRESS,F
     
     ;--- Fetch next letter to send
-    movf    POSTINC0,w,a
+    TBLRD*+
+    movwf   TABLAT,a
     MOVWF   CHAR_WRITE   
     
     decfsz  page_byte_count,a
