@@ -28,6 +28,10 @@
     CHAR_COUNT      EQU 0x5
     CHAR_WRITE      EQU 0x6
     TABLE_COUNTER   EQU 0x7
+   
+    PAGE_COUNT	    equ 0x8
+    chars_left	    equ 0x9
+    page_byte_count equ 0xA
 
     WRITE_CONTROL   EQU 10100000B
     READ_CONTROL    EQU 10100001B
@@ -44,6 +48,9 @@ PSECT code,abs
     chars equ 86
 
     DB "Choose your MARV mode?", 0x0A, "(C)colour", 0x0A, "(R)eference", 0x0A, "(A)ttack", 0x0A, "(S)imulate race", 0x0A, "(H)otload EEPROM"
+    
+    
+    org	    78h
     
 ;-------------------------------------------------------------------------------
 ; Initialisation
@@ -91,9 +98,33 @@ INIT:
     MOVLB   0x00
 
 
-    ;<editor-fold defaultstate="collapsed" desc="Setup for writing 'Team 28 - our MARV is awesome' to EEPROM">	
-    ; ---Setup for writing 'Team 28 - our MARV is awesome' to EEPROM
+    ;<editor-fold defaultstate="collapsed" desc="Setup for writing the menu screen to EEPROM">
+    
+    ; ---Setup for writing the menu screen to EEPROM with table stuff
+    
+    ; tbl works on program memory
+    movlw   0b10000000
+    movwf   EECON1,a
+    
+    ; set address of Table
+    movlw   0
+    movwf   TBLPTRU,a
+    movwf   TBLPTRH,a
+    movlw   0x20
+    movwf   TBLPTRL,a
+    
+    ; inc pointer after a read
+    TBLRD*+
+    
+    ; page write count (im hard codeing this cause the menu is constant)
+    movlw   10
+    movwf   PAGE_COUNT,a
+    movlw   6
+    movwf   chars_left,a
+    
+    
     CLRF    EEPROM_ADDRESS
+    
     MOVLW   29
     MOVWF   CHAR_COUNT
     
@@ -209,8 +240,13 @@ Main_write:
     GOTO    I2C_ERROR
     ;</editor-fold>
 
-    ;<editor-fold defaultstate="collapsed" desc="4. Load & send the data">
-    MOVF    CHAR_WRITE,W
+    ;<editor-fold defaultstate="collapsed" desc="4. Load & send the data in pages">
+    MOVLW   8
+    movwf   page_byte_count,a
+    
+page_loop:
+    
+    MOVF    TABLAT,W
     MOVWF   TX_BYTE
     CALL    my_I2C_WRITE
 
@@ -224,6 +260,11 @@ Main_write:
     ;--- Fetch next letter to send
     movf    POSTINC0,w,a
     MOVWF   CHAR_WRITE   
+    
+    decfsz  page_byte_count,a
+    bra	page_loop
+    
+    
     ;</editor-fold>
 
     ;<editor-fold defaultstate="collapsed" desc="5. Generate stop condition">    
@@ -234,10 +275,71 @@ Main_write:
     CALL    POLLING_WRITE_ACK
     ;</editor-fold>
     
-    ; Repeat two more times to write three characters in total
+    ; Repeat 10 more times to write 80 characters in total
     CALL    DELAY
-    DECFSZ  CHAR_COUNT,F
+    DECFSZ  PAGE_COUNT,F
     GOTO    Main_write
+    
+    ; handling the last bit of chars that dont fill a full 8 bytes
+    
+    ;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
+    CALL    I2C_START_CONDITION
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="2. Load & send the control byte/slave address (WRITE)">    
+    MOVLW   WRITE_CONTROL
+    MOVWF   TX_BYTE
+    CALL    my_I2C_WRITE
+    
+    ;--- Optional ACK check
+    BTFSC   SSP1CON2,6       ; ACKSTAT = 1 means no ACK received
+    GOTO    I2C_ERROR
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="3. Load & send the address">
+    MOVF    EEPROM_ADDRESS,W
+    MOVWF   TX_BYTE
+    CALL    my_I2C_WRITE    
+
+    ;--- Optional ACK check
+    BTFSC   SSP1CON2,6
+    GOTO    I2C_ERROR
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="4. Load & send the last data in a page of 6 bytes">
+    MOVLW   chars_left
+    movwf   page_byte_count,a
+    
+page_loop_left_over:
+    
+    MOVF    TABLAT,W
+    MOVWF   TX_BYTE
+    CALL    my_I2C_WRITE
+
+    ;--- Optional ACK check
+    BTFSC   SSP1CON2,6
+    GOTO    I2C_ERROR
+    
+    ;--- Increment the EEPORM address
+    INCF    EEPROM_ADDRESS,F
+    
+    ;--- Fetch next letter to send
+    movf    POSTINC0,w,a
+    MOVWF   CHAR_WRITE   
+    
+    decfsz  page_byte_count,a
+    bra	page_loop_left_over
+    
+    
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="5. Generate stop condition">    
+    CALL    I2C_STOP_CONDITION
+    ;</editor-fold>
+
+    ;<editor-fold defaultstate="collapsed" desc="6. Wait for EEPROM internal write cycle to finish">
+    CALL    POLLING_WRITE_ACK
+    ;</editor-fold>
 
 ;-------------------------------------------------------------------------------
 ; Read characters and stream to data memory
