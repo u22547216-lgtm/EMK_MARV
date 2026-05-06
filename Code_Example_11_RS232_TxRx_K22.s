@@ -14,7 +14,7 @@
 ;--- Configuration bits ---
     CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block, port function on RA6 and RA7)
     CONFIG  WDTEN = OFF           ; Watchdog Timer Enable bit (WDT is controlled by SWDTEN bit of the WDTCON register)
-    CONFIG  LVP = OFF             ; Single-Supply ICSP Enable bit (Single-Supply ICSP disabled)    
+    CONFIG  LVP = ON             ; Single-Supply ICSP Enable bit (Single-Supply ICSP disabled)    
     
 ;--- Header files ---
     #include    "pic18f45K22.inc"
@@ -55,7 +55,7 @@ Start:
     ; Baud rate setup (Datasheet RX#1)
     MOVLW   12			; 19200 BAUD @ 4 MHz
 				; table 18-5 of datasheet
-    ;MOVLW   25			; 9600 BAUD @ 4 MHz
+    ; MOVLW   25			; 9600 BAUD @ 4 MHz
     MOVWF   SPBRG1	  	; load baudrate register
     CLRF    SPBRGH1
     BSF     TXSTA1,2		; Enable high BAUDrate
