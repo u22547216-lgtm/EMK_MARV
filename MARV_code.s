@@ -549,7 +549,7 @@ init:
     
 	;Set touch start bit first so that the program waits for the touch pad to be touched
 	; State activation bits
-	BSF calibrate
+	;BSF calibrate
 	;BSF	touch_start
 	;BSF follow_line
     
@@ -588,7 +588,62 @@ init:
 ;</editor-fold>
     
 STATE_MACHINE_START:
+    
+;<editor-fold desc="State Control Bits">
+    STATE_CONTROLLER:
+	//    SECTIONS TO HANDLE IN THIS
+	    //    Power-on greeting
+	    //    Menu options
+	    //    (C)colour
+	    //    (R)eference
+	    //    (A)ttack
+	    //    (S)imulate race
+	    //    (H)otload EEPROM
+	    
+	//    this needs to control which state we go to
+	//    it needs a way to interpret commands
+	
+	//    everything here needs to be controlled by bits.
+	    //    the control bits for the main functions need to be controlled here.
+	    //    the state or menu option that we are in has to be kept track of with bits.
+	
+	READ_FROM_SERIAL:
+	
+	INTERPRET_COMMAND:
+    
+	CYOC:
+	    //    THE POWER ON MESSAGE
+	    
+	MAIN_MENU:
+	    //    SPEAKS FOR ITSELF, JUST READ THE EEPROM, AND THEN TRANSMIT IT WITH Tx
 
+	COLOUR:
+	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx
+    
+	REFERENCE:
+	    //    GO TO CALIBRATION SEQUENCE
+    
+	ATTACK:
+	    //    GO TO LLI
+    
+	SIMULATE_RACE:
+	    //    BASICALLY IT'S OWN STATE MACHINE
+	    
+	    SEND_SENSORS:
+	    //    WE NEED TO DECIDE IF IT WILL CONSTANTLY SEND SENSOR READINGS OR JUST SEND THE CURRENT SENSOR VALUE WHEN WE ENTER THE COMMAND
+    
+	    CHANGE_DIRECTION:
+    
+	HOTLOAD_EEPROM:
+	    //    READ FROM Rx AND PROGRAM TO EEPROM
+    
+	    RECIEVE_MESSAGE:
+    
+	    CHANGE_EEPROM:
+
+    
+    
+;</editor-fold>
 
 ;<editor-fold defaultstate="collapsed" desc="Calibration">
     STATE0:
