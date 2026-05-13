@@ -63,16 +63,17 @@
 
 ;<editor-fold defaultstate="collapsed" desc="Variables">
 
-    delay_inner     equ 0x00
-    delay_outer     equ 0x01
+    ;sample_wait     equ 0x00
+    black_seen_count     equ 0x01
 
 
     lost_count		equ 0x02
 
     misc_checks		equ 0x03
     #define race_colour_seen	misc_checks,0,a
+    #define black_flag		misc_checks,0,a
 
-    race_error_navigations	equ 0x04
+    sample_wait	equ 0x04
     number_of_readings	    equ 0x05
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
@@ -200,8 +201,8 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 5
-	Kp  equ 30
+	Kd  equ 20
+	Kp  equ 60
 
 
 	; sensor value mapping
@@ -215,12 +216,19 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
+	MIN_DUTY    equ 10
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
 	DUTY_100    equ 123
+    
+	DUTY_MISC   equ	80
+   
 	DUTY_STOP   equ 0
 		
+	lost_thresh equ -30
+ 
+	black_seen_thresh   equ 3
      
 
     ;</editor-fold>
@@ -491,14 +499,14 @@ init:
 
 	clrf    race_error_colour_magic,a
 	
-	movlw   DUTY_50
+	movlw   DUTY_MISC
 	movwf   default_duty_cycle,b
 	
-	MOVLW	-3
+	MOVLW	lost_thresh
 	MOVWF	lost_count,a
 	
-	MOVLW	-20
-	MOVWF	race_error_navigations,a
+	;MOVLW	-20
+	;MOVWF	race_error_navigations,a
     
     ;</editor-fold>
     
@@ -550,7 +558,7 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Test States">
     
 	; tests
-	 ;BSF code_tests
+	;BSF code_tests
 	;BSF hardware_tests
     
     ;</editor-fold>
@@ -945,7 +953,7 @@ STATE_MACHINE_START:
 
 	CAP_TOUCH:
 
-	    movlw   20
+	    movlw   60
 	    movwf   OpenSW,b	;unpressed switch value
 	    movlw   1
 	    movwf   Trip,b	;difference between pressed and unpressed switch
@@ -1027,7 +1035,8 @@ STATE_MACHINE_START:
 	    RETURN
 	TIMER4_ISR:  ;moved the ISR here because if it is way down under, it affects the charging time for the current on the touchpad, giving low values. 
 	;Also added/moved the timer2 ISR to the org 0x08 to check if it is timer2 ISR or the normal ISR.
-	    BSF	    touch_flag,0,b
+
+	BSF	    touch_flag,0,b
 
 	    BCF	    TMR4IF
 
@@ -1060,9 +1069,15 @@ STATE_MACHINE_START:
 	;STRAIGHT:
 	    
 	    ; force sampling rate to be equal to timer 2 rate
+	    
+	    ; wait for a certain amount of duty cycles
+	    movlw   2
+	    movwf   sample_wait,a
 	    BSF	    wait_for_timer2
 	    BTFSC   wait_for_timer2
 	    bra	    $-2
+	    decfsz  sample_wait,a
+	    bra	    $-8
 	    
 	    ; setup
 	    CLRF error0,b
@@ -1177,17 +1192,17 @@ STATE_MACHINE_START:
 	    CALL    CHECK_BLACK
 	    GOTO    TRANSITION1
 	    
-	    BTFSC   race_colour_seen
-	    bra	    $+10
-	    INCFSZ  race_error_navigations,a
-	    bra	    $+14
-	    goto    LOST_STOP
+	    ;BTFSC   race_colour_seen
+	    ;bra	    $+6
+	    ;INCFSZ  race_error_navigations,a
+	    ;bra	    $+14
+	    ;goto    LOST_STOP
 	    
-	    MOVLW	-3
+	    MOVLW	lost_thresh
 	    MOVWF	lost_count,a
 	    
-	    MOVLW	-20
-	    MOVWF	race_error_navigations,a
+	    ;MOVLW	-20
+	    ;MOVWF	race_error_navigations,a
 	    
 	    ; i want to add something to this that gives the lost condition a bit of time to kick in
 	    ; something like a sample delay, it has to be lost for a number of samples before it is actually lost
@@ -1341,20 +1356,44 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Steering">
 	    
 	    CCHANGE_OF_OUTPUTS:
-    
+	    
 	    ; check if a wheel needs to reverse
 	    movf    PD_OUTPUT,w,b
-	    subwf   default_duty_cycle,w,b
+	    subwf   default_duty_cycle,w,b ; new ccp = default - output
+	    ; check if new ccp < than MIN_DUTY
 	    bnn	    $+10
+	    negf    WREG,a
+	    ADDLW   MIN_DUTY
+	    ADDLW   MIN_DUTY
+	    bra	    wheel_reversing
+	    
+	    ; need to check if the value is bigger or less than MIN_DUTY
+	    sublw   MIN_DUTY
+	    bnn	    $+10
+	    ; no reversing
+	    sublw   MIN_DUTY
+	    BRA	    straight
+	    
+	    ; reversing
+	    ADDLW   MIN_DUTY
+	    bra	    wheel_reversing
+	    
 	    
 	    ; a wheel needs to reverse
-	    negf    WREG,a		; we dont put negative values into the PWM registers
+	    ;negf    WREG,a		; we dont put negative values into the PWM registers
+	    wheel_reversing:
+	    ; clamping because im not gonna tweak the PID vals now
+	    ; max value is in default_duty_cycle
+	    CPFSGT  default_duty_cycle,b
+	    movf    default_duty_cycle,w,b
+	    
 	    ; which wheel needs to reverse
 	    tstfsz  PD_SIGN,b
 	    bra	    left_reverse
 	    bra	    right_reverse
 	    ; both wheels forward
 		; which weel needs to slow down
+	    straight:
 	    tstfsz  PD_SIGN,b
 	    bra	    slow_left
 	    bra	    slow_right
@@ -1445,8 +1484,15 @@ STATE_MACHINE_START:
 	    clrf    CCPR1L,a
 	    clrf    CCPR2L,a
 	    
-	    ;TSTFSZ  BLACK_FLAG,a
-	    ;bra	    $-2
+	    BTFSS   black_flag
+	    bra	    $+8
+	    decfsz  black_seen_count,a
+	    return
+	    bra	    $+0
+	    
+	    BCF	    black_flag
+	    movlw   black_seen_thresh
+	    movwf   black_seen_count,a
 	    
 	    RETURN   
 	    
@@ -1474,6 +1520,7 @@ STATE_MACHINE_START:
 	    MOVLW   0b00011111
 	    CPFSEQ  BLACK_FLAG,a
 	    RETURN
+	    BSF	    black_flag
 	    BRA	    BRAKES
     
 TRANSITION2:
@@ -1504,10 +1551,11 @@ test_hardware:
     GOTO    SUBROUTINE0
     
     TODO_hardware_tests: ; to-do todo to do
-	    lfsr    0, 100h
-	    BSF read_sensors_call
-	    call    read_sensors
-	    BCF read_sensors_call
+	   ; getting the min value in ccprxl for the motors to turn
+	   movlw    35
+	   movwf    CCPR1L,a
+	   movwf    CCPR2L,a
+    
 	    bra	TODO_hardware_tests
 ;   state 2 code
     ; to be added later
@@ -1681,9 +1729,7 @@ SUB_TRANSITIONS1:
 		return
 
 		read_sensor:
-		    movwf   extra,a
-		    movff   number_of_readings, delay_outer
-		    movff   extra, ADCON0	; begin ADC
+		    movwf   ADCON0,a	; begin ADC
 
 		    btfsc   ADCON0,1,a	; check if ADC is done (0)
 		    bra	    $-2		; no, check again
@@ -1691,9 +1737,8 @@ SUB_TRANSITIONS1:
 		    movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
 						; Increment FSR0
 										    ; 5TAD is done
-		    decfsz  delay_outer,a
 										    ; 6TAD is done
-		    bra	    $-20						    ;happens on 7TAD
+						    ;happens on 7TAD
 		    bcf	    ADCON0,1,a						    ; shuts ADC down on 8TAD
 
 		    return
@@ -2289,7 +2334,8 @@ SUB_TRANSITIONS1:
 		    bra	    $+4
 		    ; it sees blue
 		    RETLW   'B'
-
+		    
+		    
 		    ; race error check
 		    movlw	'R'
 		    CPFSEQ	RACE_COLOUR,a
@@ -2306,7 +2352,7 @@ SUB_TRANSITIONS1:
 		    movlw	'B'
 		    CPFSEQ	RACE_COLOUR,a
 		    bra	$+6
-		    btfsc	check,0,a
+		    btfsc	check,2,a
 		    RETLW	'e'
 
 		    ; default to ERROR
