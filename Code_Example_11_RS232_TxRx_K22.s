@@ -8,6 +8,7 @@
 ; Example to implement RS232 RX/TX 
 ;-------------------------------------------------------------------------------
     
+    TITLE "a"
 ;--- Device definition ---
     PROCESSOR   18F45K22
     
@@ -71,7 +72,7 @@ Start:
     BSF	    RCSTA1,7		; Enable Serial Port (Datasheet RX#3)
     
     ; Transmit setup (TX)
-    BSF	    BAUDCON1,4		; Inverted polarity
+    ;BSF	    BAUDCON1,4		; Inverted polarity
     BSF	    TXSTA1,5		; Enable transmit
     
     ; set up interrupts
@@ -81,7 +82,7 @@ Start:
     BSF    GIE			; Enable global interrupts
     
     ; Receive setup (RX)
-    BSF	    BAUDCON1,5		; Inverted polarity (Datasheet RX#5)
+    ;BSF	    BAUDCON1,5		; Inverted polarity (Datasheet RX#5)
     BSF	    RCSTA1,4		; Enable continuous reception (Datasheet RX#6)
     
     MOVLB   0x0
