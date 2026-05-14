@@ -691,8 +691,25 @@ STATE_MACHINE_START:
 	    //    READ FROM Rx AND PROGRAM TO EEPROM
     
 	    RECIEVE_MESSAGE:
+	    //	  write recieved to Bank 1
+		LFSR    0,100h
+		
+		
     
 	    CHANGE_EEPROM:
+	    //	  how many pages to write
+		MOVLW	0
+		CLRF    PAGE_COUNT
+		ADDLW	8
+		INCF	PAGE_COUNT
+		CPFSLT	FSR0L
+		BRA	$-6
+	    //	  start address of power on message
+		MOVLW	88
+		MOVWF	EEPROM_ADDRESS
+		LFSR    0,100h
+		
+		call	MULTI_PAGE_WRITE
     
 	ECHO:
 
@@ -2860,6 +2877,12 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     ;<editor-fold defaultstate="collapsed" desc="Multi Page Write">
 	
     MULTI_PAGE_WRITE:
+	;--- Fetch the letter to send
+;	TBLRD*+
+;	movf   TABLAT,w,a
+	movf	POSTINC0,W
+	MOVWF   CHAR_WRITE   
+    
 	;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
 	CALL    I2C_START_CONDITION
 	;</editor-fold>
@@ -2901,10 +2924,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	;--- Increment the EEPORM address
 	INCF    EEPROM_ADDRESS,F
 
-	;--- Fetch next letter to send
-	TBLRD*+
-	movwf   TABLAT,a
-	MOVWF   CHAR_WRITE   
 
 	decfsz  page_byte_count,a
 	bra	page_loop
@@ -2928,144 +2947,86 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	return
     ;</editor-fold>
 
-    ;<editor-fold defaultstate="collapsed" desc="Page Write">
-    
-    PAGE_WRITE:
-
-	;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
-	CALL    I2C_START_CONDITION
-	;</editor-fold>
-
-	;<editor-fold defaultstate="collapsed" desc="2. Load & send the control byte/slave address (WRITE)">    
-	MOVLW   WRITE_CONTROL
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
-
-	;--- Optional ACK check
-	BTFSC   SSP1CON2,6       ; ACKSTAT = 1 means no ACK received
-	GOTO    I2C_ERROR
-	;</editor-fold>
-
-	;<editor-fold defaultstate="collapsed" desc="3. Load & send the address">
-	MOVF    EEPROM_ADDRESS,W
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE    
-
-	;--- Optional ACK check
-	BTFSC   SSP1CON2,6
-	GOTO    I2C_ERROR
-	;</editor-fold>
-
-	;<editor-fold defaultstate="collapsed" desc="4. Load & send the last data in a page of 6 bytes">
-	MOVLW   chars_left
-	movwf   page_byte_count,a
-
-    page_loop_left_over:
-
-	MOVF    CHAR_WRITE,W
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
-
-	;--- Optional ACK check
-	BTFSC   SSP1CON2,6
-	GOTO    I2C_ERROR
-
-	;--- Increment the EEPORM address
-	INCF    EEPROM_ADDRESS,F
-
-	;--- Fetch next letter to send
-	TBLRD*+
-	movwf   TABLAT,a
-	MOVWF   CHAR_WRITE   
-
-	decfsz  page_byte_count,a
-	bra	page_loop_left_over
-
-
-	;</editor-fold>
-
-	;<editor-fold defaultstate="collapsed" desc="5. Generate stop condition">    
-	CALL    I2C_STOP_CONDITION
-	;</editor-fold>
-
-	;<editor-fold defaultstate="collapsed" desc="6. Wait for EEPROM internal write cycle to finish">
-	CALL    POLLING_WRITE_ACK
-	;</editor-fold>
-
     ;-------------------------------------------------------------------------------
     ; Read characters and stream to data memory
     ;-------------------------------------------------------------------------------
     ;--- Reload parameters
 	CLRF    EEPROM_ADDRESS
-	MOVLW   29
+	MOVLW   chars
 	MOVWF   CHAR_COUNT
 
     ;--- Stream data to 0x100 in data memory
 	LFSR    0, 0x100
+	
+    ;<editor-fold defaultstate="collapsed" desc="Read EEPROM">
+    
+	READ_EEPROM:
 
-    Main_read:
+	    ;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
+	    CALL    I2C_START_CONDITION
+	    ;</editor-fold>
 
-	;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
-	CALL    I2C_START_CONDITION
-	;</editor-fold>
+	    ;<editor-fold defaultstate="collapsed" desc="2. Load & send the control byte/slave address: WRITE">
+	    MOVLW   WRITE_CONTROL
+	    MOVWF   TX_BYTE
+	    CALL    my_I2C_WRITE
 
-	;<editor-fold defaultstate="collapsed" desc="2. Load & send the control byte/slave address: WRITE">
-	MOVLW   WRITE_CONTROL
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
+	    BTFSC   SSP1CON2,6
+	    GOTO    I2C_ERROR
+	    ;</editor-fold>
 
-	BTFSC   SSP1CON2,6
-	GOTO    I2C_ERROR
-	;</editor-fold>
+	    ;<editor-fold defaultstate="collapsed" desc="3. Load and send the EEPROM word address">
+	    MOVF    EEPROM_ADDRESS,W
+	    MOVWF   TX_BYTE
+	    CALL    my_I2C_WRITE
 
-	;<editor-fold defaultstate="collapsed" desc="3. Load and send the EEPROM word address">
-	MOVF    EEPROM_ADDRESS,W
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
+	    BTFSC   SSP1CON2,6
+	    GOTO    I2C_ERROR
+	    ;</editor-fold>
 
-	BTFSC   SSP1CON2,6
-	GOTO    I2C_ERROR
-	;</editor-fold>
+	    ;<editor-fold defaultstate="collapsed" desc="4. Restart to switch to receive mode">
+	    CALL    I2C_RESTART
+	    ;</editor-fold>
 
-	;<editor-fold defaultstate="collapsed" desc="4. Restart to switch to receive mode">
-	CALL    I2C_RESTART
-	;</editor-fold>
+	    ;<editor-fold defaultstate="collapsed" desc="5. Load and send the control byte/slave address: READ">
+	    MOVLW   READ_CONTROL
+	    MOVWF   TX_BYTE
+	    CALL    my_I2C_WRITE
 
-	;<editor-fold defaultstate="collapsed" desc="5. Load and send the control byte/slave address: READ">
-	MOVLW   READ_CONTROL
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
+	    BTFSC   SSP1CON2,6
+	    GOTO    I2C_ERROR
+	    ;</editor-fold>
 
-	BTFSC   SSP1CON2,6
-	GOTO    I2C_ERROR
-	;</editor-fold>
+	Read_char:
+	    ;<editor-fold defaultstate="collapsed" desc="6. Read byte into POSTINC0">
+	    CALL    my_I2C_READ_BYTE
+	    ;</editor-fold>
 
-    Read_char:
-	;<editor-fold defaultstate="collapsed" desc="6. Read byte into POSTINC0">
-	CALL    my_I2C_READ_BYTE
-	;</editor-fold>
+	    ;<editor-fold defaultstate="collapsed" desc="7. ACK all but last byte, NACK the last byte">
+	    MOVLW   0x01
+	    CPFSEQ  CHAR_COUNT
+	    GOTO    More_Bytes
 
-	;<editor-fold defaultstate="collapsed" desc="7. ACK all but last byte, NACK the last byte">
-	MOVLW   0x01
-	CPFSEQ  CHAR_COUNT
-	GOTO    More_Bytes
+	Last_Byte:
+	    CALL    I2C_SEND_NACK
+	    DECF    CHAR_COUNT,F
+	    GOTO    Read_done
 
-    Last_Byte:
-	CALL    I2C_SEND_NACK
-	DECF    CHAR_COUNT,F
-	GOTO    Read_done
+	More_Bytes:
+	    CALL    I2C_SEND_ACK
+	    DECF    CHAR_COUNT,F
+	    GOTO    Read_char
+	    ;</editor-fold>
 
-    More_Bytes:
-	CALL    I2C_SEND_ACK
-	DECF    CHAR_COUNT,F
-	GOTO    Read_char
-	;</editor-fold>
-
-    Read_done:
-	;<editor-fold defaultstate="collapsed" desc="8. Stop">
-	CALL    I2C_STOP_CONDITION
-	;</editor-fold>
-
+	Read_done:
+	    ;<editor-fold defaultstate="collapsed" desc="8. Stop">
+	    CALL    I2C_STOP_CONDITION
+	    ;</editor-fold>
+	    
+	    return
+	    
+    ;</editor-fold>
+    
 	; Code ends here in endless loop.
 	CALL    DELAY
 	GOTO    $               ; Hang here
@@ -3074,7 +3035,9 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     ; Subroutines
     ;-------------------------------------------------------------------------------
 
-    ;-------------------------------------------------------
+    
+    ;<editor-fold defaultstate="collapsed" desc="I2C Start">
+    
     I2C_START_CONDITION:
 	BCF     SSP1IF
 	BSF     SSP1CON2,0      ; SEN = 1
@@ -3085,7 +3048,10 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	SETF    PORTA
 	RETURN
 
-    ;-------------------------------------------------------
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="I2C Restart">
+    
     I2C_RESTART:
 	BCF     SSP1IF
 	BSF     SSP1CON2,1      ; RSEN = 1
@@ -3093,116 +3059,144 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	BTFSC   SSP1CON2,1
 	BRA     wait_RESTART
 	RETURN
+	
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    I2C_STOP_CONDITION:
-	BCF     SSP1IF
-	BSF     SSP1CON2,2      ; PEN = 1
-    wait_STOP:
-	BTFSC   SSP1CON2,2
-	BRA     wait_STOP
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Stop">
+    
+	I2C_STOP_CONDITION:
+	    BCF     SSP1IF
+	    BSF     SSP1CON2,2      ; PEN = 1
+	wait_STOP:
+	    BTFSC   SSP1CON2,2
+	    BRA     wait_STOP
+	    RETURN
+    
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    my_I2C_WRITE:
-	BTFSC   SSP1STAT,0      ; BF = 1 means buffer full
-	GOTO    my_I2C_WRITE
-	BCF     SSP1IF
-	MOVF    TX_BYTE,W
-	MOVWF   SSP1BUF
-    wait_WRITE:
-	BTFSS   SSP1IF
-	BRA     wait_WRITE
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Write Byte">
+    
+	my_I2C_WRITE:
+	    BTFSC   SSP1STAT,0      ; BF = 1 means buffer full
+	    GOTO    my_I2C_WRITE
+	    BCF     SSP1IF
+	    MOVF    TX_BYTE,W
+	    MOVWF   SSP1BUF
+	wait_WRITE:
+	    BTFSS   SSP1IF
+	    BRA     wait_WRITE
+	    RETURN
+	
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    ; Receive one byte and store at POSTINC0
-    ; Does NOT send ACK/NACK
-    my_I2C_READ_BYTE:
-	BCF     SSP1IF
-	BSF     SSP1CON2,3      ; RCEN = 1, enable receive mode
-    WAIT1_READ:
-	BTFSS   SSP1IF
-	BRA     WAIT1_READ
-	BTFSS   SSP1STAT,0      ; BF must be set when byte is received
-	BRA     WAIT1_READ
-	MOVF    SSP1BUF,W
-	MOVWF   POSTINC0
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Recieve Byte">
+    
+	; Receive one byte and store at POSTINC0
+	; Does NOT send ACK/NACK
+	my_I2C_READ_BYTE:
+	    BCF     SSP1IF
+	    BSF     SSP1CON2,3      ; RCEN = 1, enable receive mode
+	WAIT1_READ:
+	    BTFSS   SSP1IF
+	    BRA     WAIT1_READ
+	    BTFSS   SSP1STAT,0      ; BF must be set when byte is received
+	    BRA     WAIT1_READ
+	    MOVF    SSP1BUF,W
+	    MOVWF   POSTINC0
+	    RETURN
+	
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    I2C_SEND_ACK:
-	BCF     SSP1CON2,5      ; ACKDT = 0 -> ACK
-	BCF     SSP1IF
-	BSF     SSP1CON2,4      ; ACKEN = 1
-    WAIT_ACK:
-	BTFSS   SSP1IF
-	BRA     WAIT_ACK
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Send Read Ack">
+    
+	I2C_SEND_ACK:
+	    BCF     SSP1CON2,5      ; ACKDT = 0 -> ACK
+	    BCF     SSP1IF
+	    BSF     SSP1CON2,4      ; ACKEN = 1
+	WAIT_ACK:
+	    BTFSS   SSP1IF
+	    BRA     WAIT_ACK
+	    RETURN
+	
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    I2C_SEND_NACK:
-	BSF     SSP1CON2,5      ; ACKDT = 1 -> NACK
-	BCF     SSP1IF
-	BSF     SSP1CON2,4      ; ACKEN = 1
-    WAIT_NACK:
-	BTFSS   SSP1IF
-	BRA     WAIT_NACK
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Nack">
+    
+	I2C_SEND_NACK:
+	    BSF     SSP1CON2,5      ; ACKDT = 1 -> NACK
+	    BCF     SSP1IF
+	    BSF     SSP1CON2,4      ; ACKEN = 1
+	WAIT_NACK:
+	    BTFSS   SSP1IF
+	    BRA     WAIT_NACK
+	    RETURN
+	
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    ; ACK polling for 24LC02B:
-    ; After STOP, issue START and resend WRITE control byte
-    ; until ACKSTAT = 0
-    POLLING_WRITE_ACK:
-    Poll_Loop:
-	CALL    I2C_START_CONDITION
+    ;<editor-fold defaultstate="collapsed" desc="I2C Write Ack Polling">
 
-	MOVLW   WRITE_CONTROL
-	MOVWF   TX_BYTE
-	CALL    my_I2C_WRITE
+	; ACK polling for 24LC02B:
+	; After STOP, issue START and resend WRITE control byte
+	; until ACKSTAT = 0
+	POLLING_WRITE_ACK:
+	Poll_Loop:
+	    CALL    I2C_START_CONDITION
 
-	; ACKSTAT = 1 => EEPROM still busy
-	BTFSC   SSP1CON2,6
-	GOTO    Poll_NotReady
+	    MOVLW   WRITE_CONTROL
+	    MOVWF   TX_BYTE
+	    CALL    my_I2C_WRITE
 
-    Poll_Ready:
-	CALL    I2C_STOP_CONDITION
-	RETURN
+	    ; ACKSTAT = 1 => EEPROM still busy
+	    BTFSC   SSP1CON2,6
+	    GOTO    Poll_NotReady
 
-    Poll_NotReady:
-	CALL    I2C_STOP_CONDITION
-	GOTO    Poll_Loop
+	Poll_Ready:
+	    CALL    I2C_STOP_CONDITION
+	    RETURN
 
-    ;-------------------------------------------------------
-    I2C_ERROR:
-	CALL    FLASH_LED
-	GOTO    $
+	Poll_NotReady:
+	    CALL    I2C_STOP_CONDITION
+	    GOTO    Poll_Loop
+	    
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    FLASH_LED:
-	MOVLW   11000000B
-	MOVWF   PORTA,a
-	CALL    DELAY
-	MOVLW   10000000B
-	MOVWF   PORTA,a
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Error">
+    
+	I2C_ERROR:
+	    CALL    FLASH_LED
+	    GOTO    $
+	    
+    ;</editor-fold>
 
-    ;-------------------------------------------------------
-    DELAY:
-	MOVLW   0xFF
-	MOVWF   Delay2
-    LOOP1:
-	MOVLW   0xFF
-	MOVWF   Delay1
-    LOOP2:
-	DECFSZ  Delay1,F
-	GOTO    LOOP2
-	DECFSZ  Delay2,F
-	GOTO    LOOP1
-	RETURN
+    ;<editor-fold defaultstate="collapsed" desc="I2C Error Indicator">
+    
+	FLASH_LED:
+;	    MOVLW   11000000B
+;	    MOVWF   PORTA,a
+;	    CALL    DELAY
+;	    MOVLW   10000000B
+;	    MOVWF   PORTA,a
+	    RETURN
+	    
+    ;</editor-fold>
 
-	end
+    ;<editor-fold defaultstate="collapsed" desc="I2C Delay">
+    
+	DELAY:
+	    MOVLW   0xFF
+	    MOVWF   Delay2
+	LOOP1:
+	    MOVLW   0xFF
+	    MOVWF   Delay1
+	LOOP2:
+	    DECFSZ  Delay1,F
+	    GOTO    LOOP2
+	    DECFSZ  Delay2,F
+	    GOTO    LOOP1
+	    RETURN
+	    
+    ;</editor-fold>
 
+;</editor-fold>
     
 end			
