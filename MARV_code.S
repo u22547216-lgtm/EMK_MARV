@@ -71,7 +71,8 @@
 
     misc_checks		equ 0x03
     #define race_colour_seen	misc_checks,0,a
-    #define black_flag		misc_checks,0,a
+    #define black_flag		misc_checks,1,a
+    #define Rx_done		misc_checks,2,a
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
@@ -2918,13 +2919,21 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	BTFSC   ERRORFlag,0	
 	BRA	    EXIT_NO_RC
 
-	; If byte was received, write byte to PORTD and ECHO to terminal
+	; If byte was received, write byte to POSTINC0
     EXIT_RC:    
 	MOVF    RCREG1,0		
 	; MOVWF   PORTD
 	; CALL    BYTE_TX ;ECHO to terminal
 	MOVWF	POSTINC0
-	CLRF    RCREG1       
+	CLRF    RCREG1     
+	
+	XORLW	0x0D
+	BNZ	$+6
+	
+	BSF	Rx_done
+	RETFIE
+	
+	BCF	Rx_done
 	RETFIE
 
 	; If byte was not received, i.e. error occured, clear PORTD
