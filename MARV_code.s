@@ -2927,6 +2927,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	MOVWF	POSTINC0
 	CLRF    RCREG1     
 	
+	; end of transmission checker
 	XORLW	0x0D
 	BNZ	$+6
 	
