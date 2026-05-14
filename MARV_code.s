@@ -247,21 +247,28 @@ DELAY_SKIP		equ	0x08
     
     ;<editor-fold defaultstate="collapsed" desc="I2C Variables">
     
-	TX_BYTE         EQU 0x0
-	POLL_COUNTER    EQU 0x1
-	Delay1          EQU 0x2
-	Delay2          EQU 0x3
-	EEPROM_ADDRESS  EQU 0x4
-	CHAR_COUNT      EQU 0x5
-	CHAR_WRITE      EQU 0x6
-	TABLE_COUNTER   EQU 0x7
+	TX_BYTE         EQU 0x30
+	POLL_COUNTER    EQU 0x31
+	Delay1          EQU 0x32
+	Delay2          EQU 0x33
+	EEPROM_ADDRESS  EQU 0x34
+	CHAR_COUNT      EQU 0x35
+	CHAR_WRITE      EQU 0x36
 
-	PAGE_COUNT	    equ 0x8
-	chars_left	    equ 0x9
-	page_byte_count equ 0xA
+	PAGE_COUNT	equ 0x38
+	page_byte_count equ 0x39
+ 
 
 	WRITE_CONTROL   EQU 10100000B
 	READ_CONTROL    EQU 10100001B
+    
+    ;</editor-fold>
+    
+    ;<editor-fold defaultstate="collapsed" desc="Serial Variables">
+	
+	RCFlag		EQU 0x3B
+	ERRORFlag	EQU 0x3C
+	DelayCount	EQU 0x3D    
     
     ;</editor-fold>
 
@@ -590,6 +597,10 @@ init:
 	
 	;MOVLW	-20
 	;MOVWF	race_error_navigations,a
+	
+	CLRF    RCFlag
+	CLRF    ERRORFlag
+	CLRF    DelayCount
     
     ;</editor-fold>
     
@@ -691,15 +702,66 @@ STATE_MACHINE_START:
 	    //    the state or menu option that we are in has to be kept track of with bits.
 	
 	READ_FROM_SERIAL:
+	    //   might not be needed
 	
 	INTERPRET_COMMAND:
+	    //   I DONT THINK THIS IS NEEDED. WE CAN JUST MAKE IT SO THAT MAIN MENU HAS TO PROCESS EVERY TYPE OF COMMAND, AND THE OTHER 
+	    //   ONES JUST HAVE TO CHECK IF THE COMMAND IS "M" TO RETURN TO MAIN MENU, OR JUST RETURN TO IT BY DEFAULT.
     
 	CYOC:
 	    //    THE POWER ON MESSAGE
 	    
+		; eeprom address is 88
+		; last char is a CR (0x0D) character, will make the I2C read check for this
+		MOVLW   88
+		CLRF    EEPROM_ADDRESS
+		MOVLW   -88
+		MOVWF   CHAR_COUNT
+		
+	    ;--- Stream data to 0x200 in data memory
+		LFSR    0, 0x200
+		
+		CALL	READ_EEPROM
+		
+		MOVFF	FSR0L, count
+		
+		LFSR    0, 0x200
+		
+		movf	POSTINC0,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-8
+		
+		RETURN
+	    
 	MAIN_MENU:
 	    //    SPEAKS FOR ITSELF, JUST READ THE EEPROM, AND THEN TRANSMIT IT WITH Tx
 
+		; eeprom address is 0
+		; char count is 86
+		CLRF    EEPROM_ADDRESS
+		MOVLW   86
+		MOVWF   CHAR_COUNT
+		
+	    ;--- Stream data to 0x200 in data memory
+		LFSR    0, 0x200
+		
+		CALL	READ_EEPROM
+		
+		LFSR    0, 0x200
+		
+		movf	POSTINC0,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-8
+		
+		BTFSS	Rx_done
+		BRA	$-2
+		
+		BCF	Rx_done
+		
+		// NOW TO CHECK EVERY SINGLE CASE  FOR THE COMMANDS
+		
 	COLOUR:
 	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx
     
@@ -719,11 +781,25 @@ STATE_MACHINE_START:
     
 	HOTLOAD_EEPROM:
 	    //    READ FROM Rx AND PROGRAM TO EEPROM
+		LFSR    0,100h
     
 	    RECIEVE_MESSAGE:
 	    //	  write recieved to Bank 1
-		LFSR    0,100h
+		BTFSS	Rx_done
+		BRA	$-2
 		
+		BCF	Rx_done
+		
+		MOVLW	2
+		CPFSEQ	FSR0L
+		BRA	CHANGE_EEPROM
+		
+		MOVLW	'M'
+		MOVFF	100h,extra
+		CPFSEQ	extra
+		BRA	CHANGE_EEPROM
+		
+		GOTO	MAIN_MENU
 		
     
 	    CHANGE_EEPROM:
@@ -740,6 +816,8 @@ STATE_MACHINE_START:
 		LFSR    0,100h
 		
 		call	MULTI_PAGE_WRITE
+		
+		GOTO	HOTLOAD_EEPROM
     
 	ECHO:
 
@@ -3074,17 +3152,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	return
     ;</editor-fold>
 
-    ;-------------------------------------------------------------------------------
-    ; Read characters and stream to data memory
-    ;-------------------------------------------------------------------------------
-    ;--- Reload parameters
-	CLRF    EEPROM_ADDRESS
-	MOVLW   chars
-	MOVWF   CHAR_COUNT
-
-    ;--- Stream data to 0x100 in data memory
-	LFSR    0, 0x100
-	
     ;<editor-fold defaultstate="collapsed" desc="Read EEPROM">
     
 	READ_EEPROM:
@@ -3130,6 +3197,11 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	    ;</editor-fold>
 
 	    ;<editor-fold defaultstate="collapsed" desc="7. ACK all but last byte, NACK the last byte">
+	    
+	    ; this check is here just for the power on message
+	    XORLW   0x0D ; CR character
+	    BZ	    Last_Byte
+	    
 	    MOVLW   0x01
 	    CPFSEQ  CHAR_COUNT
 	    GOTO    More_Bytes
@@ -3153,15 +3225,10 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	    return
 	    
     ;</editor-fold>
-    
-	; Code ends here in endless loop.
-	CALL    I2C_DELAY
-	GOTO    $               ; Hang here
 
     ;-------------------------------------------------------------------------------
     ; Subroutines
     ;-------------------------------------------------------------------------------
-
     
     ;<editor-fold defaultstate="collapsed" desc="I2C Start">
     
