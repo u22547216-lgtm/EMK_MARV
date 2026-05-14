@@ -291,6 +291,8 @@ DELAY_SKIP		equ	0x08
     goto init
     org     0x08            ; interrupt start
     
+    BTFSC   RCIF	    ; was it Rx?
+    GOTO    Rx_ISR
     btfsc   TMR4IF	    ;was it timer 4?
     goto    TIMER4_ISR
     goto ISR
@@ -483,7 +485,6 @@ init:
     
     ;</editor-fold>
     
-    
     ;<editor-fold defaultstate="collapsed" desc="I2C Setup">
     
 	; 100 kHz @ Fosc = 4 MHz
@@ -509,6 +510,29 @@ init:
     
     ;</editor-fold>
     
+    ;<editor-fold defaultstate="collapsed" desc="Setial Comms Setup">
+    
+	; Baud rate setup (Datasheet RX#1)
+	MOVLW   12			; 19200 BAUD @ 4 MHz
+				    ; table 18-5 of datasheet
+	; MOVLW   25			; 9600 BAUD @ 4 MHz
+	MOVWF   SPBRG1	  	; load baudrate register
+	CLRF    SPBRGH1
+	BSF     TXSTA1,2		; Enable high BAUDrate
+	BCF	BAUDCON1,3		; Use 8 bit baud generator
+
+	; Enable asynchronous serial port
+	BCF     TXSTA1,4		; Enable asynchronous transmission
+	BSF	RCSTA1,7		; Enable Serial Port (Datasheet RX#3)
+
+	; Transmit setup (TX)
+	BSF	TXSTA1,5		; Enable transmit
+
+	; Receive setup (RX)
+	BSF	RCSTA1,4		; Enable continuous reception (Datasheet RX#6)
+
+    ;</editor-fold>
+    
     ;<editor-fold defaultstate="collapsed" desc="Interrupts">
 
 	; INTCON2 = 0b 0 0 0 0 x 0 x 0 
@@ -517,10 +541,15 @@ init:
 	; INTCON3 = 0b 0 1 x 0 1 x 0 0
 	clrf    INTCON3,a	;
 	bsf     INT1IP	    ; INT1I priority is high
-	bsf	    INT1IE	    ; INT1I is enabled
+	bsf	INT1IE	    ; INT1I is enabled
 	; INTCON = 0b 1 0 1 0 0 0 0 0
 	bsf	    TMR0IE	    ; enable timer 0 interrupts
 	bsf	    TMR2IP	    ; enable timer 4 interrupts
+	
+	; serial comms interrupt
+	BCF	RCIF			; Clear RCIF Interrupt Flag
+	BSF	RCIP
+	BSF	RCIE			; Set RCIE Interrupt Enable (Datasheet RX#4)
 
 	BSF	    PEIE
 	bsf	    GIEH	    ; enable high priority interupts
@@ -2868,9 +2897,97 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
 	nop
 	retfie
+	
+	;---------- RX Interrupt service routine ---------------------------------------
+    Rx_ISR:
+	;BCF    RC1IF	; Cannot clear RC1IF in firmware (Read only bit)
+			    ; Need to read RC1REG to clear RC1IF
+	MOVF    RCREG1,0,0	; write received byte to W
+			    ; Note: You have to read RCREG1 in ISR to clear RC1IF
+			    ; RC1IF is read only, i.e. you cannot clear it in firmware
+	MOVF    RCSTA1	; Read RCSTA (Datasheet RX#7)
+	BSF	    RCFlag,0
+
+	; Error handling : overrun error
+	BTFSC   RCSTA1,1		;if overrun error occurred
+	BRA	    ErrSerialOverr	;then go handle error
+	; Error handling : framing error
+	BTFSC   RCSTA1,2		
+	BRA	    ErrSerialFrame	
+	; Test if error occured
+	BTFSC   ERRORFlag,0	
+	BRA	    EXIT_NO_RC
+
+	; If byte was received, write byte to PORTD and ECHO to terminal
+    EXIT_RC:    
+	MOVF    RCREG1,0		
+	; MOVWF   PORTD
+	; CALL    BYTE_TX ;ECHO to terminal
+	MOVWF	POSTINC0
+	CLRF    RCREG1       
+	RETFIE
+
+	; If byte was not received, i.e. error occured, clear PORTD
+    EXIT_NO_RC:
+	CLRF    PORTD
+	CLRF    ERRORFlag
+	CLRF    RCREG1
+	RETFIE
+
+    ;--- OERR overrun error bit is set ---
+    ErrSerialOverr:	bcf	RCSTA1,4	;reset the receiver logic
+		    bsf	RCSTA1,4	;enable reception again
+		    bsf	ERRORFlag,0
+		    retfie
+
+    ;--- FERR framing error bit is set ---
+    ErrSerialFrame:	movf	RCREG1,W	;discard received data that has error
+		    bsf	ERRORFlag,0
+		    retfie
     
 ;</editor-fold>
 	
+;<editor-fold defaultstate="collapsed" desc="Serial Code">
+	
+    ;---------- Subroutines --------------------------------------------------------
+    ;--- Transmit Sequence ---
+    TRANSMIT_tesT:
+	movlw   't'
+	CALL BYTE_TX
+
+	movlw   'e'
+	CALL BYTE_TX
+
+	movlw   's'
+	CALL BYTE_TX
+
+	movlw   'T'
+	CALL BYTE_TX
+
+	movlw   0x0D    ;CR
+	CALL BYTE_TX
+
+	RETURN
+
+    ;--- Delay ---		
+    Serial_DELAY:			
+	MOVLW   0xFF
+	MOVWF   DelayCount		
+    LOOP:	
+	DECFSZ  DelayCount,f	
+	BRA	    LOOP		
+	RETURN
+
+    ;--- Tx Byte (Byte must be pre-loaded in WREG) ---
+    BYTE_TX:
+	MOVWF   TXREG1
+    POLL_TX:
+	BTFSS   TXSTA1,1
+	GOTO    POLL_TX
+	; MOVWF   PORTD
+	RETURN
+	
+;</editor-fold>
 	
 ;<editor-fold defaultstate="collapsed" desc="I2C Code">
 	
@@ -2940,7 +3057,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	;</editor-fold>
 
 	; Repeat PAGE_COUNT more times to write PAGE_COUNT*8 characters in total
-	CALL    DELAY
+	CALL    I2C_DELAY
 	DECFSZ  PAGE_COUNT,F
 	GOTO    MULTI_PAGE_WRITE
 	
@@ -3028,7 +3145,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     ;</editor-fold>
     
 	; Code ends here in endless loop.
-	CALL    DELAY
+	CALL    I2C_DELAY
 	GOTO    $               ; Hang here
 
     ;-------------------------------------------------------------------------------
@@ -3173,7 +3290,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	FLASH_LED:
 ;	    MOVLW   11000000B
 ;	    MOVWF   PORTA,a
-;	    CALL    DELAY
+;	    CALL    I2C_DELAY
 ;	    MOVLW   10000000B
 ;	    MOVWF   PORTA,a
 	    RETURN
@@ -3182,7 +3299,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
     ;<editor-fold defaultstate="collapsed" desc="I2C Delay">
     
-	DELAY:
+	I2C_DELAY:
 	    MOVLW   0xFF
 	    MOVWF   Delay2
 	LOOP1:

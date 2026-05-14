@@ -94,9 +94,9 @@ Start:
 Main:
 
     ; Wait for Port to stabilize
-    CALL    DELAY    
-    CALL    DELAY  
-    CALL    DELAY  
+    CALL    Serial_DELAY    
+    CALL    Serial_DELAY  
+    CALL    Serial_DELAY  
      
 TRANSMIT:
     ; Transmit "tesT"
@@ -150,7 +150,7 @@ ErrSerialFrame:	movf	RCREG1,W	;discard received data that has error
 		return
 		
 ;--- Delay ---		
-DELAY:			
+Serial_DELAY:			
     MOVLW   0xFF
     MOVWF   DelayCount		
 LOOP:	
