@@ -47,7 +47,7 @@ PSECT code,abs
     org	    20h
     chars equ 86
 
-    DB "Choose your MARV mode?", 0x0A, "(C)colour", 0x0A, "(R)eference", 0x0A, "(A)ttack", 0x0A, "(S)imulate race", 0x0A, "(H)otload EEPROM"
+    DB "Choose your MARV mode?", 0x0A, "(C)olour", 0x0A, "(R)eference", 0x0A, "(A)ttack", 0x0A, "(S)imulate race", 0x0A, "(H)otload EEPROM"
     
     
     org	    78h
@@ -115,7 +115,7 @@ INIT:
     
     
     ; page write count (im hard codeing this cause the menu is constant)
-    movlw   10
+    movlw   11
     movwf   PAGE_COUNT,a
     movlw   6
     movwf   chars_left,a
@@ -192,9 +192,9 @@ INIT:
 
     ;MOVLW   'A'
 
-;--- Clear file registers from 0x200 to 0x220
+;--- Clear file registers from 0x100 to 0x260
     LFSR    0, 0x100
-    MOVLW   0x20
+    MOVLW   0x60
     MOVWF   TABLE_COUNTER
 
 Clear_Data_Table:
@@ -205,7 +205,7 @@ Clear_Data_Table:
 start_char_of_write_data:
     ; inc pointer after a read
     TBLRD*+
-    movwf   TABLAT,a
+    movf   TABLAT,w,a
     MOVWF   CHAR_WRITE
     ;</editor-fold>
     
@@ -258,7 +258,7 @@ page_loop:
     
     ;--- Fetch next letter to send
     TBLRD*+
-    movwf   TABLAT,a
+    movf   TABLAT,w,a
     MOVWF   CHAR_WRITE   
     
     decfsz  page_byte_count,a
@@ -280,74 +280,12 @@ page_loop:
     DECFSZ  PAGE_COUNT,F
     GOTO    Main_write
     
-    ; handling the last bit of chars that dont fill a full 8 bytes
-    
-    ;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
-    CALL    I2C_START_CONDITION
-    ;</editor-fold>
-
-    ;<editor-fold defaultstate="collapsed" desc="2. Load & send the control byte/slave address (WRITE)">    
-    MOVLW   WRITE_CONTROL
-    MOVWF   TX_BYTE
-    CALL    my_I2C_WRITE
-    
-    ;--- Optional ACK check
-    BTFSC   SSP1CON2,6       ; ACKSTAT = 1 means no ACK received
-    GOTO    I2C_ERROR
-    ;</editor-fold>
-
-    ;<editor-fold defaultstate="collapsed" desc="3. Load & send the address">
-    MOVF    EEPROM_ADDRESS,W
-    MOVWF   TX_BYTE
-    CALL    my_I2C_WRITE    
-
-    ;--- Optional ACK check
-    BTFSC   SSP1CON2,6
-    GOTO    I2C_ERROR
-    ;</editor-fold>
-
-    ;<editor-fold defaultstate="collapsed" desc="4. Load & send the last data in a page of 6 bytes">
-    MOVLW   chars_left
-    movwf   page_byte_count,a
-    
-page_loop_left_over:
-    
-    MOVF    CHAR_WRITE,W
-    MOVWF   TX_BYTE
-    CALL    my_I2C_WRITE
-
-    ;--- Optional ACK check
-    BTFSC   SSP1CON2,6
-    GOTO    I2C_ERROR
-    
-    ;--- Increment the EEPORM address
-    INCF    EEPROM_ADDRESS,F
-    
-    ;--- Fetch next letter to send
-    TBLRD*+
-    movwf   TABLAT,a
-    MOVWF   CHAR_WRITE   
-    
-    decfsz  page_byte_count,a
-    bra	page_loop_left_over
-    
-    
-    ;</editor-fold>
-
-    ;<editor-fold defaultstate="collapsed" desc="5. Generate stop condition">    
-    CALL    I2C_STOP_CONDITION
-    ;</editor-fold>
-
-    ;<editor-fold defaultstate="collapsed" desc="6. Wait for EEPROM internal write cycle to finish">
-    CALL    POLLING_WRITE_ACK
-    ;</editor-fold>
-
 ;-------------------------------------------------------------------------------
 ; Read characters and stream to data memory
 ;-------------------------------------------------------------------------------
 ;--- Reload parameters
     CLRF    EEPROM_ADDRESS
-    MOVLW   29
+    MOVLW   86
     MOVWF   CHAR_COUNT
 
 ;--- Stream data to 0x100 in data memory
