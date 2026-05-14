@@ -640,6 +640,8 @@ STATE_MACHINE_START:
 	    RECIEVE_MESSAGE:
     
 	    CHANGE_EEPROM:
+    
+	ECHO:
 
     
     
