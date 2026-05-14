@@ -1,0 +1,42 @@
+
+;ADD ALL OF THIS TO THE INTITIALISATION SECTION FOR UART
+INIT:
+  CLRF    TXSTA1,0
+    CLRF    RCSTA1,0
+    
+    CLRF    SPBRG1,0
+    
+    MOVLW   12		    
+    MOVWF   SPBRG1,0		    ;Initialize the SPBRGHx:SPBRGx register pair
+    
+    BSF	    TXSTA1,2,0 	    ;and the BRGH
+    BCF	    BAUDCON1,3,0	    ;and BRG16 bits to achieve the desired baud rate
+    
+    MOVLB   15		    ;To access bank 15 of the SFR
+    CLRF    ANSELC,b		    ;Disable Analog functionality of PORTC
+    BSF	    TRISC,6,0		    ; TRISC<7>=1 RECEIVE and TRISC<6>=1 TRANSMIT
+    BSF	    TRISC,7,0   	    
+    
+    BCF	    TXSTA1,4,0	    ;The SYNC bit must be clear for asynchronous operation.
+    BSF	    RCSTA1,7,0	    ;Enable the serial port by setting the SPEN bit
+    BCF	    TXSTA1,6,0		    ;If 9-bit transmission is desired, set the TX9 control bit.
+   
+    BCF	    BAUDCON1,4,0	    ;Set the CKTXP control bit if inverted transmit data polarity is desired.
+    BSF	    TXSTA1,5,0	    ;Enable the transmission by setting the TXEN control bit. 
+    
+    BCF	    RCSTA1,6,0		    ;If 9-bit reception is desired, set the RX9 bit
+    BCF	    BAUDCON1,5,0	    ;Set the DTRXP if inverted receive polarity is desired
+    BSF	    RCSTA1,4,0	    ;Enable reception by setting the CREN bit
+
+    BCF    RCIF			; Clear RCIF Interrupt Flag
+    BSF    RCIE			; Set RCIE Interrupt Enable (Datasheet RX#4)
+
+BYTE_TX:  ; SAME AS UART WRITE
+    MOVWF   TXREG1
+    
+    BTFSS  PORTB,5
+POLL_TX:
+    BTFSS   TXSTA1,1
+    GOTO    POLL_TX
+    MOVWF   PORTA
+
