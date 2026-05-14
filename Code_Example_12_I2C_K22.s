@@ -347,7 +347,7 @@ page_loop_left_over:
 ;-------------------------------------------------------------------------------
 ;--- Reload parameters
     CLRF    EEPROM_ADDRESS
-    MOVLW   29
+    MOVLW   chars
     MOVWF   CHAR_COUNT
 
 ;--- Stream data to 0x100 in data memory
