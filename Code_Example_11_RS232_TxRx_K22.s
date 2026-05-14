@@ -33,6 +33,8 @@ PSECT code,abs
     goto    Start
     org	    08h
     goto    ISR
+    org	    18h
+    goto    ISR
  
 ;---------- Configuration ------------------------------------------------------
 Start:	
@@ -66,6 +68,7 @@ Start:
     MOVLW   11000000B		; Setup port C for serial port.
                         	; TRISC<7>=1 and TRISC<6>=1.
     MOVWF   TRISC
+    CLRF ANSELC
     
     ; Enable asynchronous serial port
     BCF     TXSTA1,4		; Enable asynchronous transmission
@@ -103,6 +106,7 @@ TRANSMIT:
     MOVLW   0x04
     MOVWF   count    
 RECEIVE:
+    ;BSF	    BAUDCON1,1
     BTFSS   RCFlag,0
     GOTO    RECEIVE
     BCF	    RCFlag,0
