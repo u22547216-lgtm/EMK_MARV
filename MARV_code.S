@@ -76,6 +76,8 @@
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
+    SAMPLE_DELAYS	EQU 2
+	
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
 
@@ -1611,13 +1613,10 @@ STATE_MACHINE_START:
 	    ; force sampling rate to be equal to timer 2 rate
 	    
 	    ; wait for a certain amount of duty cycles
-	    movlw   2
-	    movwf   sample_wait,a
-	    BSF	    wait_for_timer2
-	    BTFSC   wait_for_timer2
-	    bra	    $-2
-	    decfsz  sample_wait,a
-	    bra	    $-8
+	    movlw   SAMPLE_DELAYS
+	    CPFSEQ  sample_wait
+	    RETURN
+	    CLRF    sample_wait
 	    
 	    ; setup
 	    CLRF error0,b
@@ -3259,7 +3258,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	retfie
 
     TIMER2_ISR:   
-        BCF	    wait_for_timer2
+	INCF	    sample_wait
         BCF	    TMR2IF
         RETFIE
 
