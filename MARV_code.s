@@ -684,7 +684,7 @@ init:
     
 STATE_MACHINE_START:
     
-;<editor-fold desc="State Control Bits">
+;<editor-fold desc="Menu Code">
     STATE_CONTROLLER:
 	//    SECTIONS TO HANDLE IN THIS
 	    //    ON POWER ON	(just throw the power on greeting and go to attack mode)
@@ -1219,8 +1219,7 @@ STATE_MACHINE_START:
 	RETURN
 ;	BCF	    calibrate
 ;	BSF	    touch_start
-;</editor-fold>
-	
+;</editor-fold>	
 
 ;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
 
