@@ -550,7 +550,7 @@ init:
 	; INTCON3 = 0b 0 1 x 0 1 x 0 0
 	clrf    INTCON3,a	;
 	bsf     INT1IP	    ; INT1I priority is high
-	bsf	INT1IE	    ; INT1I is enabled
+;	bsf	INT1IE	    ; INT1I is enabled
 	; INTCON = 0b 1 0 1 0 0 0 0 0
 	bsf	    TMR0IE	    ; enable timer 0 interrupts
 	bsf	    TMR2IP	    ; enable timer 4 interrupts
@@ -825,9 +825,9 @@ STATE_MACHINE_START:
 	    
 		LFSR    0,100h
 		
-	    Rx_CHECK:
+	    COLOUR_Rx_CHECK:
 		BTFSS	Rx_done
-		BRA	BUTTON_CHECK
+		BRA	COLOUR_BUTTON_0_CHECK
 		
 		BCF	Rx_done
 		
@@ -843,9 +843,9 @@ STATE_MACHINE_START:
 		
 		GOTO	COLOUR
 		
-	    BUTTON_CHECK:
+	    COLOUR_BUTTON_0_CHECK:
 		btfss   INT0IF	    ;wait for button press
-		bra	Rx_CHECK
+		bra	COLOUR_BUTTON_1_CHECK
 		
 		; delay so that we dont have to debounce
 		bsf	wait_for_timer333
@@ -860,6 +860,24 @@ STATE_MACHINE_START:
 		bcf	    INT0IF
 		; go back
 		GOTO	COLOUR
+		
+	    COLOUR_BUTTON_1_CHECK:
+		btfss   INT1IF	    ;wait for button press
+		bra	COLOUR_Rx_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		
+		GOTO	ATTACK
     
 	REFERENCE:
 	    //    GO TO CALIBRATION SEQUENCE
@@ -3089,8 +3107,8 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 ;<editor-fold defaultstate="collapsed" desc="INTERRUPTS">
     
     ISR:
-	btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
-	goto    race_colour_reset   
+;	btfsc   INTCON3,0,a	    ; was it INT1IF(RB1)?
+;	goto    race_colour_reset   
 	btfsc   TMR0IF	    ; was it timer 0?
 	goto    timer0_interrupt
         btfsc   TMR2IF	    ;was it timer 2?
