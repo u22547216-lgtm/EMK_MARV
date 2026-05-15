@@ -765,12 +765,48 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-8
 		
+		; wait for command
+		LFSR    0,100h
+		
 		BTFSS	Rx_done
 		BRA	$-2
 		
 		BCF	Rx_done
 		
 		// NOW TO CHECK EVERY SINGLE CASE  FOR THE COMMANDS
+		
+		MOVFF	100h,extra
+		
+		MOVLW	'C'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	COLOUR
+		
+		MOVLW	'R'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	REFERENCE
+		
+		MOVLW	'A'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	ATTACK
+		
+		MOVLW	'S'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	SIMULATE_RACE
+		
+		MOVLW	'H'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	HOTLOAD_EEPROM
+		
+		MOVLW	'E'
+		CPFSEQ	extra
+		BRA	$+6
+		GOTO	ECHO
+		
 		
 	COLOUR:
 	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx
