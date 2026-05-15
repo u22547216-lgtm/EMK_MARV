@@ -945,6 +945,80 @@ STATE_MACHINE_START:
     
 	ATTACK:
 	    //    GO TO LLI
+	    ; i need to make it so that the cap touch doesn't loop in on itself 
+	    ; so that it can be used to detect if there is a touch without 
+	    ; hogging the processing time.
+	    ; along with that, i want to check if the Rx has recieved a full string
+	    ; and if the mode change button has been pressed
+	    
+	    ; nah, i decide now that i wont change the cap touch code, i will use
+	    ; RB0 as the way to say, "I'm sure that we can start
+	    
+		LFSR    0,100h
+		
+	    ATTACK_Rx_CHECK:
+		BTFSS	Rx_done
+		BRA	ATTACK_CAP_TOUCH_CHECK
+		
+		BCF	Rx_done
+		
+		
+		MOVLW	'M'
+		MOVFF	100h,extra
+		CPFSEQ	extra
+		BRA	$+8
+		
+		BCF	touch_start
+		GOTO	MAIN_MENU
+		
+		GOTO	ATTACK
+		
+	    ATTACK_CAP_TOUCH_CHECK:
+		BTFSS	touch_start
+		BRA	ATTACK_BUTTON_0_CHECK
+		CALL	LLI
+		BCF	    follow_line
+		
+		
+	    ATTACK_BUTTON_0_CHECK:
+		btfss   INT0IF	    ;wait for button press
+		bra	ATTACK_BUTTON_1_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		
+		CALL	touch_to_start
+		; go back
+		GOTO	ATTACK
+		
+	    ATTACK_BUTTON_1_CHECK:
+		btfss   INT1IF	    ;wait for button press
+		bra	ATTACK_Rx_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		BCF	touch_start
+		
+		GOTO	REFERENCE
+	    
     
 	SIMULATE_RACE:
 	    //    BASICALLY IT'S OWN STATE MACHINE
@@ -1517,8 +1591,8 @@ STATE_MACHINE_START:
     	
     STATE2:
     LLI:	
-	BTFSS   follow_line
-	GOTO    STATE3
+;	BTFSS   follow_line
+;	GOTO    STATE3
 
 
 	; 5 sensors --> left sensor (LL), middle left sensor (ML), middle sensor (M), middle right sensor (MR), right sensor (RR)
@@ -1992,6 +2066,7 @@ STATE_MACHINE_START:
 TRANSITION2:
     ;return
     BSF	    follow_line  ;LOOP OVER LLI
+    RETURN
 
 ;</editor-fold>
     
