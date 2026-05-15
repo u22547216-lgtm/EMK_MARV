@@ -284,7 +284,8 @@ DELAY_SKIP		equ	0x08
 
 	ADC_AN6		equ 0b00011001 ; 0 00110 0 1
 
-	calib_address	equ 100h
+	sensor_read_address	equ 300h
+	sensor_read_FSR		equ 2
 	
     ;</editor-fold>
 	
@@ -884,6 +885,63 @@ STATE_MACHINE_START:
     
 	REFERENCE:
 	    //    GO TO CALIBRATION SEQUENCE
+	    
+		LFSR    0,100h
+		
+	    REFERENCE_Rx_CHECK:
+		BTFSS	Rx_done
+		BRA	REFERENCE_BUTTON_0_CHECK
+		
+		BCF	Rx_done
+		
+		
+		MOVLW	'M'
+		MOVFF	100h,extra
+		CPFSEQ	extra
+		BRA	$+6
+		
+		GOTO	MAIN_MENU
+		
+		GOTO	REFERENCE
+		
+	    REFERENCE_BUTTON_0_CHECK:
+		btfss   INT0IF	    ;wait for button press
+		bra	REFERENCE_BUTTON_1_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		
+		CALL	calibration
+		BCF	calibrate
+		; go back
+		GOTO	REFERENCE
+	    
+	    REFERENCE_BUTTON_1_CHECK:
+		btfss   INT1IF	    ;wait for button press
+		bra	REFERENCE_Rx_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		
+		GOTO	COLOUR
     
 	ATTACK:
 	    //    GO TO LLI
@@ -1003,7 +1061,7 @@ STATE_MACHINE_START:
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Red">
 	    ; red
-	    LFSR    0, 100h
+	    LFSR    1, sensor_read_address
 	    movlw   1
 	    movwf   number_of_readings,a
 	    MOVLW	red_indicator
@@ -1017,24 +1075,24 @@ STATE_MACHINE_START:
 	    BCF read_sensors_call
 
 
-	    lfsr    0, 100h
-	    movf    INDF0,w,a    ;sensor 0
+	    lfsr    1, sensor_read_address
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    MOVWF   red_thresh,a
 
@@ -1042,7 +1100,7 @@ STATE_MACHINE_START:
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Green">
 	    ;green
-	    lfsr    0, 100h
+	    lfsr    1, sensor_read_address
 	    MOVLW	green_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
@@ -1054,24 +1112,26 @@ STATE_MACHINE_START:
 	    BCF read_sensors_call
 
 
-	    lfsr    0, 105h
-	    movf    INDF0,w,a    ;sensor 0
+	    lfsr    1, sensor_read_address
+	    movlw   5h
+	    addwf   FSR1L
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    MOVWF green_thresh,a
 
@@ -1080,7 +1140,7 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Blue">
 
 	    ;blue
-	    lfsr    0, 100h
+	    lfsr    1, sensor_read_address
 	    MOVLW	blue_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
@@ -1092,24 +1152,26 @@ STATE_MACHINE_START:
 	    BCF read_sensors_call
 
 
-	    lfsr    0, 10Ah
-	    movf    INDF0,w,a    ;sensor 0
+	    lfsr    1, sensor_read_address
+	    movlw   Ah
+	    addwf   FSR1L
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    MOVWF blue_thresh,a
 
@@ -1118,7 +1180,7 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Black">
 
 	    ;black
-	    lfsr    0, 100h
+	    lfsr    1, sensor_read_address
 	    MOVLW	black_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
@@ -1130,67 +1192,66 @@ STATE_MACHINE_START:
 	    BCF read_sensors_call
 
 
-	    lfsr    0, 100h
-	    movf    INDF0,w,a    ;sensor 0
+	    lfsr    1, sensor_read_address
+	    movf    INDF1,w,a    ;sensor 0
 
-
-	    cpfsgt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	black_red_thresh,a
 
 
-	    movf    PREINC0,w,a	    ;s 0
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfsgt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	black_green_thresh,a
 
 
-	    movf    PREINC0,w,a	    ;s 0
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfsgt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfsgt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	black_blue_thresh,a
 
@@ -1199,7 +1260,7 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Calibrate White">
 
 	    ;white
-	    lfsr    0, 100h
+	    lfsr    1, sensor_read_address
 	    MOVLW	white_indicator
 	    MOVWF	DISPLAYED_COLOUR,a
 
@@ -1211,66 +1272,66 @@ STATE_MACHINE_START:
 	    BCF read_sensors_call
 
 
-	    lfsr    0, 100h
-	    movf    INDF0,w,a    ;sensor 0
+	    lfsr    1, sensor_read_address
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	white_red_thresh,a
 
 
-	    movf    PREINC0,w,a	    ;s 0
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	white_green_thresh,a
 
 
-	    movf    PREINC0,w,a	    ;s 0
+	    movf    INDF1,w,a    ;sensor 0
 
-	    cpfslt  PREINC0,a	    ;s 1
+	    cpfslt  PREINC1,a	    ;s 1
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 2
+	    cpfslt  PREINC1,a	    ;s 2
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 3
+	    cpfslt  PREINC1,a	    ;s 3
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
-	    cpfslt  PREINC0,a	    ;s 4
+	    cpfslt  PREINC1,a	    ;s 4
 	    bra	    $+4
-	    movf    INDF0,w,a
+	    movf    INDF1,w,a
 
 	    movwf	white_blue_thresh,a
 
@@ -2139,7 +2200,7 @@ SUB_TRANSITIONS1:
 		    btfsc   ADCON0,1,a	; check if ADC is done (0)
 		    bra	    $-2		; no, check again
 										    ; 3TAD is done
-		    movff   ADRESH,POSTINC0	; MOVE ADC result bits <9:2> into FSR0L + 4
+		    movff   ADRESH,POSTINC1	; MOVE ADC result bits <9:2> into FSR0L + 4
 						; Increment FSR0
 										    ; 5TAD is done
 										    ; 6TAD is done
@@ -2170,12 +2231,12 @@ SUB_TRANSITIONS1:
 	    clrf    SENSOR4,a
 
 	    ; read sensors to bank 2 for now
-	    LFSR    0, 200h	
+	    LFSR    1, sensor_read_address	
 	    BSF read_sensors_call
 	    call    read_sensors
 	    BCF read_sensors_call
 	    ; back to bank 2
-	    LFSR    0, 200h	
+	    LFSR    1, sensor_read_address	
 
 	;<editor-fold defaultstate="collapsed" desc="White Check">
 	    ; always check for white first
@@ -2188,7 +2249,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 0
 		movf    white_red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2196,7 +2257,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 1
 		movf    white_red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2204,7 +2265,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 2
 		movf    white_red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2212,7 +2273,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 3
 		movf    white_red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2220,7 +2281,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 4
 		movf    white_red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2234,7 +2295,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 0
 		movf    white_green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2242,7 +2303,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 1
 		movf    white_green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2250,7 +2311,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 2
 		movf    white_green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2258,7 +2319,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 3
 		movf    white_green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2266,7 +2327,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 4
 		movf    white_green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2280,7 +2341,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 0
 		movf    white_blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2288,7 +2349,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 1
 		movf    white_blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2296,7 +2357,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 2
 		movf    white_blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2304,7 +2365,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 3
 		movf    white_blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2312,7 +2373,7 @@ SUB_TRANSITIONS1:
 
 		;sensor 4
 		movf    white_blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  white_tol,a
@@ -2417,7 +2478,7 @@ SUB_TRANSITIONS1:
 		TODO_maybe_put_a_checking_order_for_the_colours:
 		nop
 
-		lfsr	0,200h
+		lfsr	1, sensor_read_address
 
 	;<editor-fold defaultstate="collapsed" desc="Red Check">
 
@@ -2430,7 +2491,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  red_tol,a
@@ -2442,7 +2503,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  red_tol,a
@@ -2454,7 +2515,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  red_tol,a
@@ -2466,7 +2527,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  red_tol,a
@@ -2478,7 +2539,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    red_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  red_tol,a
@@ -2497,7 +2558,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  green_tol,a
@@ -2509,7 +2570,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  green_tol,a
@@ -2521,7 +2582,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  green_tol,a
@@ -2533,7 +2594,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  green_tol,a
@@ -2545,7 +2606,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    green_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  green_tol,a
@@ -2564,7 +2625,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  blue_tol,a
@@ -2576,7 +2637,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  blue_tol,a
@@ -2588,7 +2649,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  blue_tol,a
@@ -2600,7 +2661,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  blue_tol,a
@@ -2612,7 +2673,7 @@ SUB_TRANSITIONS1:
 		bra	    $+14
 
 		movf    blue_thresh,w,a
-		SUBWF   POSTINC0,w,a	    ; get error
+		SUBWF   POSTINC1,w,a	    ; get error
 		BNN	    $+6
 		NEGF    WREG,a		    ; make positive if negative
 		cpfslt  blue_tol,a
