@@ -703,6 +703,11 @@ STATE_MACHINE_START:
 	    //    the control bits for the main functions need to be controlled here.
 	    //    the state or menu option that we are in has to be kept track of with bits.
 	
+	POWER_ON:
+	    CALL    POWER_ON_GREETING
+	    
+	    GOTO    ATTACK
+	
 	READ_FROM_SERIAL:
 	    //   might not be needed
 	
@@ -2821,17 +2826,17 @@ SUB_TRANSITIONS1:
 
 		display_white:
 		; white = RGB(255,255,255)
-		SETF	LATA,a
+		bsf	red_pin,a
+		bsf	green_pin,a
+		bsf	blue_pin,a
 		nop
 		nop
 		nop
 		nop
 		nop
-		nop
-		nop
-		nop
-		nop
-		CLRF	LATA,a
+		bcf	red_pin,a
+		bcf	green_pin,a
+		bcf	blue_pin,a
 
 		return
 
