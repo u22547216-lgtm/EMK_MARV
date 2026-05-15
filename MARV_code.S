@@ -858,6 +858,9 @@ STATE_MACHINE_START:
 		bcf	delay_333_call
 		; reset button wait
 		bcf	    INT0IF
+		
+		CALL	race_colour_selection
+		BCF	colour_chosen
 		; go back
 		GOTO	COLOUR
 		
