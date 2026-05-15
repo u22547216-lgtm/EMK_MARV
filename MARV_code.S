@@ -711,22 +711,16 @@ STATE_MACHINE_START:
 	    CALL    POWER_ON_GREETING
 	    
 	    GOTO    ATTACK
-	
-	READ_FROM_SERIAL:
-	    //   might not be needed
-	
-	INTERPRET_COMMAND:
-	    //   I DONT THINK THIS IS NEEDED. WE CAN JUST MAKE IT SO THAT MAIN MENU HAS TO PROCESS EVERY TYPE OF COMMAND, AND THE OTHER 
-	    //   ONES JUST HAVE TO CHECK IF THE COMMAND IS "M" TO RETURN TO MAIN MENU, OR JUST RETURN TO IT BY DEFAULT.
-    
+	    
+	;<editor-fold desc="Power on Greeting">
 	POWER_ON_GREETING:
 	    //    THE POWER ON MESSAGE
 	    
 		; eeprom address is 88
 		; last char is a CR (0x0D) character, will make the I2C read check for this
 		MOVLW   88
-		CLRF    EEPROM_ADDRESS
-		MOVLW   -88
+		MOVWF    EEPROM_ADDRESS
+		MOVLW   -89
 		MOVWF   CHAR_COUNT
 		
 	    ;--- Stream data to 0x200 in data memory
@@ -745,7 +739,10 @@ STATE_MACHINE_START:
 		BRA	$-8
 		
 		RETURN
-	    
+	
+	;</editor-fold>
+		
+	;<editor-fold desc="Main Menu">
 	MAIN_MENU:
 	    //    SPEAKS FOR ITSELF, JUST READ THE EEPROM, AND THEN TRANSMIT IT WITH Tx
 		//    YOU GET HERE WITH THE CYOC COMMAND, I HAVE CHOSEN IT TO BE "M" FOR  NOW
@@ -818,8 +815,10 @@ STATE_MACHINE_START:
 		CPFSEQ	extra
 		BRA	$+6
 		GOTO	ECHO
+	
+	;</editor-fold>
 		
-		
+	;<editor-fold desc="Colour">
 	COLOUR:
 	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx or the button
 	    ; need to check for Rx and a button press
@@ -885,6 +884,9 @@ STATE_MACHINE_START:
 		
 		GOTO	ATTACK
     
+	;</editor-fold>
+		
+	;<editor-fold desc="Reference">
 	REFERENCE:
 	    //    GO TO CALIBRATION SEQUENCE
 	    
@@ -945,6 +947,9 @@ STATE_MACHINE_START:
 		
 		GOTO	COLOUR
     
+	;</editor-fold>
+		
+	;<editor-fold desc="Attack">
 	ATTACK:
 	    //    GO TO LLI
 	    ; i need to make it so that the cap touch doesn't loop in on itself 
@@ -1028,7 +1033,9 @@ STATE_MACHINE_START:
 		CLRF	TMR2
 		GOTO	REFERENCE
 	    
+	;</editor-fold>
     
+	;<editor-fold desc="Simulate">
 	SIMULATE_RACE:
 	    //    BASICALLY IT'S OWN STATE MACHINE
 	    
@@ -1037,6 +1044,9 @@ STATE_MACHINE_START:
     
 	    CHANGE_DIRECTION:
     
+	;</editor-fold>
+    
+	;<editor-fold desc="Hotload EEPROM">
 	HOTLOAD_EEPROM:
 	    //    READ FROM Rx AND PROGRAM TO EEPROM
 		LFSR    0,100h
@@ -1077,6 +1087,9 @@ STATE_MACHINE_START:
 		
 		GOTO	HOTLOAD_EEPROM
     
+	;</editor-fold>
+		
+	;<editor-fold desc="Echo">
 	ECHO:
     
 	    send_echo_mode:
@@ -1111,12 +1124,12 @@ STATE_MACHINE_START:
 		
 		MOVLW	2
 		CPFSEQ	FSR0L
-		BRA	CHANGE_EEPROM
+		BRA	ECHO_CHARS
 		
 		MOVLW	'M'
 		MOVFF	100h,extra
 		CPFSEQ	extra
-		BRA	CHANGE_EEPROM
+		BRA	ECHO_CHARS
 		
 		GOTO	MAIN_MENU
 		
@@ -1132,7 +1145,7 @@ STATE_MACHINE_START:
 		
 		GOTO	RECIEVE_CHARS
 
-    
+	;</editor-fold>
     
 ;</editor-fold>
 
@@ -3705,4 +3718,30 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
 ;</editor-fold>
     
+;<editor-fold desc="Mode Messages">
+    
+    org 7000h
+    db  "Select the Race Colour", 0x0D
+    colour_message  equ	23
+    org 7020h
+    db  "Calibration Mode", 0x0D
+    reference_message	equ 17
+    org 7040h
+    db  "Attack"
+    attack_message  equ 6
+    org 7060h
+    db  "Simulate Mode", 0x0D
+    simutlate_race_message equ 14
+    org 7080h
+    db  "Enter a new Power-on Greeting", 0x0D
+    hotload_eeprom_message  equ	30
+    org 70A0h
+    db  "ECHO MODE", 0x0D
+    echo_message    equ 10
+    ;<editor-fold defaultstate="collapsed" desc="">
+    org	7806h
+    DB "We're no strangers to love", 0x0A, "You know the rules and so do I", 0x0A, "A full commitment's what I'm thinking of", 0x0A, "You wouldn't get this from any other guy", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "And if you ask me how I'm feeling", 0x0A, "Don't tell me you're too blind to see", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Ooh (Give you up)", 0x0A, "Ooh-ooh (Give you up)", 0x0A, "Ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "Ooh-ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you"
+    ;</editor-fold>
+;</editor-fold>
+	
 end			

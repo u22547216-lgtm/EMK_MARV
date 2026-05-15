@@ -48,8 +48,8 @@ PSECT code,abs
 
     DB "Choose your MARV mode?", 0x0A, "(C)olour", 0x0A, "(R)eference", 0x0A, "(A)ttack", 0x0A, "(S)imulate race", 0x0A, "(H)otload EEPROM", 0x0A,0,0
     
-    db "EMK310 is doing numbers on my sanity :D", 0x0A, 0x0D,  0,0,0,0,0,0,0
-    ; begin at 9, end at 48, 39 chars +2 41, fill to 48 with 0
+    db "EMK310 is doing numbers on my sanity :D", 0x0D,  0,0,0,0,0,0,0,0
+    ; begin at 9, end at 48, 38 chars +2 40, fill to 48 with 0
     
     chars equ 86+2+41+7
     ;org	    78h
