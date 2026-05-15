@@ -1236,7 +1236,7 @@ STATE_MACHINE_START:
 
 
 	    lfsr    1, sensor_read_address
-	    movlw   Ah
+	    movlw   0xA
 	    addwf   FSR1L
 	    movf    INDF1,w,a    ;sensor 0
 
