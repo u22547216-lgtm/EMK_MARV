@@ -86,6 +86,7 @@
 	#define code_tests	state_0,2,a
 	#define hardware_tests	state_0,3,a
 	#define	touch_start	state_0,4,a
+	#define colour_chosen	state_0,5,a
 
 	; sub-routine bits
 	subroutine_0	equ 0x07
@@ -935,8 +936,8 @@ STATE_MACHINE_START:
 ;<editor-fold defaultstate="collapsed" desc="Calibration">
     STATE0:
     calibration:
-	BTFSS   calibrate
-	GOTO    STATE1
+;	BTFSS   calibrate
+;	GOTO    STATE1
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Red">
 	    ; red
@@ -1213,77 +1214,83 @@ STATE_MACHINE_START:
 
 	;</editor-fold>
 
-	;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
-
-	race_colour_selection:
-	
-	    MOVLW	error_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    bsf		button_press_check
-	    call    wait_for_button_press_show_colour
-	    bcf		button_press_check
-
-	    BSF	check_colour
-	    call    detect_colour
-	    BCF	check_colour
-
-	    ; Race colour
-	    movff   SENSOR2,RACE_COLOUR
-
-	    movlw   'R'
-	    cpfseq  RACE_COLOUR,a
-	    bra	    $+12
-	    MOVLW	red_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-	    BSF	race_error_colour_magic,4,a
-	    goto    display_race_colour
-
-	    movlw   'G'
-	    cpfseq  RACE_COLOUR,a
-	    bra	    $+12
-	    MOVLW	green_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-	    BSF	race_error_colour_magic,6,a
-	    goto    display_race_colour
-
-	    movlw   'B'
-	    cpfseq  RACE_COLOUR,a
-	    bra	    $+12
-	    MOVLW	blue_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-	    BSF	race_error_colour_magic,7,a
-	    goto    display_race_colour
-
-	    movlw   'K'
-	    cpfseq  RACE_COLOUR,a
-	    bra	    $+10
-	    MOVLW	black_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-	    goto    display_race_colour
-
-	    MOVLW	white_indicator
-	    MOVWF	DISPLAYED_COLOUR,a
-
-	    display_race_colour:
-
-	    bsf		flash_colour_display
-	    call 	flash
-	    bcf		flash_colour_display
-
-	;</editor-fold>
-
     TRANSITION0:
-	BCF	    calibrate
-	BSF	    touch_start
+	BSF	    calibrate
+	RETURN
+;	BCF	    calibrate
+;	BSF	    touch_start
+;</editor-fold>
+	
+
+;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
+
+    race_colour_selection:
+
+	MOVLW	error_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+
+	bsf		button_press_check
+	call    wait_for_button_press_show_colour
+	bcf		button_press_check
+
+	BSF	check_colour
+	call    detect_colour
+	BCF	check_colour
+
+	; Race colour
+	movff   SENSOR2,RACE_COLOUR
+
+	movlw   'R'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+12
+	MOVLW	red_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+	BSF	race_error_colour_magic,4,a
+	goto    display_race_colour
+
+	movlw   'G'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+12
+	MOVLW	green_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+	BSF	race_error_colour_magic,6,a
+	goto    display_race_colour
+
+	movlw   'B'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+12
+	MOVLW	blue_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+	BSF	race_error_colour_magic,7,a
+	goto    display_race_colour
+
+	movlw   'K'
+	cpfseq  RACE_COLOUR,a
+	bra	    $+10
+	MOVLW	black_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+	goto    display_race_colour
+
+	MOVLW	white_indicator
+	MOVWF	DISPLAYED_COLOUR,a
+
+	display_race_colour:
+
+	bsf		flash_colour_display
+	call 	flash
+	bcf		flash_colour_display
+	
+	BSF	colour_chosen
+	return
+
 ;</editor-fold>
     
 ;<editor-fold defaultstate="collapsed" desc="Touch start">
     
     STATE1:
     touch_to_start:
-	BTFSS   touch_start
-	GOTO    STATE2
+;	BTFSS   touch_start
+;	GOTO    STATE2
 	;Load threshold values. Change according to the touch pad used
 
     ;    MOVLW	0b00001001; AN2
@@ -1384,8 +1391,10 @@ STATE_MACHINE_START:
 
 	    RETFIE
     TRANSITION1:
-	BCF	    touch_start
-	BSF	    follow_line
+	BSF	    touch_start
+	return
+;	BCF	    touch_start
+;	BSF	    follow_line
     
 ;</editor-fold>
     
