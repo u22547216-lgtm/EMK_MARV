@@ -818,7 +818,48 @@ STATE_MACHINE_START:
 		
 		
 	COLOUR:
-	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx
+	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx or the button
+	    ; need to check for Rx and a button press
+		; if Rx, just take the character
+		; if buttong press, run race_colour_selection
+	    
+		LFSR    0,100h
+		
+	    Rx_CHECK:
+		BTFSS	Rx_done
+		BRA	BUTTON_CHECK
+		
+		BCF	Rx_done
+		
+		
+		MOVLW	'M'
+		MOVFF	100h,extra
+		CPFSEQ	extra
+		BRA	$+6
+		
+		GOTO	MAIN_MENU
+		
+		MOVFF	100h, RACE_COLOUR
+		
+		GOTO	COLOUR
+		
+	    BUTTON_CHECK:
+		btfss   INT0IF	    ;wait for button press
+		bra	Rx_CHECK
+		
+		; delay so that we dont have to debounce
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		bsf	wait_for_timer333
+		bsf	delay_333_call
+		call    delay_333
+		bcf	delay_333_call
+		; reset button wait
+		bcf	    INT0IF
+		; go back
+		GOTO	COLOUR
     
 	REFERENCE:
 	    //    GO TO CALIBRATION SEQUENCE
@@ -1224,13 +1265,6 @@ STATE_MACHINE_START:
 ;<editor-fold defaultstate="collapsed" desc="Select Race Colour">
 
     race_colour_selection:
-
-	MOVLW	error_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-
-	bsf		button_press_check
-	call    wait_for_button_press_show_colour
-	bcf		button_press_check
 
 	BSF	check_colour
 	call    detect_colour
