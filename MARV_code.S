@@ -968,12 +968,15 @@ STATE_MACHINE_START:
 		MOVLW	'M'
 		MOVFF	100h,extra
 		CPFSEQ	extra
-		BRA	$+8
+		GOTO	ATTACK
 		
+		clrf    CCPR1L,a
+		clrf    CCPR2L,a
+		BCF	TMR2ON
+		CLRF	TMR2
 		BCF	touch_start
 		GOTO	MAIN_MENU
 		
-		GOTO	ATTACK
 		
 	    ATTACK_CAP_TOUCH_CHECK:
 		BTFSS	touch_start
@@ -1019,6 +1022,10 @@ STATE_MACHINE_START:
 		bcf	    INT0IF
 		BCF	touch_start
 		
+		clrf    CCPR1L,a
+		clrf    CCPR2L,a
+		BCF	TMR2ON
+		CLRF	TMR2
 		GOTO	REFERENCE
 	    
     
