@@ -686,6 +686,7 @@ STATE_MACHINE_START:
 ;<editor-fold desc="State Control Bits">
     STATE_CONTROLLER:
 	//    SECTIONS TO HANDLE IN THIS
+	    //    ON POWER ON	(just throw the power on greeting and go to attack mode)
 	    //    Power-on greeting
 	    //    Menu options
 	    //    (C)colour
@@ -697,6 +698,7 @@ STATE_MACHINE_START:
 	//    this needs to control which state we go to
 	//    it needs a way to interpret commands
 	
+	; not so sure about this anymore, be can control everything easily with GOTO's, CALL's and BRA's
 	//    everything here needs to be controlled by bits.
 	    //    the control bits for the main functions need to be controlled here.
 	    //    the state or menu option that we are in has to be kept track of with bits.
@@ -708,7 +710,7 @@ STATE_MACHINE_START:
 	    //   I DONT THINK THIS IS NEEDED. WE CAN JUST MAKE IT SO THAT MAIN MENU HAS TO PROCESS EVERY TYPE OF COMMAND, AND THE OTHER 
 	    //   ONES JUST HAVE TO CHECK IF THE COMMAND IS "M" TO RETURN TO MAIN MENU, OR JUST RETURN TO IT BY DEFAULT.
     
-	CYOC:
+	POWER_ON_GREETING:
 	    //    THE POWER ON MESSAGE
 	    
 		; eeprom address is 88
@@ -736,6 +738,9 @@ STATE_MACHINE_START:
 	    
 	MAIN_MENU:
 	    //    SPEAKS FOR ITSELF, JUST READ THE EEPROM, AND THEN TRANSMIT IT WITH Tx
+		//    YOU GET HERE WITH THE CYOC COMMAND, I HAVE CHOSEN IT TO BE "M" FOR  NOW
+	    
+		CALL	POWER_ON_GREETING
 
 		; eeprom address is 0
 		; char count is 86
