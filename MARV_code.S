@@ -730,6 +730,7 @@ STATE_MACHINE_START:
 		
 		CALL	READ_EEPROM
 		
+		; send the power on greeting
 		MOVFF	FSR0L, count
 		
 		LFSR    0, 0x200
@@ -758,12 +759,19 @@ STATE_MACHINE_START:
 		
 		CALL	READ_EEPROM
 		
+		; send the menu
+		MOVFF	FSR0L, count
+		
 		LFSR    0, 0x200
 		
 		movf	POSTINC0,W
 		CALL	BYTE_TX
 		DECFSZ	count
 		BRA	$-8
+		
+		; send CR character
+		movlw	0x0D
+		CALL	BYTE_TX
 		
 		; wait for command
 		LFSR    0,100h
@@ -866,6 +874,59 @@ STATE_MACHINE_START:
 		GOTO	HOTLOAD_EEPROM
     
 	ECHO:
+    
+	    send_echo_mode:
+		movlw	'E'
+		CALL	BYTE_TX
+		movlw	'C'
+		CALL	BYTE_TX
+		movlw	'H'
+		CALL	BYTE_TX
+		movlw	'O'
+		CALL	BYTE_TX
+		movlw	' '
+		CALL	BYTE_TX
+		movlw	'M'
+		CALL	BYTE_TX
+		movlw	'O'
+		CALL	BYTE_TX
+		movlw	'D'
+		CALL	BYTE_TX
+		movlw	'E'
+		CALL	BYTE_TX
+		movlw	0x0D
+		CALL	BYTE_TX
+		
+	    RECIEVE_CHARS:
+	    //	  write recieved to Bank 1
+		LFSR    0,100h
+		BTFSS	Rx_done
+		BRA	$-2
+		
+		BCF	Rx_done
+		
+		MOVLW	2
+		CPFSEQ	FSR0L
+		BRA	CHANGE_EEPROM
+		
+		MOVLW	'M'
+		MOVFF	100h,extra
+		CPFSEQ	extra
+		BRA	CHANGE_EEPROM
+		
+		GOTO	MAIN_MENU
+		
+	    ECHO_CHARS:
+		MOVFF	FSR0L, count
+		
+		LFSR    0, 0x100
+		
+		movf	POSTINC0,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-8
+		
+		GOTO	RECIEVE_CHARS
 
     
     
