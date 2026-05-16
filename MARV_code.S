@@ -712,7 +712,7 @@ STATE_MACHINE_START:
 	    
 	    GOTO    ATTACK
 	    
-	;<editor-fold desc="Power on Greeting">
+	;<editor-fold defaultstate="collapsed" desc="Power on Greeting">
 	POWER_ON_GREETING:
 	    //    THE POWER ON MESSAGE
 	    
@@ -742,7 +742,7 @@ STATE_MACHINE_START:
 	
 	;</editor-fold>
 		
-	;<editor-fold desc="Main Menu">
+	;<editor-fold defaultstate="collapsed" desc="Main Menu">
 	MAIN_MENU:
 	    //    SPEAKS FOR ITSELF, JUST READ THE EEPROM, AND THEN TRANSMIT IT WITH Tx
 		//    YOU GET HERE WITH THE CYOC COMMAND, I HAVE CHOSEN IT TO BE "M" FOR  NOW
@@ -818,13 +818,31 @@ STATE_MACHINE_START:
 	
 	;</editor-fold>
 		
-	;<editor-fold desc="Colour">
+	;<editor-fold defaultstate="collapsed" desc="Colour">
 	COLOUR:
 	    //    DECIDE THE RACE COLOUR, LIKELY WITH Rx or the button
 	    ; need to check for Rx and a button press
 		; if Rx, just take the character
 		; if buttong press, run race_colour_selection
-	    
+		
+	    send_colour_message:
+		; org 7000h
+		MOVLW	0x00
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	colour_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
+		
+	    COLOUR_start:
 		LFSR    0,100h
 		
 	    COLOUR_Rx_CHECK:
@@ -843,7 +861,7 @@ STATE_MACHINE_START:
 		
 		MOVFF	100h, RACE_COLOUR
 		
-		GOTO	COLOUR
+		GOTO	COLOUR_start
 		
 	    COLOUR_BUTTON_0_CHECK:
 		btfss   INT0IF	    ;wait for button press
@@ -864,7 +882,7 @@ STATE_MACHINE_START:
 		CALL	race_colour_selection
 		BCF	colour_chosen
 		; go back
-		GOTO	COLOUR
+		GOTO	COLOUR_start
 		
 	    COLOUR_BUTTON_1_CHECK:
 		btfss   INT1IF	    ;wait for button press
@@ -886,10 +904,28 @@ STATE_MACHINE_START:
     
 	;</editor-fold>
 		
-	;<editor-fold desc="Reference">
+	;<editor-fold defaultstate="collapsed" desc="Reference">
 	REFERENCE:
 	    //    GO TO CALIBRATION SEQUENCE
 	    
+	    send_reference_message:
+		; org 7020h
+		MOVLW	0x20
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	reference_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
+	    
+	    REFERENCE_start:
 		LFSR    0,100h
 		
 	    REFERENCE_Rx_CHECK:
@@ -906,7 +942,7 @@ STATE_MACHINE_START:
 		
 		GOTO	MAIN_MENU
 		
-		GOTO	REFERENCE
+		GOTO	REFERENCE_start
 		
 	    REFERENCE_BUTTON_0_CHECK:
 		btfss   INT0IF	    ;wait for button press
@@ -927,7 +963,7 @@ STATE_MACHINE_START:
 		CALL	calibration
 		BCF	calibrate
 		; go back
-		GOTO	REFERENCE
+		GOTO	REFERENCE_start
 	    
 	    REFERENCE_BUTTON_1_CHECK:
 		btfss   INT1IF	    ;wait for button press
@@ -949,7 +985,7 @@ STATE_MACHINE_START:
     
 	;</editor-fold>
 		
-	;<editor-fold desc="Attack">
+	;<editor-fold defaultstate="collapsed" desc="Attack">
 	ATTACK:
 	    //    GO TO LLI
 	    ; i need to make it so that the cap touch doesn't loop in on itself 
@@ -960,6 +996,32 @@ STATE_MACHINE_START:
 	    
 	    ; nah, i decide now that i wont change the cap touch code, i will use
 	    ; RB0 as the way to say, "I'm sure that we can start
+	    
+	    
+	    send_attack_message:
+		; org 7040h
+		MOVLW	0x40
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	attack_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
+		
+		MOVF	RACE_COLOUR
+		CALL	BYTE_TX
+		MOVLW	0x0D
+		CALL	BYTE_TX
+		
+		
+	    ATTACK_start:
 	    
 		LFSR    0,100h
 		
@@ -973,7 +1035,7 @@ STATE_MACHINE_START:
 		MOVLW	'M'
 		MOVFF	100h,extra
 		CPFSEQ	extra
-		GOTO	ATTACK
+		GOTO	ATTACK_start
 		
 		clrf    CCPR1L,a
 		clrf    CCPR2L,a
@@ -1008,7 +1070,7 @@ STATE_MACHINE_START:
 		
 		CALL	touch_to_start
 		; go back
-		GOTO	ATTACK
+		GOTO	ATTACK_start
 		
 	    ATTACK_BUTTON_1_CHECK:
 		btfss   INT1IF	    ;wait for button press
@@ -1037,8 +1099,26 @@ STATE_MACHINE_START:
     
 	;<editor-fold desc="Simulate">
 	SIMULATE_RACE:
-	    //    BASICALLY IT'S OWN STATE MACHINE
+    
+	    send_simutlate_race_message:
+		; org 7080h
+		MOVLW	0x80
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	simutlate_race_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
 	    
+	    SIMULATE_RACE_start:
+    
 	    SEND_SENSORS:
 	    //    WE NEED TO DECIDE IF IT WILL CONSTANTLY SEND SENSOR READINGS OR JUST SEND THE CURRENT SENSOR VALUE WHEN WE ENTER THE COMMAND
     
@@ -1046,8 +1126,27 @@ STATE_MACHINE_START:
     
 	;</editor-fold>
     
-	;<editor-fold desc="Hotload EEPROM">
+	;<editor-fold defaultstate="collapsed" desc="Hotload EEPROM">
 	HOTLOAD_EEPROM:
+    
+	    send_hotload_eeprom_message:
+		; org 7080h
+		MOVLW	0x80
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	hotload_eeprom_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
+		
+	    HOTLOAD_EEPROM_start:
 	    //    READ FROM Rx AND PROGRAM TO EEPROM
 		LFSR    0,100h
     
@@ -1085,7 +1184,7 @@ STATE_MACHINE_START:
 		
 		call	MULTI_PAGE_WRITE
 		
-		GOTO	HOTLOAD_EEPROM
+		GOTO	HOTLOAD_EEPROM_start
     
 	;</editor-fold>
 		
@@ -3722,7 +3821,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     db  "Calibration Mode", 0x0D
     reference_message	equ 17
     org 7040h
-    db  "Attack"
+    db  "Attack "
     attack_message  equ 6
     org 7060h
     db  "Simulate Mode", 0x0D
