@@ -73,6 +73,7 @@ INIT:
     CLRF    ANSELA,b
 
 ;--- PORTC Setup
+    CLRF    TRISC
     BSF     TRISC,3          ; RC3 = SCL1
     BSF     TRISC,4          ; RC4 = SDA1
     CLRF    ANSELC,b
@@ -214,6 +215,8 @@ start_char_of_write_data:
 ;-------------------------------------------------------------------------------
 ; Write three characters to EEPROM
 ;-------------------------------------------------------------------------------
+    
+BSF	power_eeprom
 Main_write:
     ;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
     CALL    I2C_START_CONDITION
@@ -280,6 +283,8 @@ page_loop:
     DECFSZ  PAGE_COUNT,F
     GOTO    Main_write
     
+    BCF	power_eeprom
+    
 ;-------------------------------------------------------------------------------
 ; Read characters and stream to data memory
 ;-------------------------------------------------------------------------------
@@ -291,6 +296,7 @@ page_loop:
 ;--- Stream data to 0x100 in data memory
     LFSR    0, 0x100
 
+BSF	power_eeprom
 Main_read:
 
     ;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
@@ -356,6 +362,7 @@ Read_done:
 
     ; Code ends here in endless loop.
     CALL    DELAY
+    BCF	power_eeprom
     GOTO    $               ; Hang here
 
 ;-------------------------------------------------------------------------------

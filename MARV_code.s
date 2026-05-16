@@ -265,6 +265,8 @@ DELAY_SKIP		equ	0x08
 	WRITE_CONTROL   EQU 10100000B
 	READ_CONTROL    EQU 10100001B
     
+	#define power_eeprom	PORTC,5
+    
     ;</editor-fold>
     
     ;<editor-fold defaultstate="collapsed" desc="Serial Variables">
@@ -715,6 +717,7 @@ STATE_MACHINE_START:
 	;<editor-fold defaultstate="collapsed" desc="Power on Greeting">
 	POWER_ON_GREETING:
 	    //    THE POWER ON MESSAGE
+		BSF	power_eeprom
 	    
 		; eeprom address is 88
 		; last char is a CR (0x0D) character, will make the I2C read check for this
@@ -738,6 +741,7 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-8
 		
+		BCF	power_eeprom
 		RETURN
 	
 	;</editor-fold>
@@ -758,7 +762,9 @@ STATE_MACHINE_START:
 	    ;--- Stream data to 0x200 in data memory
 		LFSR    0, 0x200
 		
+		BSF	power_eeprom
 		CALL	READ_EEPROM
+		BCF	power_eeprom
 		
 		; send the menu
 		MOVFF	FSR0L, count
@@ -1185,7 +1191,9 @@ STATE_MACHINE_START:
 		MOVWF	EEPROM_ADDRESS
 		LFSR    0,100h
 		
+		BSF	power_eeprom
 		call	MULTI_PAGE_WRITE
+		BCF	power_eeprom
 		
 		GOTO	HOTLOAD_EEPROM_start
     
