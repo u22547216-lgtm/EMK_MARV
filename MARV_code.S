@@ -1089,30 +1089,25 @@ STATE_MACHINE_START:
     
 	;</editor-fold>
 		
-	;<editor-fold desc="Echo">
+	;<editor-fold defaultstate="collapsed" desc="Echo">
 	ECHO:
     
 	    send_echo_mode:
-		movlw	'E'
+		; org 70A0h
+		MOVLW	0xA0
+		MOVWF	TBLPTRL
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		CLRF	TBLPTRU
+		
+		MOVLW	echo_message
+		MOVWF	count
+		
+		TBLRD*+
+		MOVF	TABLAT,W
 		CALL	BYTE_TX
-		movlw	'C'
-		CALL	BYTE_TX
-		movlw	'H'
-		CALL	BYTE_TX
-		movlw	'O'
-		CALL	BYTE_TX
-		movlw	' '
-		CALL	BYTE_TX
-		movlw	'M'
-		CALL	BYTE_TX
-		movlw	'O'
-		CALL	BYTE_TX
-		movlw	'D'
-		CALL	BYTE_TX
-		movlw	'E'
-		CALL	BYTE_TX
-		movlw	0x0D
-		CALL	BYTE_TX
+		DECFSZ	count
+		BRA	$-10
 		
 	    RECIEVE_CHARS:
 	    //	  write recieved to Bank 1
@@ -3718,7 +3713,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 
 ;</editor-fold>
     
-;<editor-fold desc="Mode Messages">
+;<editor-fold defaultstate="collapsed" desc="Mode Messages">
     
     org 7000h
     db  "Select the Race Colour", 0x0D
