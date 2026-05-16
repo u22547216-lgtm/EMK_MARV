@@ -3822,7 +3822,7 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     reference_message	equ 17
     org 7040h
     db  "Attack "
-    attack_message  equ 6
+    attack_message  equ 7
     org 7060h
     db  "Simulate Mode", 0x0D
     simutlate_race_message equ 14
