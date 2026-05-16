@@ -118,6 +118,7 @@ DELAY_SKIP		equ	0x08
     offset_stuff	equ 0x0F
     reading_count	equ 0x10
     count		equ 0x11
+    race_colour_string_start	equ 0x12
     ;   dont use address 0x13, strange things afoot
     extra		equ 0x19
 
@@ -630,7 +631,10 @@ init:
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
-
+    
+    MOVLW	0xE8
+    MOVWF	race_colour_string_start
+		
 ;</editor-fold>
 
 ;<editor-fold defaultstate="collapsed" desc="State Machine Setup">
@@ -867,7 +871,7 @@ STATE_MACHINE_START:
 		
 		MOVFF	100h, RACE_COLOUR
 		
-		GOTO	COLOUR_start
+		GOTO	show_chosen_colour
 		
 	    COLOUR_BUTTON_0_CHECK:
 		btfss   INT0IF	    ;wait for button press
@@ -888,6 +892,87 @@ STATE_MACHINE_START:
 		CALL	race_colour_selection
 		BCF	colour_chosen
 		; go back
+	    show_chosen_colour:
+	
+		MOVLW	0x00
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		
+		MOVLW	0xC0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		CLRF	race_error_colour_magic
+		
+		movlw   'R'
+		cpfseq  RACE_COLOUR,a
+		bra	    $+16
+		MOVLW	red_indicator
+		MOVWF	DISPLAYED_COLOUR,a
+		MOVLW	0xC0
+		MOVWF	TBLPTRL
+		BSF	race_error_colour_magic,4,a
+		goto    COLOUR_SEND
+
+		movlw   'G'
+		cpfseq  RACE_COLOUR,a
+		bra	    $+16
+		MOVLW	gren_indicator
+		MOVWF	DISPLAYED_COLOUR,a
+		MOVLW	0xC8
+		MOVWF	TBLPTRL
+		BSF	race_error_colour_magic,6,a
+		goto    COLOUR_SEND
+
+		movlw   'B'
+		cpfseq  RACE_COLOUR,a
+		bra	    $+16
+		MOVLW	blue_indicator
+		MOVWF	DISPLAYED_COLOUR,a
+		MOVLW	0xD0
+		MOVWF	TBLPTRL
+		BSF	race_error_colour_magic,7,a
+		goto    COLOUR_SEND
+
+		movlw   'K'
+		cpfseq  RACE_COLOUR,a
+		bra	    $+14
+		MOVLW	black_indicator
+		MOVWF	DISPLAYED_COLOUR,a
+		MOVLW	0xD8
+		MOVWF	TBLPTRL
+		goto    COLOUR_SEND
+		
+		MOVLW	0xE8
+		MOVWF	TBLPTRL
+		
+	    COLOUR_SEND:
+		MOVWF	race_colour_string_start
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+
+	    display_race_colour:
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+	
 		GOTO	COLOUR_start
 		
 	    COLOUR_BUTTON_1_CHECK:
@@ -922,14 +1007,12 @@ STATE_MACHINE_START:
 		MOVWF	TBLPTRH
 		CLRF	TBLPTRU
 		
-		MOVLW	reference_message
-		MOVWF	count
 		
 		TBLRD*+
 		MOVF	TABLAT,W
 		CALL	BYTE_TX
-		DECFSZ	count
-		BRA	$-10
+		XORLW	0x0D
+		BNZ	$-10
 	    
 	    REFERENCE_start:
 		LFSR    0,100h
@@ -1021,11 +1104,13 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-10
 		
-		MOVF	RACE_COLOUR,W
-		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
+		MOVFF	race_colour_string_start, TBLPTRL
 		
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
 		
 	    ATTACK_start:
 	    
@@ -1192,6 +1277,7 @@ STATE_MACHINE_START:
 		LFSR    0,100h
 		
 		BSF	power_eeprom
+		CALL    I2C_DELAY
 		call	MULTI_PAGE_WRITE
 		BCF	power_eeprom
 		
@@ -1261,6 +1347,23 @@ STATE_MACHINE_START:
 ;	GOTO    STATE1
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Red">
+	
+		MOVLW	0xF0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0xC0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
 	    ; red
 	    LFSR    1, sensor_read_address
 	    movlw   1
@@ -1300,6 +1403,23 @@ STATE_MACHINE_START:
 	;</editor-fold>
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Green">
+	
+		MOVLW	0xF0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0xC8
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
 	    ;green
 	    lfsr    1, sensor_read_address
 	    MOVLW	green_indicator
@@ -1339,7 +1459,23 @@ STATE_MACHINE_START:
 	;</editor-fold>
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Blue">
-
+	
+		MOVLW	0xF0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0xD0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
 	    ;blue
 	    lfsr    1, sensor_read_address
 	    MOVLW	blue_indicator
@@ -1379,7 +1515,23 @@ STATE_MACHINE_START:
 	;</editor-fold>
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate Black">
-
+	
+		MOVLW	0xF0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0xD8
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
 	    ;black
 	    lfsr    1, sensor_read_address
 	    MOVLW	black_indicator
@@ -1459,7 +1611,23 @@ STATE_MACHINE_START:
 	;</editor-fold>
 
 	;<editor-fold defaultstate="collapsed" desc="Calibrate White">
-
+	
+		MOVLW	0xF0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	' '
+		BNZ	$-10
+		
+		MOVLW	0xE0
+		MOVWF	TBLPTRL
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
 	    ;white
 	    lfsr    1, sensor_read_address
 	    MOVLW	white_indicator
@@ -1555,48 +1723,9 @@ STATE_MACHINE_START:
 
 	; Race colour
 	movff   SENSOR2,RACE_COLOUR
-
-	movlw   'R'
-	cpfseq  RACE_COLOUR,a
-	bra	    $+12
-	MOVLW	red_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-	BSF	race_error_colour_magic,4,a
-	goto    display_race_colour
-
-	movlw   'G'
-	cpfseq  RACE_COLOUR,a
-	bra	    $+12
-	MOVLW	green_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-	BSF	race_error_colour_magic,6,a
-	goto    display_race_colour
-
-	movlw   'B'
-	cpfseq  RACE_COLOUR,a
-	bra	    $+12
-	MOVLW	blue_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-	BSF	race_error_colour_magic,7,a
-	goto    display_race_colour
-
-	movlw   'K'
-	cpfseq  RACE_COLOUR,a
-	bra	    $+10
-	MOVLW	black_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-	goto    display_race_colour
-
-	MOVLW	white_indicator
-	MOVWF	DISPLAYED_COLOUR,a
-
-	display_race_colour:
-
-	bsf		flash_colour_display
-	call 	flash
-	bcf		flash_colour_display
 	
 	BSF	colour_chosen
+	
 	return
 
 ;</editor-fold>
@@ -3512,11 +3641,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     ;<editor-fold defaultstate="collapsed" desc="Multi Page Write">
 	
     MULTI_PAGE_WRITE:
-	;--- Fetch the letter to send
-;	TBLRD*+
-;	movf   TABLAT,w,a
-	movf	POSTINC0,W
-	MOVWF   CHAR_WRITE   
     
 	;<editor-fold defaultstate="collapsed" desc="1. Generate start condition">
 	CALL    I2C_START_CONDITION
@@ -3547,8 +3671,9 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
 	movwf   page_byte_count,a
 
     page_loop:
-
-	MOVF    CHAR_WRITE,W
+	;--- Fetch the letter to send
+	movf	POSTINC0,W
+	
 	MOVWF   TX_BYTE
 	CALL    my_I2C_WRITE
 
@@ -3829,8 +3954,8 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     db  "Select the Race Colour", 0x0D
     colour_message  equ	23
     org 7020h
-    db  "Calibration Mode", 0x0D
-    reference_message	equ 17
+    db  "Calibration Mode (RB0 to start)", 0x0D
+    
     org 7040h
     db  "Attack "
     attack_message  equ 7
@@ -3843,13 +3968,28 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     org 70A0h
     db  "ECHO MODE", 0x0D
     echo_message    equ 10
+    org 70C0h
+    db	"Red", 0x0D
+    org 70C8h
+    db	"Green", 0x0D
+    org 70D0h
+    db	"Blue", 0x0D
+    org 70D8h
+    db	"Black", 0x0D
+    org 70E0h
+    db	"White", 0x0D
+    org 70E8h
+    db	"Nothing", 0x0D
+    org	70F0h
+    db	"Calibrate "
+    org	7100h
+    db	"Selected "
     
-    org	70C0h
+    org	7200h
     db	"A person who thinks all the time has nothing to think about except thoughts. So, he loses touch with reality and lives in a world of illusions. Alan Watts.",0x0D
-    
     ;<editor-fold defaultstate="collapsed" desc="">
     org	7806h
-    DB "We're no strangers to love", 0x0A, "You know the rules and so do I", 0x0A, "A full commitment's what I'm thinking of", 0x0A, "You wouldn't get this from any other guy", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "And if you ask me how I'm feeling", 0x0A, "Don't tell me you're too blind to see", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Ooh (Give you up)", 0x0A, "Ooh-ooh (Give you up)", 0x0A, "Ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "Ooh-ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you"
+    DB "We're no strangers to love", 0x0A, "You know the rules and so do I", 0x0A, "A full commitment's what I'm thinking of", 0x0A, "You wouldn't get this from any other guy", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "And if you ask me how I'm feeling", 0x0A, "Don't tell me you're too blind to see", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Ooh (Give you up)", 0x0A, "Ooh-ooh (Give you up)", 0x0A, "Ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "Ooh-ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0D
     ;</editor-fold>
 ;</editor-fold>
 	
