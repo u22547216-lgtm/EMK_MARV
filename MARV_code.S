@@ -930,7 +930,7 @@ STATE_MACHINE_START:
 		movlw   'G'
 		cpfseq  RACE_COLOUR,a
 		bra	    $+16
-		MOVLW	gren_indicator
+		MOVLW	green_indicator
 		MOVWF	DISPLAYED_COLOUR,a
 		MOVLW	0xC8
 		MOVWF	TBLPTRL
