@@ -278,6 +278,32 @@ DELAY_SKIP		equ	0x08
     
     ;</editor-fold>
 
+    ;<editor-fold defaultstate="collapsed" desc="7-seg Menu stuff">
+    
+	; variables to reduce magic numbers
+	main_menu_digit		equ 0b00111111	; 0
+	colour_digit		equ 0b00000110	; 1
+	reference_digit		equ 0b01011011	; 2
+	attack_digit		equ 0b01001111	; 3
+	simulate_digit		equ 0b01100110	; 4
+	hotload_eeprom_digit	equ 0b01101101	; 5
+	echo_digit		equ 0b01111101	; 6
+		
+	echo_digit		equ 0b01010000	; r
+	echo_digit		equ 0b00111101	; G
+	echo_digit		equ 0b01111100	; b
+	echo_digit		equ 0b01110110	; K
+		
+	#define	segG	PORTD,7
+	#define	segF	PORTD,4
+	#define	segE	PORTC,0
+	#define	segD	PORTC,1
+	#define	segC	PORTC,2
+	#define	segB	PORTD,0
+	#define	segA	PORTD,1
+	
+    ;</editor-fold>
+    
     ;<editor-fold defaultstate="collapsed" desc="Magic Numbers">
     
 	; variables to reduce magic numbers
