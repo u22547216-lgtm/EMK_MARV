@@ -907,14 +907,6 @@ STATE_MACHINE_START:
 		MOVLW	0x70
 		MOVWF	TBLPTRH
 		
-		MOVLW	0xC0
-		MOVWF	TBLPTRL
-		TBLRD*+
-		MOVF	TABLAT,W
-		CALL	BYTE_TX
-		XORLW	0x0D
-		BNZ	$-10
-		
 		CLRF	race_error_colour_magic
 		
 		movlw   'R'
