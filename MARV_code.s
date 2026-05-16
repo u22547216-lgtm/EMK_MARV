@@ -1154,6 +1154,9 @@ STATE_MACHINE_START:
 	    //	  write recieved to Bank 1
 		BTFSS	Rx_done
 		BRA	$-2
+
+		BTFSS	Rx_done
+		BRA	$-6
 		
 		BCF	Rx_done
 		
@@ -3832,6 +3835,10 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     org 70A0h
     db  "ECHO MODE", 0x0D
     echo_message    equ 10
+    
+    org	70C0h
+    db	"A person who thinks all the time has nothing to think about except thoughts. So, he loses touch with reality and lives in a world of illusions. Alan Watts.",0x0D
+    
     ;<editor-fold defaultstate="collapsed" desc="">
     org	7806h
     DB "We're no strangers to love", 0x0A, "You know the rules and so do I", 0x0A, "A full commitment's what I'm thinking of", 0x0A, "You wouldn't get this from any other guy", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "And if you ask me how I'm feeling", 0x0A, "Don't tell me you're too blind to see", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Ooh (Give you up)", 0x0A, "Ooh-ooh (Give you up)", 0x0A, "Ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "Ooh-ooh (Never gonna give, never gonna give)", 0x0A, "Give you up", 0x0A, "We've known each other for so long", 0x0A, "Your heart's been aching, but you're too shy to say it", 0x0A, "Inside, we both know what's been going on", 0x0A, "We know the game, and we're gonna play it", 0x0A, "I just wanna tell you how I'm feeling", 0x0A, "Gotta make you understand", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you", 0x0A, "Never gonna give you up", 0x0A, "Never gonna let you down", 0x0A, "Never gonna run around and desert you", 0x0A, "Never gonna make you cry", 0x0A, "Never gonna say goodbye", 0x0A, "Never gonna tell a lie and hurt you"
