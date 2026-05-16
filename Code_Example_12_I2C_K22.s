@@ -35,6 +35,8 @@
 
     WRITE_CONTROL   EQU 10100000B
     READ_CONTROL    EQU 10100001B
+    
+	#define power_eeprom	PORTC,5
 
 ;-------------------------------------------------------------------------------
 ; Vectors
