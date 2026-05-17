@@ -125,6 +125,7 @@ DELAY_SKIP		equ	0x08
     count		equ 0x11
     race_colour_string_start	equ 0x12
     ;   dont use address 0x13, strange things afoot
+    RACE_COLOUR_DIGIT	EQU 0X18
     extra		equ 0x19
 
     ;<editor-fold defaultstate="collapsed" desc="Colour Related Variables">
@@ -953,41 +954,49 @@ STATE_MACHINE_START:
 		
 		movlw   'R'
 		cpfseq  RACE_COLOUR,a
-		bra	    $+16
+		bra	    $+20
 		MOVLW	red_indicator
 		MOVWF	DISPLAYED_COLOUR,a
 		MOVLW	0xC0
 		MOVWF	TBLPTRL
 		BSF	race_error_colour_magic,4,a
+		MOVLW	red_digit
+		MOVWF	RACE_COLOUR_DIGIT
 		goto    COLOUR_SEND
 
 		movlw   'G'
 		cpfseq  RACE_COLOUR,a
-		bra	    $+16
+		bra	    $+20
 		MOVLW	green_indicator
 		MOVWF	DISPLAYED_COLOUR,a
 		MOVLW	0xC8
 		MOVWF	TBLPTRL
 		BSF	race_error_colour_magic,6,a
+		MOVLW	green_digit
+		MOVWF	RACE_COLOUR_DIGIT
 		goto    COLOUR_SEND
 
 		movlw   'B'
 		cpfseq  RACE_COLOUR,a
-		bra	    $+16
+		bra	    $+20
 		MOVLW	blue_indicator
 		MOVWF	DISPLAYED_COLOUR,a
 		MOVLW	0xD0
 		MOVWF	TBLPTRL
 		BSF	race_error_colour_magic,7,a
+		MOVLW	blue_digit
+		MOVWF	RACE_COLOUR_DIGIT
 		goto    COLOUR_SEND
 
 		movlw   'K'
 		cpfseq  RACE_COLOUR,a
-		bra	    $+14
+		bra	    $+18
 		MOVLW	black_indicator
 		MOVWF	DISPLAYED_COLOUR,a
 		MOVLW	0xD8
 		MOVWF	TBLPTRL
+		MOVLW	 black_digit
+		MOVWF	RACE_COLOUR_DIGIT
 		goto    COLOUR_SEND
 		
 		MOVLW	0xE8
@@ -3519,9 +3528,11 @@ SUB_TRANSITIONS1:
 	    BSF	colour_display
 	    call	display_colour
 	    BCF	colour_display
+	    
+		CALL	DISPLAY_DIGIT
 
 	    btfss   INT0IF	    ;wait for button press
-	    bra	    $-10
+	    bra	    $-14
 	    ; delay so that we dont have to debounce
 	bsf	wait_for_timer333
 	    bsf	delay_333_call
