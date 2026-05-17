@@ -649,19 +649,19 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
     
 	COLOUR_TOLERANCES:
-	movlw   10
+	movlw   0
 	MOVWF   red_tol,a
 	
-	movlw   10
+	movlw   1
 	MOVWF   green_tol,a
 	
-	movlw   10
+	movlw   0
 	MOVWF   blue_tol,a
 
-	movlw   10
+	movlw   0
 	MOVWF   black_tol,a
 
-	movlw   10
+	movlw   0
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
