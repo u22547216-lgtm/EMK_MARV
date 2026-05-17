@@ -73,6 +73,10 @@
     #define race_colour_seen	misc_checks,0,a
     #define black_flag		misc_checks,1,a
     #define Rx_done		misc_checks,2,a
+    #define SIM_SEND		misc_checks,3,a
+    #define SIM_FORWARD		misc_checks,4,a
+    #define SIM_LEFT		misc_checks,5,a
+    #define SIM_RIGHT		misc_checks,6,a
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
@@ -280,6 +284,8 @@ DELAY_SKIP		equ	0x08
 
     ;<editor-fold defaultstate="collapsed" desc="7-seg Menu stuff">
     
+	displayed_digit		equ 0x3E
+    
 	; variables to reduce magic numbers
 	main_menu_digit		equ 0b00111111	; 0
 	colour_digit		equ 0b00000110	; 1
@@ -289,10 +295,10 @@ DELAY_SKIP		equ	0x08
 	hotload_eeprom_digit	equ 0b01101101	; 5
 	echo_digit		equ 0b01111101	; 6
 		
-	echo_digit		equ 0b01010000	; r
-	echo_digit		equ 0b00111101	; G
-	echo_digit		equ 0b01111100	; b
-	echo_digit		equ 0b01110110	; K
+	red_digit		equ 0b01010000	; r
+	green_digit		equ 0b00111101	; G
+	blue_digit		equ 0b01111100	; b
+	black_digit		equ 0b01110110	; K
 		
 	#define	segG	PORTD,7
 	#define	segF	PORTD,4
@@ -810,11 +816,15 @@ STATE_MACHINE_START:
 		movlw	0x0D
 		CALL	BYTE_TX
 		
+		MOVLW	main_menu_digit
+		MOVWF	displayed_digit
+		
 		; wait for command
 		LFSR    0,100h
 		
+		CALL	DISPLAY_DIGIT
 		BTFSS	Rx_done
-		BRA	$-2
+		BRA	$-6
 		
 		BCF	Rx_done
 		
@@ -878,10 +888,15 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-10
 		
+		MOVLW	colour_digit
+		MOVWF	displayed_digit
+		
 	    COLOUR_start:
 		LFSR    0,100h
 		
 	    COLOUR_Rx_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		BTFSS	Rx_done
 		BRA	COLOUR_BUTTON_0_CHECK
 		
@@ -1031,11 +1046,16 @@ STATE_MACHINE_START:
 		CALL	BYTE_TX
 		XORLW	0x0D
 		BNZ	$-10
+		
+		MOVLW	reference_digit
+		MOVWF	displayed_digit
 	    
 	    REFERENCE_start:
 		LFSR    0,100h
 		
 	    REFERENCE_Rx_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		BTFSS	Rx_done
 		BRA	REFERENCE_BUTTON_0_CHECK
 		
@@ -1130,11 +1150,16 @@ STATE_MACHINE_START:
 		XORLW	0x0D
 		BNZ	$-10
 		
+		MOVLW	attack_digit
+		MOVWF	displayed_digit
+		
 	    ATTACK_start:
 	    
 		LFSR    0,100h
 		
 	    ATTACK_Rx_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		BTFSS	Rx_done
 		BRA	ATTACK_CAP_TOUCH_CHECK
 		
@@ -1225,13 +1250,114 @@ STATE_MACHINE_START:
 		CALL	BYTE_TX
 		DECFSZ	count
 		BRA	$-10
+		
+		MOVLW	simulate_digit
+		MOVWF	displayed_digit
+		
+		BCF	TMR2IE
+		BSF	TMR2ON
 	    
 	    SIMULATE_RACE_start:
+		
+    
+		CALL	DISPLAY_DIGIT
+		
+		BTFSS	Rx_done
+		BRA	SEND_SENSORS
+		
+		BCF	Rx_done
+		
+		MOVFF	100h,extra
+		
+		MOVLW	'M'
+		CPFSEQ	extra
+		BRA	$+24
+		BCF	SIM_SEND
+		BCF	SIM_FORWARD
+		BCF	SIM_LEFT
+		BCF	SIM_RIGHT
+		
+		clrf    CCPR1L,a
+		clrf    CCPR2L,a
+		BCF	TMR2ON
+		CLRF	TMR2
+		BSF	TMR2IE
+		
+		GOTO	MAIN_MENU
+		
+		MOVLW	'S'
+		CPFSEQ	extra
+		BRA	$+8
+		BTG	SIM_SEND
+		
+		GOTO	SEND_SENSORS
+		
+		MOVLW	'F'
+		CPFSEQ	extra
+		BRA	$+8
+		BTG	SIM_FORWARD
+		
+		GOTO	SEND_SENSORS
+		
+		MOVLW	'L'
+		CPFSEQ	extra
+		BRA	$+8
+		BTG	SIM_LEFT
+		
+		GOTO	SEND_SENSORS
+		
+		MOVLW	'R'
+		CPFSEQ	extra
+		BRA	$+4
+		BTG	SIM_RIGHT
     
 	    SEND_SENSORS:
 	    //    WE NEED TO DECIDE IF IT WILL CONSTANTLY SEND SENSOR READINGS OR JUST SEND THE CURRENT SENSOR VALUE WHEN WE ENTER THE COMMAND
-    
-	    CHANGE_DIRECTION:
+		BTFSS	SIM_SEND
+		BRA	FORWARD
+		
+		
+	    FORWARD:
+		BTFSS	SIM_FORWARD
+		BRA	LEFT
+		
+		MOVLW	'F'
+		CALL	BYTE_TX
+		MOVLW	0x0D
+		CALL	BYTE_TX
+		
+		MOVLW	DUTY_50
+		MOVWF	CCPR1L,a    
+		MOVWF   CCPR2L,a
+		
+	    LEFT:
+		BTFSS	SIM_LEFT
+		BRA	RIGHT
+		
+		MOVLW	'L'
+		CALL	BYTE_TX
+		MOVLW	0x0D
+		CALL	BYTE_TX
+		
+		MOVLW	DUTY_50
+		CLRF	CCPR1L,a    
+		MOVWF	CCPR2L,a
+		
+	    RIGHT:
+		BTFSS	SIM_RIGHT
+		BRA	SIMULATE_RACE_start
+		
+		MOVLW	'R'
+		CALL	BYTE_TX
+		MOVLW	0x0D
+		CALL	BYTE_TX
+		
+		MOVLW	DUTY_50
+		MOVWF	CCPR1L,a    
+		CLRF	CCPR2L,a
+		
+		
+		BRA	SIMULATE_RACE_start
     
 	;</editor-fold>
     
@@ -1255,17 +1381,22 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-10
 		
+		MOVLW	hotload_eeprom_digit
+		MOVWF	displayed_digit
+		
 	    HOTLOAD_EEPROM_start:
 	    //    READ FROM Rx AND PROGRAM TO EEPROM
+	    //	  write recieved to Bank 1
 		LFSR    0,100h
+		
     
 	    RECIEVE_MESSAGE:
-	    //	  write recieved to Bank 1
-		BTFSS	Rx_done
-		BRA	$-2
-
+		CALL	DISPLAY_DIGIT
 		BTFSS	Rx_done
 		BRA	$-6
+
+		BTFSS	Rx_done
+		BRA	$-10
 		
 		BCF	Rx_done
 		
@@ -1299,6 +1430,19 @@ STATE_MACHINE_START:
 		call	MULTI_PAGE_WRITE
 		BCF	power_eeprom
 		
+		MOVLW	0x10
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
+		
 		GOTO	HOTLOAD_EEPROM_start
     
 	;</editor-fold>
@@ -1323,11 +1467,17 @@ STATE_MACHINE_START:
 		DECFSZ	count
 		BRA	$-10
 		
+		MOVLW	echo_digit
+		MOVWF	displayed_digit
+		
 	    RECIEVE_CHARS:
 	    //	  write recieved to Bank 1
 		LFSR    0,100h
+		
+		CALL	DISPLAY_DIGIT
+		
 		BTFSS	Rx_done
-		BRA	$-2
+		BRA	$-6
 		
 		BCF	Rx_done
 		
@@ -3322,11 +3472,6 @@ SUB_TRANSITIONS1:
 	BTFSS   colour_display
 	GOTO    STATE_MACHINE_END
 
-	    nop
-	    nop
-	    nop
-	    nop
-	    nop
 	    MOVF	PCL,w,a
 	    MOVF	DISPLAYED_COLOUR,w,a
 	    ADDWF	PCL,f,a
@@ -3507,6 +3652,41 @@ SUB_TRANSITIONS1:
 
     SUB_TRANSITIONS7:
 	BCF	    colour_display
+    
+;</editor-fold>
+	
+;<editor-fold defaultstate="collapsed" desc="Display Digit">
+	
+    DISPLAY_DIGIT:
+	BTFSC	displayed_digit,0
+	BSF	segA
+	BCF	segA
+	
+	BTFSC	displayed_digit,1
+	BSF	segB
+	BCF	segB
+	
+	BTFSC	displayed_digit,2
+	BSF	segC
+	BCF	segC
+	
+	BTFSC	displayed_digit,3
+	BSF	segD
+	BCF	segD
+	
+	BTFSC	displayed_digit,4
+	BSF	segE
+	BCF	segE
+	
+	BTFSC	displayed_digit,5
+	BSF	segF
+	BCF	segF
+	
+	BTFSC	displayed_digit,6
+	BSF	segG
+	BCF	segG
+	
+	RETURN
     
 ;</editor-fold>
     
@@ -4002,6 +4182,8 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     db	"Calibrate "
     org	7100h
     db	"Selected "
+    org	7110h
+    db	"Greeting saved", 0x0D
     
     org	7200h
     db	"A person who thinks all the time has nothing to think about except thoughts. So, he loses touch with reality and lives in a world of illusions. Alan Watts.",0x0D
