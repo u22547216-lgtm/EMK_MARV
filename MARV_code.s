@@ -284,7 +284,7 @@ DELAY_SKIP		equ	0x08
 
     ;<editor-fold defaultstate="collapsed" desc="7-seg Menu stuff">
     
-	displayed_digit		equ 0x3E
+	displayed_digit		equ 0x3A
     
 	; variables to reduce magic numbers
 	main_menu_digit		equ 0b00111111	; 0
@@ -415,7 +415,7 @@ init:
     clrf    PORTD, a
     clrf    LATD, a
     clrf    ANSELD, b
-    ; clrf    TRISD, a
+    clrf    TRISD, a
     
     ; RD2 = CCP2 PWM output P2B, RD3 = CCP2 PWM output P2C, RD5 = CCP1 PWM OUTPUT P1B, RD6 = CCP1 OUTPUT P1C
     bcf     TRISD,2,a
@@ -1256,6 +1256,11 @@ STATE_MACHINE_START:
 		
 		BCF	TMR2IE
 		BSF	TMR2ON
+		
+		BCF	SIM_SEND
+		BCF	SIM_FORWARD
+		BCF	SIM_LEFT
+		BCF	SIM_RIGHT
 	    
 	    SIMULATE_RACE_start:
 		LFSR    0,100h
