@@ -77,6 +77,7 @@
     #define SIM_FORWARD		misc_checks,4,a
     #define SIM_LEFT		misc_checks,5,a
     #define SIM_RIGHT		misc_checks,6,a
+    #define SIM_STOPPED		misc_checks,7,a
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
@@ -1235,8 +1236,8 @@ STATE_MACHINE_START:
 	SIMULATE_RACE:
     
 	    send_simutlate_race_message:
-		; org 7080h
-		MOVLW	0x80
+		; org 7060h
+		MOVLW	0x60
 		MOVWF	TBLPTRL
 		MOVLW	0x70
 		MOVWF	TBLPTRH
@@ -1261,6 +1262,7 @@ STATE_MACHINE_START:
 		BCF	SIM_FORWARD
 		BCF	SIM_LEFT
 		BCF	SIM_RIGHT
+		BCF	SIM_STOPPED
 	    
 	    SIMULATE_RACE_start:
 		LFSR    0,100h
@@ -1278,18 +1280,19 @@ STATE_MACHINE_START:
 		BCF	Rx_done
 		LFSR    0,100h
 		
+		clrf    CCPR1L,a
+		clrf    CCPR2L,a
+		
 		MOVFF	100h,extra
 		
 		MOVLW	'M'
 		CPFSEQ	extra
-		BRA	$+24
+		BRA	$+20
 		BCF	SIM_SEND
 		BCF	SIM_FORWARD
 		BCF	SIM_LEFT
 		BCF	SIM_RIGHT
 		
-		clrf    CCPR1L,a
-		clrf    CCPR2L,a
 		BCF	TMR2ON
 		CLRF	TMR2
 		BSF	TMR2IE
@@ -1305,23 +1308,29 @@ STATE_MACHINE_START:
 		
 		MOVLW	'F'
 		CPFSEQ	extra
-		BRA	$+8
+		BRA	$+10
 		BTG	SIM_FORWARD
+		
+		BSF	SIM_STOPPED
 		
 		GOTO	SEND_SENSORS
 		
 		MOVLW	'L'
 		CPFSEQ	extra
-		BRA	$+8
+		BRA	$+10
 		BTG	SIM_LEFT
+		
+		BSF	SIM_STOPPED
 		
 		GOTO	SEND_SENSORS
 		
 		MOVLW	'R'
 		CPFSEQ	extra
-		BRA	$+4
+		BRA	$+6
 		BTG	SIM_RIGHT
     
+		BSF	SIM_STOPPED
+		
 	    SEND_SENSORS:
 	    //    WE NEED TO DECIDE IF IT WILL CONSTANTLY SEND SENSOR READINGS OR JUST SEND THE CURRENT SENSOR VALUE WHEN WE ENTER THE COMMAND
 		BTFSS	SIM_SEND
@@ -1345,10 +1354,20 @@ STATE_MACHINE_START:
 		BTFSS	SIM_FORWARD
 		BRA	LEFT
 		
-		MOVLW	'F'
+		BCF	SIM_STOPPED
+		
+		MOVLW	0x20
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
 		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
 		
 		MOVLW	DUTY_50
 		MOVWF	CCPR1L,a    
@@ -1358,10 +1377,20 @@ STATE_MACHINE_START:
 		BTFSS	SIM_LEFT
 		BRA	RIGHT
 		
-		MOVLW	'L'
+		BCF	SIM_STOPPED
+		
+		MOVLW	0x28
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
 		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
 		
 		MOVLW	DUTY_50
 		CLRF	CCPR1L,a    
@@ -1369,17 +1398,49 @@ STATE_MACHINE_START:
 		
 	    RIGHT:
 		BTFSS	SIM_RIGHT
-		BRA	SIMULATE_Rx_CHECK
+		BRA	STOPPED
 		
-		MOVLW	'R'
+		BCF	SIM_STOPPED
+		
+		MOVLW	0x30
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
 		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
 		
 		MOVLW	DUTY_50
 		MOVWF	CCPR1L,a    
 		CLRF	CCPR2L,a
 		
+	    STOPPED:
+		TSTFSZ	CCPR1L
+		BRA	SIMULATE_Rx_CHECK
+		TSTFSZ	CCPR2L
+		BRA	SIMULATE_Rx_CHECK
+		BTFSS	SIM_STOPPED
+		BRA	SIMULATE_Rx_CHECK
+		
+		BCF	SIM_STOPPED
+		
+		MOVLW	0x38
+		MOVWF	TBLPTRL
+		MOVLW	0x71
+		MOVWF	TBLPTRH
+		TBLRD*+
+		MOVF	TABLAT,W
+		CALL	BYTE_TX
+		XORLW	0x0D
+		BNZ	$-10
+		
+		MOVLW	0x70
+		MOVWF	TBLPTRH
 		
 		BRA	SIMULATE_Rx_CHECK
     
@@ -2755,6 +2816,9 @@ SUB_TRANSITIONS1:
 	    BSF read_sensors_call
 	    call    read_sensors
 	    BCF read_sensors_call
+	    
+		CALL	DISPLAY_DIGIT
+		
 	    ; back to bank 2
 	    LFSR    1, sensor_read_address	
 
@@ -2983,20 +3047,7 @@ SUB_TRANSITIONS1:
 
 	;</editor-fold>
 
-		TODO_change_how_the_colour_checks_are_done:
-		; best ideas so far:
-		    ; check how close the colours are to their white thresholds.
-			; this can be used to resolve error cases where two colours
-			; are higher than their thresholds.
-		    ; check how far the colours are from their black thresholds.
-			; can be used when all the colours are lower than their thresholds
-			; but the sensor is not seeing black.
-		; comments:
-		    ; need to check how much noise is on the output of the new amplifier
-		    ; circuit to see how generous i have to be with the error tollerance 
-		nop
-		TODO_maybe_put_a_checking_order_for_the_colours:
-		nop
+		CALL	DISPLAY_DIGIT
 
 		lfsr	1, sensor_read_address
 
@@ -3200,6 +3251,8 @@ SUB_TRANSITIONS1:
 		bsf	    blue_check_bits,4,a
 
 	;</editor-fold>
+	
+		CALL	DISPLAY_DIGIT
 
 	;<editor-fold defaultstate="collapsed" desc="Get Sensor Colours">
 
@@ -4208,6 +4261,14 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     db	"Selected "
     org	7110h
     db	"Greeting saved", 0x0D
+    org	7120h
+    db	"Forward", 0x0D
+    org	7128h
+    db	"Left", 0x0D
+    org	7130h
+    db	"Right", 0x0D
+    org	7138h
+    db	"Stopped", 0x0D
     
     org	7200h
     db	"A person who thinks all the time has nothing to think about except thoughts. So, he loses touch with reality and lives in a world of illusions. Alan Watts.",0x0D
