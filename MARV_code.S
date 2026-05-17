@@ -1032,7 +1032,7 @@ STATE_MACHINE_START:
 		call    delay_333
 		bcf	delay_333_call
 		; reset button wait
-		bcf	    INT0IF
+		bcf	    INT1IF
 		
 		GOTO	ATTACK
     
@@ -1116,7 +1116,7 @@ STATE_MACHINE_START:
 		call    delay_333
 		bcf	delay_333_call
 		; reset button wait
-		bcf	    INT0IF
+		bcf	    INT1IF
 		
 		GOTO	COLOUR
     
@@ -1230,7 +1230,7 @@ STATE_MACHINE_START:
 		call    delay_333
 		bcf	delay_333_call
 		; reset button wait
-		bcf	    INT0IF
+		bcf	    INT1IF
 		BCF	touch_start
 		
 		clrf    CCPR1L,a
