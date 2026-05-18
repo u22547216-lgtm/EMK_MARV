@@ -7,7 +7,7 @@
 ;	    Owam Bandile Ntlemeza
 ;	    Elmor Van Der Walt
 ;	    Bianca Mkhize
-; Date of last revision: May 2026
+; Date of last revision: March 2026
 ;------------------------------------------------------------------------------
 ; Description: 
 ;   Code for the MARV of team 28 for EMK 310 in 2026
@@ -81,7 +81,7 @@
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
-    SAMPLE_DELAYS	EQU 3
+    SAMPLE_DELAYS	EQU 2
 	
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
@@ -227,7 +227,7 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
-	MIN_DUTY    equ 40
+	MIN_DUTY    equ 10
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
@@ -643,26 +643,25 @@ init:
 	CLRF    ERRORFlag
 	CLRF    DelayCount
     
-	CLRF	RACE_COLOUR_DIGIT
     ;</editor-fold>
     
     
     ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
     
 	COLOUR_TOLERANCES:
-	movlw   10
+	movlw   6
 	MOVWF   red_tol,a
 	
-	movlw   10
+	movlw   8
 	MOVWF   green_tol,a
 	
-	movlw   10
+	movlw   2
 	MOVWF   blue_tol,a
 
 	movlw   0
 	MOVWF   black_tol,a
 
-	movlw   12
+	movlw   10
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
@@ -1004,7 +1003,7 @@ STATE_MACHINE_START:
 		MOVWF	TBLPTRL
 		
 	    COLOUR_SEND:
-		MOVFF	TBLPTRL,race_colour_string_start
+		MOVWF	race_colour_string_start
 		TBLRD*+
 		MOVF	TABLAT,W
 		CALL	BYTE_TX
@@ -1100,24 +1099,6 @@ STATE_MACHINE_START:
 		
 		CALL	calibration
 		BCF	calibrate
-		
-		MOVLW	'D'
-		CALL	BYTE_TX
-		MOVLW	'O'
-		CALL	BYTE_TX
-		MOVLW	'N'
-		CALL	BYTE_TX
-		MOVLW	'E'
-		CALL	BYTE_TX
-		MOVLW	' '
-		CALL	BYTE_TX
-		MOVLW	':'
-		CALL	BYTE_TX
-		MOVLW	'D'
-		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
-		
 		; go back
 		GOTO	REFERENCE_start
 	    
@@ -1202,7 +1183,8 @@ STATE_MACHINE_START:
 		
 		clrf    CCPR1L,a
 		clrf    CCPR2L,a
-		
+		BCF	TMR2ON
+		CLRF	TMR2
 		BCF	touch_start
 		GOTO	MAIN_MENU
 		
@@ -1212,7 +1194,6 @@ STATE_MACHINE_START:
 		
 		BTFSS	touch_start
 		BRA	ATTACK_BUTTON_0_CHECK
-		
 		CALL	LLI
 		BCF	    follow_line
 		
@@ -1232,22 +1213,10 @@ STATE_MACHINE_START:
 		bsf	delay_333_call
 		call    delay_333
 		bcf	delay_333_call
-		
-		CALL	touch_to_start
-		
-		MOVLW	'G'
-		CALL	BYTE_TX
-		MOVLW	'O'
-		CALL	BYTE_TX
-		MOVLW	0x0D
-		CALL	BYTE_TX
-		
-		MOVFF	RACE_COLOUR_DIGIT, displayed_digit
-		
 		; reset button wait
 		bcf	    INT0IF
 		
-		BSF	TMR2ON
+		CALL	touch_to_start
 		; go back
 		GOTO	ATTACK_start
 		
@@ -1272,7 +1241,8 @@ STATE_MACHINE_START:
 		
 		clrf    CCPR1L,a
 		clrf    CCPR2L,a
-		
+		BCF	TMR2ON
+		CLRF	TMR2
 		GOTO	REFERENCE
 	    
 	;</editor-fold>
@@ -1308,13 +1278,7 @@ STATE_MACHINE_START:
 		BCF	SIM_LEFT
 		BCF	SIM_RIGHT
 		BCF	SIM_STOPPED
-		
-		BCF	    STR1C
-		BSF	    STR1B
-		
-		BCF	    STR2C
-		BSF	    STR2B
-    
+	    
 	    SIMULATE_RACE_start:
 		LFSR    0,100h
 		
@@ -1420,7 +1384,7 @@ STATE_MACHINE_START:
 		MOVLW	0x70
 		MOVWF	TBLPTRH
 		
-		MOVLW	DUTY_75
+		MOVLW	DUTY_50
 		MOVWF	CCPR1L,a    
 		MOVWF   CCPR2L,a
 		
@@ -1443,7 +1407,7 @@ STATE_MACHINE_START:
 		MOVLW	0x70
 		MOVWF	TBLPTRH
 		
-		MOVLW	DUTY_75
+		MOVLW	DUTY_50
 		CLRF	CCPR1L,a    
 		MOVWF	CCPR2L,a
 		
@@ -1466,7 +1430,7 @@ STATE_MACHINE_START:
 		MOVLW	0x70
 		MOVWF	TBLPTRH
 		
-		MOVLW	DUTY_75
+		MOVLW	DUTY_50
 		MOVWF	CCPR1L,a    
 		CLRF	CCPR2L,a
 		
@@ -2211,8 +2175,8 @@ STATE_MACHINE_START:
 	    ; force sampling rate to be equal to timer 2 rate
 	    
 	    ; wait for a certain amount of duty cycles
-	    movlw   SAMPLE_DELAYS-1
-	    CPFSGT  sample_wait
+	    movlw   SAMPLE_DELAYS
+	    CPFSEQ  sample_wait
 	    RETURN
 	    CLRF    sample_wait
 	    
@@ -2621,11 +2585,11 @@ STATE_MACHINE_START:
 	    clrf    CCPR1L,a
 	    clrf    CCPR2L,a
 	    
-	    ;BTFSS   black_flag
-	    ;bra	    $+8
-	    ;decfsz  black_seen_count,a
-	    ;return
-	    ;bra	    $+0
+	    BTFSS   black_flag
+	    bra	    $+8
+	    decfsz  black_seen_count,a
+	    return
+	    bra	    $+0
 	    
 	    BCF	    black_flag
 	    movlw   black_seen_thresh
@@ -3475,12 +3439,12 @@ SUB_TRANSITIONS1:
 		    RETLW	'G'
 		    
 		    
-		    ;btfsc	check,0,a
-		    ;RETLW	'R'
+		    btfsc	check,0,a
+		    RETLW	'R'
 		    
 		    
-		    ;btfsc	check,2,a
-		    ;RETLW	'B'
+		    btfsc	check,2,a
+		    RETLW	'B'
 		    
 		    ; race error check
 		    movlw	'R'
@@ -4355,7 +4319,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     org 70A0h
     db  "ECHO MODE", 0x0D
     echo_message    equ 10
-    
     org 70C0h
     db	"Red", 0x0D
     org 70C8h
@@ -4368,7 +4331,6 @@ GOTO    STATE_MACHINE_START   ; LOOP OVER ALL STATES
     db	"White", 0x0D
     org 70E8h
     db	"Nothing", 0x0D
-    
     org	70F0h
     db	"Calibrate "
     org	7100h

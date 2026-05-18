@@ -81,7 +81,7 @@
 
     sample_wait	equ 0x04
     number_of_readings	    equ 0x05
-    SAMPLE_DELAYS	EQU 3
+    SAMPLE_DELAYS	EQU 2
 	
 
     ;<editor-fold defaultstate="collapsed" desc="State Machine Variables">
@@ -227,13 +227,13 @@ DELAY_SKIP		equ	0x08
 
 
 	;DUTY CYCLE DEFINITIONS
-	MIN_DUTY    equ 40
+	MIN_DUTY    equ 50
 	DUTY_25     equ 31
 	DUTY_50     equ 62
 	DUTY_75     equ 93
 	DUTY_100    equ 123
     
-	DUTY_MISC   equ	80
+	DUTY_MISC   equ	95
    
 	DUTY_STOP   equ 0
 		
@@ -650,13 +650,13 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
     
 	COLOUR_TOLERANCES:
-	movlw   10
+	movlw   4
 	MOVWF   red_tol,a
 	
-	movlw   10
+	movlw   4
 	MOVWF   green_tol,a
 	
-	movlw   10
+	movlw   2
 	MOVWF   blue_tol,a
 
 	movlw   0
@@ -3475,12 +3475,12 @@ SUB_TRANSITIONS1:
 		    RETLW	'G'
 		    
 		    
-		    ;btfsc	check,0,a
-		    ;RETLW	'R'
+		    btfsc	check,0,a
+		    RETLW	'R'
 		    
 		    
-		    ;btfsc	check,2,a
-		    ;RETLW	'B'
+		    btfsc	check,2,a
+		    RETLW	'B'
 		    
 		    ; race error check
 		    movlw	'R'
