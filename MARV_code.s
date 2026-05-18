@@ -649,19 +649,19 @@ init:
     ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
     
 	COLOUR_TOLERANCES:
-	movlw   0
+	movlw   6
 	MOVWF   red_tol,a
 	
-	movlw   1
+	movlw   8
 	MOVWF   green_tol,a
 	
-	movlw   0
+	movlw   2
 	MOVWF   blue_tol,a
 
 	movlw   0
 	MOVWF   black_tol,a
 
-	movlw   0
+	movlw   10
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
@@ -1190,6 +1190,8 @@ STATE_MACHINE_START:
 		
 		
 	    ATTACK_CAP_TOUCH_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		BTFSS	touch_start
 		BRA	ATTACK_BUTTON_0_CHECK
 		CALL	LLI
@@ -1197,6 +1199,8 @@ STATE_MACHINE_START:
 		
 		
 	    ATTACK_BUTTON_0_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		btfss   INT0IF	    ;wait for button press
 		bra	ATTACK_BUTTON_1_CHECK
 		
@@ -1217,6 +1221,8 @@ STATE_MACHINE_START:
 		GOTO	ATTACK_start
 		
 	    ATTACK_BUTTON_1_CHECK:
+		CALL	DISPLAY_DIGIT
+		
 		btfss   INT1IF	    ;wait for button press
 		bra	ATTACK_Rx_CHECK
 		
@@ -1661,6 +1667,14 @@ STATE_MACHINE_START:
 	    movf    INDF1,w,a
 
 	    MOVWF   red_thresh,a
+	    
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+		
+		
+	    bcf	    INT0IF
 
 	;</editor-fold>
 
@@ -1717,6 +1731,14 @@ STATE_MACHINE_START:
 	    movf    INDF1,w,a
 
 	    MOVWF green_thresh,a
+	    
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+		
+		
+	    bcf	    INT0IF
 
 	;</editor-fold>
 
@@ -1773,6 +1795,14 @@ STATE_MACHINE_START:
 	    movf    INDF1,w,a
 
 	    MOVWF blue_thresh,a
+	    
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+		
+		
+	    bcf	    INT0IF
 
 	;</editor-fold>
 
@@ -1869,6 +1899,14 @@ STATE_MACHINE_START:
 	    movf    INDF1,w,a
 
 	    movwf	black_blue_thresh,a
+	    
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+		
+		
+	    bcf	    INT0IF
 
 	;</editor-fold>
 
@@ -1965,6 +2003,14 @@ STATE_MACHINE_START:
 	    movf    INDF1,w,a
 
 	    movwf	white_blue_thresh,a
+	    
+
+		bsf		flash_colour_display
+		call 	flash
+		bcf		flash_colour_display
+		
+		
+	    bcf	    INT0IF
 
 	;</editor-fold>
 
@@ -2657,9 +2703,11 @@ delay_333:
 	movlw	0b10000111
 	movwf	T0CON,a
 	
+	CALL	DISPLAY_DIGIT
+	
 	; option to wait for the timer
 	btfsc	wait_for_timer333
-	bra	$-2
+	bra	$-6
 	
 	; restore context
 	movf    extra,w,a
@@ -2695,8 +2743,11 @@ delay_RGB:
 	; turn the timer on
 	bsf	TMR1ON
 	; wait for the timer
+	
+	CALL	DISPLAY_DIGIT
+	
 	btfss	TMR1IF
-	bra	$-2
+	bra	$-6
 	; turn the timer off
 	bcf	TMR1ON
 	bcf	TMR1IF
@@ -3384,6 +3435,17 @@ SUB_TRANSITIONS1:
 		    RETLW   'B'
 		    
 		    
+		    btfsc	check,1,a
+		    RETLW	'G'
+		    
+		    
+		    btfsc	check,0,a
+		    RETLW	'R'
+		    
+		    
+		    btfsc	check,2,a
+		    RETLW	'B'
+		    
 		    ; race error check
 		    movlw	'R'
 		    CPFSEQ	RACE_COLOUR,a
@@ -3499,13 +3561,16 @@ SUB_TRANSITIONS1:
 	    ; do this because i will do things while waiting for the timer.
 	    bsf	wait_for_timer333
 		; turn on
+		
+	    CALL	DISPLAY_DIGIT
+	    
 	    MOVF	DISPLAYED_COLOUR,w,a
 	    BSF	colour_display
 	    call	display_colour
 	    BCF	colour_display
 		;wait 0.166 seconds
 	    btfsc	wait_for_timer333
-	    bra	$-10
+	    bra	$-14
 	    ; did we flash enough?
 	    decfsz  count,a
 	    bra	BEGIN_FLASH	; no
