@@ -212,8 +212,8 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 20
-	Kp  equ 60
+	Kd  equ 10
+	Kp  equ 30
 
 
 	; sensor value mapping
@@ -3139,6 +3139,236 @@ SUB_TRANSITIONS1:
 		bra	$+6
 		; it sees white
 		movlw	'W'
+		movwf	SENSOR4,a
+
+	;</editor-fold>
+
+		CALL	DISPLAY_DIGIT
+		
+		
+	    LFSR    1, sensor_read_address	
+
+	;<editor-fold defaultstate="collapsed" desc="Black Check">
+	    ; always check for white first
+	    white_check:
+
+		    white_red_check:
+
+
+		clrf	red_check_bits,a
+
+		;sensor 0
+		movf    black_red_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    red_check_bits,0,a
+
+		;sensor 1
+		movf    black_red_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    red_check_bits,1,a
+
+		;sensor 2
+		movf    black_red_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    red_check_bits,2,a
+
+		;sensor 3
+		movf    black_red_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    red_check_bits,3,a
+
+		;sensor 4
+		movf    black_red_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    red_check_bits,4,a
+
+
+		    white_green_check:
+
+
+		clrf	green_check_bits,a
+
+		;sensor 0
+		movf    black_green_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    green_check_bits,0,a
+
+		;sensor 1
+		movf    black_green_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    green_check_bits,1,a
+
+		;sensor 2
+		movf    black_green_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    green_check_bits,2,a
+
+		;sensor 3
+		movf    black_green_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    green_check_bits,3,a
+
+		;sensor 4
+		movf    black_green_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    green_check_bits,4,a
+
+
+		    white_blue_check:
+
+
+		clrf	blue_check_bits,a
+
+		;sensor 0
+		movf    black_blue_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    blue_check_bits,0,a
+
+		;sensor 1
+		movf    black_blue_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    blue_check_bits,1,a
+
+		;sensor 2
+		movf    black_blue_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    blue_check_bits,2,a
+
+		;sensor 3
+		movf    black_blue_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    blue_check_bits,3,a
+
+		;sensor 4
+		movf    black_blue_thresh,w,a
+		SUBWF   POSTINC1,w,a	    ; get error
+		BNN	    $+6
+		NEGF    WREG,a		    ; make positive if negative
+		cpfsgt  black_tol,a
+		bsf	    blue_check_bits,4,a
+
+		final_white_check:
+		CLRF    check,a
+
+		;check sensor 0
+		btfsc   red_check_bits,0,a
+		bsf     check,0,a
+		btfsc   green_check_bits,0,a
+		bsf     check,1,a
+		btfsc   blue_check_bits,0,a
+		bsf     check,2,a
+
+		movlw	7
+		cpfseq	check,a
+		bra	$+6
+		; it sees black
+		movlw	'K'
+		movwf	SENSOR0,a
+
+		CLRF    check,a
+		;check sensor 1
+		btfsc   red_check_bits,1,a
+		bsf     check,0,a
+		btfsc   green_check_bits,1,a
+		bsf     check,1,a
+		btfsc   blue_check_bits,1,a
+		bsf     check,2,a
+
+		movlw	7
+		cpfseq	check,a
+		bra	$+6
+		; it sees black
+		movlw	'K'
+		movwf	SENSOR1,a
+
+		CLRF    check,a
+		;check sensor 2
+		btfsc   red_check_bits,2,a
+		bsf     check,0,a
+		btfsc   green_check_bits,2,a
+		bsf     check,1,a
+		btfsc   blue_check_bits,2,a
+		bsf     check,2,a
+
+		movlw	7
+		cpfseq	check,a
+		bra	$+6
+		; it sees black
+		movlw	'K'
+		movwf	SENSOR2,a
+
+		CLRF    check,a
+		;check sensor 3
+		btfsc   red_check_bits,3,a
+		bsf     check,0,a
+		btfsc   green_check_bits,3,a
+		bsf     check,1,a
+		btfsc   blue_check_bits,3,a
+		bsf     check,2,a
+
+		movlw	7
+		cpfseq	check,a
+		bra	$+6
+		; it sees black
+		movlw	'K'
+		movwf	SENSOR3,a
+
+		CLRF    check,a
+		;check sensor 4
+		btfsc   red_check_bits,4,a
+		bsf     check,0,a
+		btfsc   green_check_bits,4,a
+		bsf     check,1,a
+		btfsc   blue_check_bits,4,a
+		bsf     check,2,a
+
+		movlw	7
+		cpfseq	check,a
+		bra	$+6
+		; it sees black
+		movlw	'K'
 		movwf	SENSOR4,a
 
 	;</editor-fold>
