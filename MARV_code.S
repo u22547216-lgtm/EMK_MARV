@@ -647,30 +647,31 @@ init:
     ;</editor-fold>
     
     
+    
+    MOVLW	0xE8
+    MOVWF	race_colour_string_start
+		
+;</editor-fold>
+    
     ;<editor-fold defaultstate="collapsed" desc="Setting Detection Tolerances">
     
 	COLOUR_TOLERANCES:
 	movlw   10
 	MOVWF   red_tol,a
 	
-	movlw   10
+	movlw   8
 	MOVWF   green_tol,a
 	
 	movlw   10
 	MOVWF   blue_tol,a
 
-	movlw   0
+	movlw   1
 	MOVWF   black_tol,a
 
-	movlw   12
+	movlw   8
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
-    
-    MOVLW	0xE8
-    MOVWF	race_colour_string_start
-		
-;</editor-fold>
 
 ;<editor-fold defaultstate="collapsed" desc="State Machine Setup">
     
