@@ -3161,35 +3161,35 @@ SUB_TRANSITIONS1:
 		movf    black_red_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    red_check_bits,0,a
 
 		;sensor 1
 		movf    black_red_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    red_check_bits,1,a
 
 		;sensor 2
 		movf    black_red_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    red_check_bits,2,a
 
 		;sensor 3
 		movf    black_red_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    red_check_bits,3,a
 
 		;sensor 4
 		movf    black_red_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    red_check_bits,4,a
 
 
@@ -3202,35 +3202,35 @@ SUB_TRANSITIONS1:
 		movf    black_green_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    green_check_bits,0,a
 
 		;sensor 1
 		movf    black_green_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    green_check_bits,1,a
 
 		;sensor 2
 		movf    black_green_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    green_check_bits,2,a
 
 		;sensor 3
 		movf    black_green_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    green_check_bits,3,a
 
 		;sensor 4
 		movf    black_green_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    green_check_bits,4,a
 
 
@@ -3243,35 +3243,35 @@ SUB_TRANSITIONS1:
 		movf    black_blue_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    blue_check_bits,0,a
 
 		;sensor 1
 		movf    black_blue_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    blue_check_bits,1,a
 
 		;sensor 2
 		movf    black_blue_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    blue_check_bits,2,a
 
 		;sensor 3
 		movf    black_blue_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    blue_check_bits,3,a
 
 		;sensor 4
 		movf    black_blue_thresh,w,a
 		SUBWF   POSTINC1,w,a	    ; get error
 		BN	    $+4
-		cpfsgt  black_tol,a
+		cpfslt  black_tol,a
 		bsf	    blue_check_bits,4,a
 
 		final_black_check:
