@@ -3150,9 +3150,9 @@ SUB_TRANSITIONS1:
 
 	;<editor-fold defaultstate="collapsed" desc="Black Check">
 	    ; always check for white first
-	    white_check:
+	    black_check:
 
-		    white_red_check:
+		    black_red_check:
 
 
 		clrf	red_check_bits,a
@@ -3198,7 +3198,7 @@ SUB_TRANSITIONS1:
 		bsf	    red_check_bits,4,a
 
 
-		    white_green_check:
+		    black_green_check:
 
 
 		clrf	green_check_bits,a
@@ -3244,7 +3244,7 @@ SUB_TRANSITIONS1:
 		bsf	    green_check_bits,4,a
 
 
-		    white_blue_check:
+		    black_blue_check:
 
 
 		clrf	blue_check_bits,a
@@ -3289,7 +3289,7 @@ SUB_TRANSITIONS1:
 		cpfsgt  black_tol,a
 		bsf	    blue_check_bits,4,a
 
-		final_white_check:
+		final_black_check:
 		CLRF    check,a
 
 		;check sensor 0
@@ -3383,7 +3383,7 @@ SUB_TRANSITIONS1:
 		clrf	red_check_bits,a
 
 		; sensor 0
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR0,a
 		bra	    $+14
 
@@ -3395,7 +3395,7 @@ SUB_TRANSITIONS1:
 		bsf	    red_check_bits,0,a
 
 		; sensor 1
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR1,a
 		bra	    $+14
 
@@ -3407,7 +3407,7 @@ SUB_TRANSITIONS1:
 		bsf	    red_check_bits,1,a
 
 		; sensor 2
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR2,a
 		bra	    $+14
 
@@ -3419,7 +3419,7 @@ SUB_TRANSITIONS1:
 		bsf	    red_check_bits,2,a
 
 		; sensor 3
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR3,a
 		bra	    $+14
 
@@ -3431,7 +3431,7 @@ SUB_TRANSITIONS1:
 		bsf	    red_check_bits,3,a
 
 		; sensor 4
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR4,a
 		bra	    $+14
 
@@ -3450,7 +3450,7 @@ SUB_TRANSITIONS1:
 		clrf	green_check_bits,a
 
 		; sensor 0
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR0,a
 		bra	    $+14
 
@@ -3462,7 +3462,7 @@ SUB_TRANSITIONS1:
 		bsf	    green_check_bits,0,a
 
 		; sensor 1
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR1,a
 		bra	    $+14
 
@@ -3474,7 +3474,7 @@ SUB_TRANSITIONS1:
 		bsf	    green_check_bits,1,a
 
 		; sensor 2
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR2,a
 		bra	    $+14
 
@@ -3486,7 +3486,7 @@ SUB_TRANSITIONS1:
 		bsf	    green_check_bits,2,a
 
 		; sensor 3
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR3,a
 		bra	    $+14
 
@@ -3498,7 +3498,7 @@ SUB_TRANSITIONS1:
 		bsf	    green_check_bits,3,a
 
 		; sensor 4
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR4,a
 		bra	    $+14
 
@@ -3517,7 +3517,7 @@ SUB_TRANSITIONS1:
 		clrf	blue_check_bits,a
 
 		; sensor 0
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR0,a
 		bra	    $+14
 
@@ -3529,7 +3529,7 @@ SUB_TRANSITIONS1:
 		bsf	    blue_check_bits,0,a
 
 		; sensor 1
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR1,a
 		bra	    $+14
 
@@ -3541,7 +3541,7 @@ SUB_TRANSITIONS1:
 		bsf	    blue_check_bits,1,a
 
 		; sensor 2
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR2,a
 		bra	    $+14
 
@@ -3553,7 +3553,7 @@ SUB_TRANSITIONS1:
 		bsf	    blue_check_bits,2,a
 
 		; sensor 3
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR3,a
 		bra	    $+14
 
@@ -3565,7 +3565,7 @@ SUB_TRANSITIONS1:
 		bsf	    blue_check_bits,3,a
 
 		; sensor 4
-		; is it white?
+		; is it decided already?
 		TSTFSZ  SENSOR4,a
 		bra	    $+14
 
@@ -3584,7 +3584,7 @@ SUB_TRANSITIONS1:
 
 	    checking_colours:
 		; check sensor 0
-		; check if it is white
+		; check if it is decided already
 		TSTFSZ  SENSOR0,a
 		bra	    $+22
 
@@ -3601,7 +3601,7 @@ SUB_TRANSITIONS1:
 		movwf   SENSOR0,a
 
 		; check sensor 1
-		; check if it is white
+		; check if it is decided already
 		TSTFSZ  SENSOR1,a
 		bra	    $+22
 
@@ -3618,7 +3618,7 @@ SUB_TRANSITIONS1:
 		movwf   SENSOR1,a
 
 		; check sensor 2
-		; check if it is white
+		; check if it is decided already
 		TSTFSZ  SENSOR2,a
 		bra	    $+22
 
@@ -3635,7 +3635,7 @@ SUB_TRANSITIONS1:
 		movwf   SENSOR2,a
 
 		; check sensor 3
-		; check if it is white
+		; check if it is decided already
 		TSTFSZ  SENSOR3,a
 		bra	    $+22
 
@@ -3652,7 +3652,7 @@ SUB_TRANSITIONS1:
 		movwf   SENSOR3,a
 
 		; check sensor 4
-		; check if it is white
+		; check if it is decided already
 		TSTFSZ  SENSOR4,a
 		bra	    $+22
 
