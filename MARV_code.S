@@ -659,16 +659,16 @@ init:
 	movlw   10
 	MOVWF   red_tol,a
 	
-	movlw   8
+	movlw   6
 	MOVWF   green_tol,a
 	
-	movlw   10
+	movlw   8
 	MOVWF   blue_tol,a
 
 	movlw   1
 	MOVWF   black_tol,a
 
-	movlw   8
+	movlw   14
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
@@ -1681,6 +1681,8 @@ STATE_MACHINE_START:
 	    bcf		button_press_check
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 
 
@@ -1743,6 +1745,8 @@ STATE_MACHINE_START:
 	    bcf		button_press_check
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 
 
@@ -1807,6 +1811,8 @@ STATE_MACHINE_START:
 	    bcf		button_press_check
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 
 
@@ -1871,6 +1877,8 @@ STATE_MACHINE_START:
 	    bcf		button_press_check
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 
 
@@ -1937,6 +1945,14 @@ STATE_MACHINE_START:
 
 	    movwf	black_blue_thresh,a
 	    
+	    ; CHECK HOW CLOSE THIS IS TO NORMAL BLUE, THEN DEC SOME IF NEEDED
+	    SUBWF   blue_thresh,W
+	    CPFSLT  blue_tol
+	    BRA	    $+8
+	    MOVF    blue_tol
+	    SUBWF   black_blue_thresh
+	    SUBWF   black_blue_thresh
+	    
 
 		bsf		flash_colour_display
 		call 	flash
@@ -1975,6 +1991,8 @@ STATE_MACHINE_START:
 	    bcf		button_press_check
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 
 
@@ -2840,6 +2858,17 @@ SUB_TRANSITIONS1:
 
 	    call    read_all_sensors
 	    bcf	    blue_pin,a
+	    
+	    
+	    bsf	RGB_delay_call
+	    call delay_RGB
+	    bcf	RGB_delay_call
+	    bsf	RGB_delay_call
+	    call delay_RGB
+	    bcf	RGB_delay_call
+	    bsf	RGB_delay_call
+	    call delay_RGB
+	    bcf	RGB_delay_call
 
 	    return
 	    GOTO	SUB_TRANSITIONS2
@@ -2892,6 +2921,25 @@ SUB_TRANSITIONS1:
     
 ;</editor-fold>
     
+;<editor-fold defaultstate="collapsed" desc="Average readings">
+	
+    AVERAGE_READINGS:
+	LFSR	1,sensor_read_address
+	LFSR	2,sensor_read_address+15
+	
+	MOVF	number_of_readings,W
+	MOVWF	reading_count
+	
+	movf	POSTINC2,W
+	ADDWF	INDF1
+	RRCF	POSTINC1
+	DECFSZ	reading_count
+	BRA	$-8
+	
+	RETURN
+        
+;</editor-fold>
+	
 ;<editor-fold defaultstate="collapsed" desc="Colour Detection">
         
     SUBROUTINE3:
@@ -2912,6 +2960,8 @@ SUB_TRANSITIONS1:
 	    LFSR    1, sensor_read_address	
 	    BSF read_sensors_call
 	    call    read_sensors
+	    call    read_sensors
+	    CALL    AVERAGE_READINGS
 	    BCF read_sensors_call
 	    
 		CALL	DISPLAY_DIGIT
@@ -3691,12 +3741,12 @@ SUB_TRANSITIONS1:
 		    RETLW	'G'
 		    
 		    
-		    ;btfsc	check,0,a
-		    ;RETLW	'R'
+		    btfsc	check,0,a
+		    RETLW	'R'
 		    
 		    
-		    ;btfsc	check,2,a
-		    ;RETLW	'B'
+		    btfsc	check,2,a
+		    RETLW	'B'
 		    
 		    ; race error check
 		    movlw	'R'
