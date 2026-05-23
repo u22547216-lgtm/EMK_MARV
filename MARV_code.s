@@ -217,12 +217,15 @@ DELAY_SKIP		equ	0x08
 
 
 	; sensor value mapping
-	s0_value        equ   -4
-	s1_value        equ   -2
+	s0_value        equ   0
+	s0_value_e        equ   0
+	s1_value        equ   -4
 	s1_value_e	equ	-1
-	s2_value        equ   0
+	s2_value        equ   -2
+	s2_value_e        equ   -1
 	s3_value_e	equ	1
 	s3_value        equ   2
+	s4_value_e        equ   2
 	s4_value        equ   4
 
 
@@ -233,7 +236,7 @@ DELAY_SKIP		equ	0x08
 	DUTY_75     equ 93
 	DUTY_100    equ 123
     
-	DUTY_MISC   equ	80
+	DUTY_MISC   equ	100
    
 	DUTY_STOP   equ 0
 		
@@ -668,7 +671,7 @@ init:
 	movlw   1
 	MOVWF   black_tol,a
 
-	movlw   14
+	movlw   10
 	MOVWF   white_tol,a
 	
     ;</editor-fold>
@@ -2253,7 +2256,7 @@ STATE_MACHINE_START:
 	    movlw   'e'
 	    CPFSEQ  SENSOR0,a
 	    bra	    $+8
-	    movlw   s1_value
+	    movlw   s0_value_e
 	    MOVWF   error0,b
 	    setf    line_seen,b
 	    
@@ -2289,7 +2292,7 @@ STATE_MACHINE_START:
 	    ;MOVF    SENSOR2,W,a
 	    CPFSEQ  SENSOR2,a
 	    bra	    $+8
-	    movlw   s2_value
+	    movlw   s2_value_e
 	    MOVWF   error2,b
 	    setf    line_seen,b
 	    
@@ -2325,7 +2328,7 @@ STATE_MACHINE_START:
 	    ;MOVF    SENSOR4,W,a
 	    CPFSEQ  SENSOR4,a
 	    bra	    $+8
-	    movlw   s3_value
+	    movlw   s4_value_e
 	    MOVWF   error4,b
 	    setf    line_seen,b
 	    
@@ -3737,16 +3740,16 @@ SUB_TRANSITIONS1:
 		    RETLW   'B'
 		    
 		    
-		    btfsc	check,1,a
-		    RETLW	'G'
+		    ;btfsc	check,1,a
+		    ;RETLW	'G'
 		    
 		    
-		    btfsc	check,0,a
-		    RETLW	'R'
+		    ;btfsc	check,0,a
+		    ;RETLW	'R'
 		    
 		    
-		    btfsc	check,2,a
-		    RETLW	'B'
+		    ;btfsc	check,2,a
+		    ;RETLW	'B'
 		    
 		    ; race error check
 		    movlw	'R'
