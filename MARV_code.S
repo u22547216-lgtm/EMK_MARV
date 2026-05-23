@@ -212,17 +212,17 @@ DELAY_SKIP		equ	0x08
     
 	 
 	; PD constants
-	Kd  equ 10
-	Kp  equ 30
+	Kd  equ 15
+	Kp  equ 35
 
 
 	; sensor value mapping
-	s0_value        equ   0
-	s0_value_e        equ   0
-	s1_value        equ   -4
+	s0_value        equ   -4
+	s0_value_e        equ   -2
+	s1_value        equ   -2
 	s1_value_e	equ	-1
-	s2_value        equ   -2
-	s2_value_e        equ   -1
+	s2_value        equ   0
+	s2_value_e        equ   0
 	s3_value_e	equ	1
 	s3_value        equ   2
 	s4_value_e        equ   2
